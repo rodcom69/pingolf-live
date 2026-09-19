@@ -287,6 +287,7 @@
     <div class="sheet">
       <h2 id="sheetHoleName">Hole</h2>
       <div class="target-line" id="sheetTarget">Target: 0</div>
+      <div class="note" id="sheetEditNote" hidden></div>
       <div class="ball-btns">
         <button class="ball-btn" data-ball="1">Hit it on Ball 1 <span class="strokes-pill">1</span></button>
         <button class="ball-btn" data-ball="2">Hit it on Ball 2 <span class="strokes-pill">2</span></button>
@@ -374,6 +375,7 @@
 
   var allAttempts = [];
   var currentHole = null;
+  var currentEditId = null;
 
   var nameInput = document.getElementById('nameInput');
   var nameSelect = document.getElementById('nameSelect');
@@ -464,7 +466,7 @@
       var attemptsHere = mine.filter(function(a){ return a.hole === h.n; });
       var btn = document.createElement('button');
       btn.className = 'hole-tile' + (attemptsHere.length ? ' done' : '');
-      btn.disabled = !nameReady || atCap || attemptsHere.length > 0;
+      btn.disabled = !nameReady || (attemptsHere.length === 0 && atCap);
       var best = null;
       if (attemptsHere.length) {
         best = attemptsHere.slice().sort(function(a,b){ return a.strokes - b.strokes; })[0];
@@ -482,14 +484,21 @@
 
   function openSheet(hole){
     var mine = myAttempts().filter(function(a){ return a.hole === hole.n; });
-    if (mine.length > 0) return;
     currentHole = hole;
+    currentEditId = mine.length ? mine[0].id : null;
     document.getElementById('sheetHoleName').textContent = hole.n + '. ' + hole.name;
     document.getElementById('sheetTarget').textContent = 'Target: ' + fmtNum(hole.target);
     document.getElementById('missScore').value = '';
+    var editNote = document.getElementById('sheetEditNote');
+    if (currentEditId) {
+      editNote.hidden = false;
+      editNote.textContent = 'Correcting your existing entry (currently ' + attemptScoreLabel(mine[0]) + ' → ' + mine[0].strokes + ' strokes). Saving below will replace it.';
+    } else {
+      editNote.hidden = true;
+    }
     document.getElementById('overlay').style.display = 'flex';
   }
-  function closeSheet(){ document.getElementById('overlay').style.display = 'none'; currentHole = null; }
+  function closeSheet(){ document.getElementById('overlay').style.display = 'none'; currentHole = null; currentEditId = null; }
   document.getElementById('sheetClose').addEventListener('click', closeSheet);
   document.getElementById('overlay').addEventListener('click', function(e){ if (e.target.id === 'overlay') closeSheet(); });
 
@@ -504,8 +513,11 @@
     var name = nameInput.value.trim();
     if (!name) return;
     var mine = myAttempts();
-    if (mine.length >= MAX_ATTEMPTS) { closeSheet(); return; }
-    if (mine.some(function(a){ return a.hole === currentHole.n; })) { closeSheet(); return; }
+    var editId = currentEditId;
+    if (!editId) {
+      if (mine.length >= MAX_ATTEMPTS) { closeSheet(); return; }
+      if (mine.some(function(a){ return a.hole === currentHole.n; })) { closeSheet(); return; }
+    }
     var data = {
       playerKey: playerKey(name),
       playerName: name,
@@ -518,7 +530,8 @@
     };
     if (extra) Object.assign(data, extra);
     closeSheet();
-    db.collection('attempts').add(data).catch(function(err){
+    var op = editId ? db.collection('attempts').doc(editId).set(data) : db.collection('attempts').add(data);
+    op.catch(function(err){
       setConnNote('Could not save that score (' + err.message + '). Check your connection and try again.', true);
     });
   }
