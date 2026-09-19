@@ -260,7 +260,7 @@
 
     <details class="rules">
       <summary>How scoring works</summary>
-      <p>Hit the target on ball 1, 2, or 3 &mdash; that's your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4&ndash;8) are looked up automatically. Play any 10 of the 15 holes &mdash; each hole once, no replays. Your worst hole is dropped; the best 9 of your 10 count toward your total.</p>
+      <p>Hit the target on ball 1, 2, or 3 &mdash; that's your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4&ndash;8) are looked up automatically. Play any 10 of the 17 holes &mdash; each hole once, no replays. Your worst hole is dropped; the best 9 of your 10 count toward your total.</p>
     </details>
     <div class="conn-note" id="connNote"></div>
   </section>
@@ -271,7 +271,7 @@
   </section>
 
   <section class="panel" id="panel-rules">
-    <div class="note" style="margin-top:0;font-size:13.5px;line-height:1.5;">Hit the target on ball 1, 2, or 3 &mdash; that's your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4&ndash;8) are looked up automatically. Play any 10 of the 15 holes &mdash; each hole once, no replays. Your worst hole is dropped; the best 9 of your 10 count toward your total.</div>
+    <div class="note" style="margin-top:0;font-size:13.5px;line-height:1.5;">Hit the target on ball 1, 2, or 3 &mdash; that's your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4&ndash;8) are looked up automatically. Play any 10 of the 17 holes &mdash; each hole once, no replays. Your worst hole is dropped; the best 9 of your 10 count toward your total.</div>
     <div class="obj-list" id="objList"></div>
   </section>
 
@@ -312,21 +312,23 @@
   var db = firebase.firestore();
 
   var HOLES = [
-    {n:1, name:"Wheel of Fortune", target:9000000, label:"9M"},
-    {n:2, name:"Star Wars", target:325000000, label:"325M"},
+    {n:1, name:"Cyclopes", target:200000, label:"200K"},
+    {n:2, name:"Wheel of Fortune", target:9000000, label:"9M"},
     {n:3, name:"Star Wars: Fall of the Empire", target:50000000, label:"50M"},
-    {n:4, name:"SeaWitch", target:400000, label:"400K"},
-    {n:5, name:"Beatles", target:2000000, label:"2M"},
-    {n:6, name:"Joker Poker", target:100000, label:"100K"},
-    {n:7, name:"Medieval Madness", target:12000000, label:"12M"},
-    {n:8, name:"Pokemon", target:25000000, label:"25M"},
-    {n:9, name:"Venom", target:55000000, label:"55M"},
+    {n:4, name:"Star Wars", target:325000000, label:"325M"},
+    {n:5, name:"SeaWitch", target:400000, label:"400K"},
+    {n:6, name:"Beatles", target:2000000, label:"2M"},
+    {n:7, name:"Joker Poker", target:100000, label:"100K"},
+    {n:8, name:"Medieval Madness", target:12000000, label:"12M"},
+    {n:9, name:"Pokemon", target:25000000, label:"25M"},
     {n:10, name:"John Wick", target:25000000, label:"25M"},
-    {n:11, name:"Cyclopes", target:200000, label:"200K"},
+    {n:11, name:"Venom", target:55000000, label:"55M"},
     {n:12, name:"Guardians of the Galaxy", target:25000000, label:"25M"},
     {n:13, name:"Metallica", target:24000000, label:"24M"},
-    {n:14, name:"Game of Thrones", target:50000000, label:"50M"},
-    {n:15, name:"Mustang", target:60000, label:"60K"}
+    {n:14, name:"Ali", target:40000, label:"40K"},
+    {n:15, name:"NBA Fast Break", target:75, label:"75"},
+    {n:16, name:"Game of Thrones", target:50000000, label:"50M"},
+    {n:17, name:"Mustang", target:60000, label:"60K"}
   ];
   var MAX_ATTEMPTS = 10, BEST_N = 9;
 
