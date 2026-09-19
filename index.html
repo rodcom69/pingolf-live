@@ -255,8 +255,8 @@
   </section>
 
   <section class="panel" id="panel-board">
-    <div class="lb-list" id="lbList"><div class="empty-note">No scores yet &mdash; be the first on the board.</div></div>
     <div id="tvBoardWrap" style="overflow-x:auto;"></div>
+    <div class="lb-list" id="lbList" style="margin-top:16px;"><div class="empty-note">No scores yet &mdash; be the first on the board.</div></div>
   </section>
 
   <div class="overlay" id="overlay" style="display:none;">
@@ -561,7 +561,7 @@
       var res = bestTotal(p.attempts);
       return {name:p.name, attempts:p.attempts, res:res};
     });
-    if (!players.length) { wrap.innerHTML = '<div class="empty-note">Waiting for the first score&hellip;</div>'; return; }
+    if (!players.length) { wrap.innerHTML = tvMode ? '<div class="empty-note">Waiting for the first score&hellip;</div>' : ''; return; }
     players.sort(function(a,b){ return a.res.total - b.res.total || b.res.thru - a.res.thru; });
 
     var head = '<th class="th-rank"></th><th class="th-player">Player</th><th class="th-thru">Thru</th>' +
@@ -602,7 +602,7 @@
     renderScoreTab();
     renderLeaderboard();
     refreshNameSelect();
-    if (tvMode) renderTvBoard();
+    renderTvBoard();
   }
 
   var tvMode = /tv/i.test(window.location.hash);
