@@ -243,9 +243,14 @@
 
   <section class="panel active" id="panel-score">
     <div class="name-card">
-      <label class="field-label" for="nameInput">Your name</label>
-      <input type="text" id="nameInput" list="nameList" placeholder="Type your name" autocomplete="off">
-      <datalist id="nameList"></datalist>
+      <label class="field-label" for="nameSelect">Already started? Select yourself</label>
+      <select id="nameSelect">
+        <option value="">+ New player</option>
+      </select>
+      <div id="newNameWrap" style="margin-top:10px;">
+        <label class="field-label" for="nameInput">Enter your name</label>
+        <input type="text" id="nameInput" placeholder="Type your name" autocomplete="off">
+      </div>
       <div class="total-row" id="totalRow" style="display:none;">
         <div>
           <div class="field-label" style="margin-bottom:2px;">Current total</div>
@@ -371,9 +376,22 @@
   var currentHole = null;
 
   var nameInput = document.getElementById('nameInput');
-  var nameList = document.getElementById('nameList');
+  var nameSelect = document.getElementById('nameSelect');
+  var newNameWrap = document.getElementById('newNameWrap');
   try { nameInput.value = localStorage.getItem('pingolf_name') || ''; } catch(e){}
   nameInput.addEventListener('input', function(){
+    try { localStorage.setItem('pingolf_name', nameInput.value); } catch(e){}
+    renderScoreTab();
+  });
+  nameSelect.addEventListener('change', function(){
+    if (!nameSelect.value) {
+      newNameWrap.hidden = false;
+      nameInput.value = '';
+      nameInput.focus();
+    } else {
+      newNameWrap.hidden = true;
+      nameInput.value = nameSelect.value;
+    }
     try { localStorage.setItem('pingolf_name', nameInput.value); } catch(e){}
     renderScoreTab();
   });
@@ -383,7 +401,16 @@
       if (!seen[a.playerKey]) { seen[a.playerKey] = true; names.push(a.playerName); }
     });
     names.sort(function(a,b){ return a.localeCompare(b); });
-    nameList.innerHTML = names.map(function(n){ return '<option value="' + n.replace(/"/g,'&quot;') + '">'; }).join('');
+    nameSelect.innerHTML = '<option value="">+ New player</option>' +
+      names.map(function(n){ return '<option value="' + n.replace(/"/g,'&quot;') + '">' + n + '</option>'; }).join('');
+    var match = names.find(function(n){ return playerKey(n) === playerKey(nameInput.value); });
+    if (match) {
+      nameSelect.value = match;
+      newNameWrap.hidden = true;
+    } else {
+      nameSelect.value = '';
+      newNameWrap.hidden = false;
+    }
   }
 
   var TAB_NAMES = ['score', 'board', 'rules'];
