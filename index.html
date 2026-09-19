@@ -114,7 +114,6 @@
     font-family:"Teko",sans-serif;font-size:17px;min-width:24px;height:24px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);
   }
-  .hole-tile .badge.mull{background:var(--gold);}
   .hole-tile.done{border-color:var(--accent);}
 
   .overlay{
@@ -141,6 +140,11 @@
   .close-btn{display:block;width:100%;text-align:center;margin-top:18px;background:none;border:none;color:var(--text-dim);font-family:inherit;font-size:14px;padding:8px;cursor:pointer;}
 
   .lb-list{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
+  .obj-list{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
+  .obj-row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:10px 13px;box-shadow:var(--shadow);}
+  .obj-num{font-family:"Teko",sans-serif;font-size:24px;color:var(--text-dim);width:22px;flex-shrink:0;text-align:center;}
+  .obj-name{flex:1;font-weight:600;font-size:14px;}
+  .obj-target{font-family:"Teko",sans-serif;font-size:22px;color:var(--accent);flex-shrink:0;}
   .lb-row{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 13px;box-shadow:var(--shadow);}
   .lb-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
   .lb-rank{font-family:"Teko",sans-serif;font-size:24px;color:var(--gold);width:26px;flex-shrink:0;}
@@ -152,7 +156,9 @@
   .attempt-line{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:4px 0;color:var(--text-dim);}
   .attempt-line .an{flex:1;min-width:0;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .attempt-line .araw{color:var(--text-dim);flex-shrink:0;}
-  .attempt-line .as{font-family:"Teko",sans-serif;font-size:16px;color:var(--accent);width:20px;flex-shrink:0;text-align:right;}
+  .attempt-line .as{font-family:"Teko",sans-serif;font-size:16px;color:var(--accent);width:34px;flex-shrink:0;text-align:right;}
+  .attempt-line.ace .as{color:var(--gold);font-weight:700;text-shadow:0 0 8px rgba(184,134,47,.5);}
+  .attempt-line.ace .an{color:var(--gold);font-weight:700;}
   .attempt-line .dropped{text-decoration:line-through;opacity:.5;}
   .del-x{margin-left:auto;background:none;border:none;color:var(--bad);font-size:15px;cursor:pointer;padding:2px 6px;}
   .empty-note{color:var(--text-dim);font-size:14px;text-align:center;padding:30px 10px;}
@@ -197,6 +203,8 @@
   .tv-board .tv-cell.played{color:#f2eddd;}
   .tv-board .tv-cell .pip{display:inline-flex;align-items:center;justify-content:center;width:1.9vw;height:1.9vw;min-width:22px;min-height:22px;border-radius:50%;}
   .tv-board .tv-cell.hit .pip{background:var(--accent);color:#0d1a10;}
+  .tv-board .tv-cell.ace .pip{background:var(--gold);color:#241c06;font-weight:700;box-shadow:0 0 0 .2vw rgba(224,172,63,.4), 0 0 1vw rgba(224,172,63,.65);}
+  .tv-board .tv-cell.ace{color:var(--gold);}
   .tv-board .tv-cell.miss .pip{background:#2c2a1c;border:.12vw solid #4a4630;}
   .tv-board .tv-cell.dropped{opacity:.4;text-decoration:line-through;}
   .tv-board .tv-total-val{font-family:"Teko",sans-serif;font-size:clamp(20px,2.6vw,36px);color:var(--gold);font-weight:700;}
@@ -221,6 +229,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="score">Enter Score</button>
       <button class="tab-btn" data-tab="board">Leaderboard</button>
+      <button class="tab-btn" data-tab="rules">Objectives</button>
     </div>
   </div></header>
 
@@ -249,7 +258,7 @@
 
     <details class="rules">
       <summary>How scoring works</summary>
-      <p>Hit the target on ball 1, 2, or 3 &mdash; that's your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4&ndash;8) are looked up automatically. Play 9 holes, plus one more &mdash; a 10th hole or a replay of one you already played (a <strong>Mulligan</strong>). Your best 9 of those 10 count toward your total.</p>
+      <p>Hit the target on ball 1, 2, or 3 &mdash; that's your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4&ndash;8) are looked up automatically. Play any 10 of the 15 holes &mdash; each hole once, no replays. Your worst hole is dropped; the best 9 of your 10 count toward your total.</p>
     </details>
     <div class="conn-note" id="connNote"></div>
   </section>
@@ -259,11 +268,15 @@
     <div class="lb-list" id="lbList" style="margin-top:16px;"><div class="empty-note">No scores yet &mdash; be the first on the board.</div></div>
   </section>
 
+  <section class="panel" id="panel-rules">
+    <div class="note" style="margin-top:0;font-size:13.5px;line-height:1.5;">Hit the target on ball 1, 2, or 3 &mdash; that's your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4&ndash;8) are looked up automatically. Play any 10 of the 15 holes &mdash; each hole once, no replays. Your worst hole is dropped; the best 9 of your 10 count toward your total.</div>
+    <div class="obj-list" id="objList"></div>
+  </section>
+
   <div class="overlay" id="overlay" style="display:none;">
     <div class="sheet">
       <h2 id="sheetHoleName">Hole</h2>
       <div class="target-line" id="sheetTarget">Target: 0</div>
-      <div class="note" id="sheetMullNote" style="display:none;"></div>
       <div class="ball-btns">
         <button class="ball-btn" data-ball="1">Hit it on Ball 1 <span class="strokes-pill">1</span></button>
         <button class="ball-btn" data-ball="2">Hit it on Ball 2 <span class="strokes-pill">2</span></button>
@@ -298,20 +311,20 @@
 
   var HOLES = [
     {n:1, name:"Wheel of Fortune", target:9000000, label:"9M"},
-    {n:2, name:"Star Wars", target:250000000, label:"250M"},
+    {n:2, name:"Star Wars", target:325000000, label:"325M"},
     {n:3, name:"Star Wars: Fall of the Empire", target:50000000, label:"50M"},
     {n:4, name:"SeaWitch", target:400000, label:"400K"},
     {n:5, name:"Beatles", target:2000000, label:"2M"},
-    {n:6, name:"Joker Poker", target:125000, label:"125K"},
+    {n:6, name:"Joker Poker", target:100000, label:"100K"},
     {n:7, name:"Medieval Madness", target:12000000, label:"12M"},
     {n:8, name:"Pokemon", target:25000000, label:"25M"},
-    {n:9, name:"Venom", target:70000000, label:"70M"},
+    {n:9, name:"Venom", target:55000000, label:"55M"},
     {n:10, name:"John Wick", target:25000000, label:"25M"},
-    {n:11, name:"Cyclopes", target:250000, label:"250K"},
-    {n:12, name:"Guardians of the Galaxy", target:40000000, label:"40M"},
+    {n:11, name:"Cyclopes", target:200000, label:"200K"},
+    {n:12, name:"Guardians of the Galaxy", target:25000000, label:"25M"},
     {n:13, name:"Metallica", target:24000000, label:"24M"},
     {n:14, name:"Game of Thrones", target:50000000, label:"50M"},
-    {n:15, name:"Mustang", target:50000, label:"50K"}
+    {n:15, name:"Mustang", target:60000, label:"60K"}
   ];
   var MAX_ATTEMPTS = 10, BEST_N = 9;
 
@@ -366,14 +379,24 @@
     nameSelect.value = match || '';
   }
 
+  var TAB_NAMES = ['score', 'board', 'rules'];
+  function activateTab(name){
+    if (TAB_NAMES.indexOf(name) === -1) return;
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === name); });
+    document.querySelectorAll('.panel').forEach(function(p){ p.classList.toggle('active', p.id === 'panel-' + name); });
+  }
   document.querySelectorAll('.tab-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
-      document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
-      document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
-      btn.classList.add('active');
-      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+      if (window.location.hash.slice(1) === btn.dataset.tab) { activateTab(btn.dataset.tab); }
+      else { window.location.hash = btn.dataset.tab; }
     });
   });
+  window.addEventListener('hashchange', function(){
+    activateTab(window.location.hash.slice(1));
+  });
+  if (TAB_NAMES.indexOf(window.location.hash.slice(1)) !== -1) {
+    activateTab(window.location.hash.slice(1));
+  }
 
   function myAttempts(){
     var key = playerKey(nameInput.value || '');
@@ -407,7 +430,7 @@
       var attemptsHere = mine.filter(function(a){ return a.hole === h.n; });
       var btn = document.createElement('button');
       btn.className = 'hole-tile' + (attemptsHere.length ? ' done' : '');
-      btn.disabled = !nameReady || atCap;
+      btn.disabled = !nameReady || atCap || attemptsHere.length > 0;
       var best = null;
       if (attemptsHere.length) {
         best = attemptsHere.slice().sort(function(a,b){ return a.strokes - b.strokes; })[0];
@@ -417,25 +440,19 @@
         '<div class="hn tnum">' + h.n + '</div>' +
         '<div class="mname">' + h.name + '</div>' +
         '<div class="mtarget">' + scoreLine + '</div>' +
-        (attemptsHere.length ? '<div class="badge' + (attemptsHere.length > 1 ? ' mull' : '') + '">' + best.strokes + '</div>' : '');
+        (attemptsHere.length ? '<div class="badge">' + best.strokes + '</div>' : '');
       btn.addEventListener('click', function(){ openSheet(h); });
       grid.appendChild(btn);
     });
   }
 
   function openSheet(hole){
+    var mine = myAttempts().filter(function(a){ return a.hole === hole.n; });
+    if (mine.length > 0) return;
     currentHole = hole;
     document.getElementById('sheetHoleName').textContent = hole.n + '. ' + hole.name;
     document.getElementById('sheetTarget').textContent = 'Target: ' + fmtNum(hole.target);
     document.getElementById('missScore').value = '';
-    var mine = myAttempts().filter(function(a){ return a.hole === hole.n; });
-    var mullNote = document.getElementById('sheetMullNote');
-    if (mine.length > 0) {
-      mullNote.style.display = 'block';
-      mullNote.textContent = 'Already played (best: ' + Math.min.apply(null, mine.map(function(a){ return a.strokes; })) + ' strokes). This attempt counts as your Mulligan.';
-    } else {
-      mullNote.style.display = 'none';
-    }
     document.getElementById('overlay').style.display = 'flex';
   }
   function closeSheet(){ document.getElementById('overlay').style.display = 'none'; currentHole = null; }
@@ -454,7 +471,7 @@
     if (!name) return;
     var mine = myAttempts();
     if (mine.length >= MAX_ATTEMPTS) { closeSheet(); return; }
-    var isMulligan = mine.some(function(a){ return a.hole === currentHole.n; });
+    if (mine.some(function(a){ return a.hole === currentHole.n; })) { closeSheet(); return; }
     var data = {
       playerKey: playerKey(name),
       playerName: name,
@@ -463,7 +480,6 @@
       target: currentHole.target,
       strokes: strokes,
       method: method,
-      mulligan: isMulligan,
       ts: Date.now()
     };
     if (extra) Object.assign(data, extra);
@@ -519,10 +535,11 @@
       var sortedAttempts = p.attempts.slice().sort(function(a,b){ return a.strokes - b.strokes; });
       var lines = sortedAttempts.map(function(a){
         var dropped = p.res.countedIds.indexOf(a.id) === -1;
-        return '<div class="attempt-line' + (dropped ? ' dropped' : '') + '">' +
-          '<span class="an">' + a.holeName + (a.mulligan ? ' (Mull.)' : '') + '</span>' +
+        var ace = a.strokes === 1;
+        return '<div class="attempt-line' + (dropped ? ' dropped' : '') + (ace ? ' ace' : '') + '">' +
+          '<span class="an">' + a.holeName + '</span>' +
           '<span class="araw tnum">' + attemptScoreLabel(a) + '</span>' +
-          '<span class="as tnum">' + a.strokes + '</span>' +
+          '<span class="as tnum">' + (ace ? '★ ' : '') + a.strokes + '</span>' +
           '<button class="del-x" data-id="' + a.id + '" title="Remove entry">&times;</button>' +
           '</div>';
       }).join('');
@@ -577,8 +594,9 @@
         var a = byHole[h.n];
         if (!a) return '<td class="tv-cell">&mdash;</td>';
         var hit = a.strokes <= 3;
+        var ace = a.strokes === 1;
         var dropped = p.res.countedIds.indexOf(a.id) === -1;
-        return '<td class="tv-cell played ' + (hit ? 'hit' : 'miss') + (dropped ? ' dropped' : '') + '">' +
+        return '<td class="tv-cell played ' + (hit ? 'hit' : 'miss') + (ace ? ' ace' : '') + (dropped ? ' dropped' : '') + '">' +
           '<span class="pip">' + a.strokes + '</span></td>';
       }).join('');
       return '<tr>' +
@@ -611,6 +629,14 @@
     document.body.setAttribute('data-theme', 'dark');
     document.getElementById('panel-board').classList.add('active');
   }
+
+  document.getElementById('objList').innerHTML = HOLES.map(function(h){
+    return '<div class="obj-row">' +
+      '<div class="obj-num tnum">' + h.n + '</div>' +
+      '<div class="obj-name">' + h.name + '</div>' +
+      '<div class="obj-target tnum">' + h.label + '</div>' +
+      '</div>';
+  }).join('');
 
   renderAll();
   setConnNote('Connecting…', false);
