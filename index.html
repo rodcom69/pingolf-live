@@ -181,10 +181,13 @@
   .tv-board th, .tv-board td{padding:.6vw .5vw;text-align:center;font-variant-numeric:tabular-nums;}
   .tv-board thead th{font-family:"Teko",sans-serif;font-weight:600;font-size:clamp(14px,1.7vw,24px);color:#b8ab86;letter-spacing:.02em;border-bottom:.15vw solid #3a361f;}
   .tv-board thead th.th-player{text-align:left;font-family:"Inter",sans-serif;font-size:clamp(11px,1.1vw,15px);text-transform:uppercase;letter-spacing:.08em;}
+  .tv-board thead th.th-thru{font-family:"Inter",sans-serif;font-size:clamp(10px,1vw,13px);text-transform:uppercase;letter-spacing:.06em;}
   .tv-board thead th.th-total{color:var(--gold);}
-  .tv-board col.col-player{width:22%;}
+  .tv-board col.col-player{width:20%;}
+  .tv-board col.col-thru{width:6%;}
   .tv-board col.col-hole{width:auto;}
   .tv-board col.col-total{width:8%;}
+  .tv-board .tv-thru-cell{font-family:"Teko",sans-serif;font-size:clamp(14px,1.8vw,22px);color:#b8ab86;}
   .tv-board tbody tr td{background:#1c1a10;}
   .tv-board tbody tr td:first-child{border-radius:.7vw 0 0 .7vw;}
   .tv-board tbody tr td:last-child{border-radius:0 .7vw .7vw 0;}
@@ -197,7 +200,6 @@
   .tv-board .tv-cell.miss .pip{background:#2c2a1c;border:.12vw solid #4a4630;}
   .tv-board .tv-cell.dropped{opacity:.4;text-decoration:line-through;}
   .tv-board .tv-total-val{font-family:"Teko",sans-serif;font-size:clamp(20px,2.6vw,36px);color:var(--gold);font-weight:700;}
-  .tv-board .tv-thru{font-size:clamp(9px,.9vw,12px);color:#8a836c;display:block;font-family:"Inter",sans-serif;}
 
   .tv-qr-corner{position:fixed;right:1.6vw;bottom:1.6vw;background:#1c1a10;border:1px solid #3a361f;border-radius:1vw;padding:1vw 1.2vw;display:flex;align-items:center;gap:1vw;box-shadow:0 .4vw 1.4vw rgba(0,0,0,.4);}
   .tv-qr-corner img{width:clamp(64px,7vw,110px);height:clamp(64px,7vw,110px);border-radius:.4vw;}
@@ -562,7 +564,7 @@
     if (!players.length) { wrap.innerHTML = '<div class="empty-note">Waiting for the first score&hellip;</div>'; return; }
     players.sort(function(a,b){ return a.res.total - b.res.total || b.res.thru - a.res.thru; });
 
-    var head = '<th class="th-rank"></th><th class="th-player">Player</th>' +
+    var head = '<th class="th-rank"></th><th class="th-player">Player</th><th class="th-thru">Thru</th>' +
       HOLES.map(function(h){ return '<th>' + h.n + '</th>'; }).join('') +
       '<th class="th-total">Total</th>';
 
@@ -582,14 +584,15 @@
       return '<tr>' +
         '<td class="tv-rank">' + (i + 1) + '</td>' +
         '<td class="tv-name">' + p.name + '</td>' +
+        '<td class="tv-thru-cell">' + p.res.thru + '</td>' +
         cells +
-        '<td><span class="tv-total-val">' + p.res.total + '</span>' +
-          '<span class="tv-thru">thru ' + p.res.thru + '</span></td>' +
+        '<td><span class="tv-total-val">' + p.res.total + '</span></td>' +
       '</tr>';
     }).join('');
 
     wrap.innerHTML = '<table class="tv-board"><colgroup><col class="col-rank">' +
       '<col class="col-player">' +
+      '<col class="col-thru">' +
       HOLES.map(function(){ return '<col class="col-hole">'; }).join('') +
       '<col class="col-total"></colgroup>' +
       '<thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>';
