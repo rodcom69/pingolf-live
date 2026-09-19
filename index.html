@@ -164,7 +164,7 @@
   .attempt-line .as{font-family:"Teko",sans-serif;font-size:16px;color:var(--accent);width:34px;flex-shrink:0;text-align:right;}
   .attempt-line.ace .as{color:var(--gold);font-weight:700;text-shadow:0 0 8px rgba(184,134,47,.5);}
   .attempt-line.ace .an{color:var(--gold);font-weight:700;}
-  .attempt-line .dropped{text-decoration:line-through;opacity:.5;}
+  .attempt-line.dropped{text-decoration:line-through;opacity:.5;}
   .del-x{margin-left:auto;background:none;border:none;color:var(--bad);font-size:15px;cursor:pointer;padding:2px 6px;}
   .empty-note{color:var(--text-dim);font-size:14px;text-align:center;padding:30px 10px;}
 
@@ -217,11 +217,6 @@
   .tv-board .tv-cell.dropped .pip{opacity:.4;text-decoration:line-through;}
   .tv-board .tv-total-val{font-family:"Teko",sans-serif;font-size:clamp(20px,2.6vw,36px);color:var(--gold);font-weight:700;}
 
-  .tv-qr-corner{position:fixed;right:1.6vw;bottom:1.6vw;background:#1c1a10;border:1px solid #3a361f;border-radius:1vw;padding:1vw 1.2vw;display:flex;align-items:center;gap:1vw;box-shadow:0 .4vw 1.4vw rgba(0,0,0,.4);}
-  .tv-qr-corner img{width:clamp(64px,7vw,110px);height:clamp(64px,7vw,110px);border-radius:.4vw;}
-  .tv-qr-corner .tv-qr-text{font-family:"Inter",sans-serif;line-height:1.25;}
-  .tv-qr-corner .tv-qr-text b{display:block;font-size:clamp(13px,1.3vw,18px);color:#f2eddd;}
-  .tv-qr-corner .tv-qr-text span{display:block;font-size:clamp(10px,1vw,14px);color:#b8ab86;}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
 </head>
@@ -233,11 +228,12 @@
       <h1>XGOLF PINGOLF</h1>
       <span class="place">Chester Springs, PA</span>
     </div>
-    <div class="sub">live scoring &middot; lowest total wins</div>
+    <div class="sub" id="eventSub">Loading event&hellip;</div>
     <div class="tabs">
       <button class="tab-btn active" data-tab="score">Enter Score</button>
       <button class="tab-btn" data-tab="board">Leaderboard</button>
       <button class="tab-btn" data-tab="rules">Objectives</button>
+      <button class="tab-btn" data-tab="history">History</button>
     </div>
   </div></header>
 
@@ -268,7 +264,7 @@
 
     <details class="rules">
       <summary>How scoring works</summary>
-      <p>Hit the target on ball 1, 2, or 3 &mdash; that's your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4&ndash;8) are looked up automatically. Play any 10 of the 17 holes &mdash; each hole once, no replays. Your worst hole is dropped; the best 9 of your 10 count toward your total.</p>
+      <p id="rulesNoteShort"></p>
     </details>
     <div class="conn-note" id="connNote"></div>
   </section>
@@ -279,8 +275,14 @@
   </section>
 
   <section class="panel" id="panel-rules">
-    <div class="note" style="margin-top:0;font-size:13.5px;line-height:1.5;">Hit the target on ball 1, 2, or 3 &mdash; that's your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4&ndash;8) are looked up automatically. Play any 10 of the 17 holes &mdash; each hole once, no replays. Your worst hole is dropped; the best 9 of your 10 count toward your total.</div>
+    <div class="note" id="rulesNoteFull" style="margin-top:0;font-size:13.5px;line-height:1.5;"></div>
     <div class="obj-list" id="objList"></div>
+  </section>
+
+  <section class="panel" id="panel-history">
+    <label class="field-label" for="historyEventSelect">Past events</label>
+    <select id="historyEventSelect"><option value="">Loading&hellip;</option></select>
+    <div id="historyBoardWrap" style="overflow-x:auto;margin-top:14px;"></div>
   </section>
 
   <div class="overlay" id="overlay" style="display:none;">
@@ -319,6 +321,8 @@
   };
   firebase.initializeApp(firebaseConfig);
   var db = firebase.firestore();
+  var CURRENT_EVENT_ID = null;
+  var CURRENT_EVENT_LABEL = 'Live';
 
   var HOLES = [
     {n:1, name:"Cyclopes", target:200000, label:"200K"},
@@ -340,6 +344,7 @@
     {n:17, name:"Mustang", target:60000, label:"60K"}
   ];
   var MAX_ATTEMPTS = 10, BEST_N = 9;
+  var RULES_TEXT = 'Hit the target on ball 1, 2, or 3 — that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4–8) are looked up automatically. Play any 10 of the 17 holes — each hole once, no replays. Your worst hole is dropped; the best 9 of your 10 count toward your total.';
 
   function strokeRanges(target){
     var b4 = Math.round(target*4/5), b3 = Math.round(target*3/5), b2 = Math.round(target*2/5), b1 = Math.round(target*1/5);
@@ -415,11 +420,12 @@
     }
   }
 
-  var TAB_NAMES = ['score', 'board', 'rules'];
+  var TAB_NAMES = ['score', 'board', 'rules', 'history'];
   function activateTab(name){
     if (TAB_NAMES.indexOf(name) === -1) return;
     document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === name); });
     document.querySelectorAll('.panel').forEach(function(p){ p.classList.toggle('active', p.id === 'panel-' + name); });
+    if (name === 'history') loadHistory();
   }
   document.querySelectorAll('.tab-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -526,6 +532,8 @@
       target: currentHole.target,
       strokes: strokes,
       method: method,
+      eventId: CURRENT_EVENT_ID,
+      eventLabel: CURRENT_EVENT_LABEL,
       ts: Date.now()
     };
     if (extra) Object.assign(data, extra);
@@ -611,11 +619,9 @@
     });
   }
 
-  function renderTvBoard(){
-    var wrap = document.getElementById('tvBoardWrap');
-    if (!wrap) return;
+  function buildBoardHtml(attemptsList){
     var byPlayer = {};
-    allAttempts.forEach(function(a){
+    attemptsList.forEach(function(a){
       if (!byPlayer[a.playerKey]) byPlayer[a.playerKey] = {name: a.playerName, attempts: []};
       byPlayer[a.playerKey].name = a.playerName;
       byPlayer[a.playerKey].attempts.push(a);
@@ -625,7 +631,7 @@
       var res = bestTotal(p.attempts);
       return {name:p.name, attempts:p.attempts, res:res};
     });
-    if (!players.length) { wrap.innerHTML = tvMode ? '<div class="empty-note">Waiting for the first score&hellip;</div>' : ''; return; }
+    if (!players.length) return '';
     players.sort(function(a,b){ return a.res.total - b.res.total || b.res.thru - a.res.thru; });
 
     var head = '<th class="th-rank"></th><th class="th-player">Player</th><th class="th-thru">Thru</th>' +
@@ -654,13 +660,52 @@
       '</tr>';
     }).join('');
 
-    wrap.innerHTML = '<table class="tv-board"><colgroup><col class="col-rank">' +
+    return '<table class="tv-board"><colgroup><col class="col-rank">' +
       '<col class="col-player">' +
       '<col class="col-thru">' +
       HOLES.map(function(){ return '<col class="col-hole">'; }).join('') +
       '<col class="col-total"></colgroup>' +
       '<thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>';
   }
+
+  function renderTvBoard(){
+    var wrap = document.getElementById('tvBoardWrap');
+    if (!wrap) return;
+    var html = buildBoardHtml(allAttempts);
+    wrap.innerHTML = html || (tvMode ? '<div class="empty-note">Waiting for the first score&hellip;</div>' : '');
+  }
+
+  var historyEvents = null;
+  function loadHistory(){
+    if (historyEvents) return;
+    historyEvents = [];
+    db.collection('attempts').get().then(function(snap){
+      var byEvent = {};
+      snap.docs.forEach(function(d){
+        var a = d.data();
+        var key = a.eventId || 'unknown';
+        if (!byEvent[key]) byEvent[key] = {id: key, label: a.eventLabel || key, minTs: a.ts, attempts: []};
+        if (a.ts < byEvent[key].minTs) byEvent[key].minTs = a.ts;
+        byEvent[key].attempts.push(a);
+      });
+      historyEvents = Object.keys(byEvent).map(function(k){ return byEvent[k]; });
+      historyEvents.sort(function(a,b){ return b.minTs - a.minTs; });
+      var sel = document.getElementById('historyEventSelect');
+      if (!historyEvents.length) { sel.innerHTML = '<option value="">No events yet</option>'; return; }
+      sel.innerHTML = historyEvents.map(function(e){
+        return '<option value="' + e.id + '">' + e.label + (e.id === CURRENT_EVENT_ID ? ' (current)' : '') + '</option>';
+      }).join('');
+      renderHistoryBoard(historyEvents[0].id);
+    });
+  }
+  function renderHistoryBoard(eventId){
+    var ev = historyEvents.find(function(e){ return e.id === eventId; });
+    var wrap = document.getElementById('historyBoardWrap');
+    wrap.innerHTML = ev ? (buildBoardHtml(ev.attempts) || '<div class="empty-note">No scores in this event.</div>') : '';
+  }
+  document.getElementById('historyEventSelect').addEventListener('change', function(){
+    renderHistoryBoard(this.value);
+  });
 
   function renderAll(){
     renderScoreTab();
@@ -690,20 +735,39 @@
       '<div class="obj-ranges">' + rangeHtml + '</div>' +
       '</div>';
   }).join('');
+  document.getElementById('rulesNoteShort').textContent = RULES_TEXT;
+  document.getElementById('rulesNoteFull').textContent = RULES_TEXT;
 
   renderAll();
   setConnNote('Connecting…', false);
 
-  db.collection('attempts').onSnapshot(function(snap){
-    setConnNote('', false);
-    allAttempts = snap.docs.map(function(d){
-      var data = d.data() || {};
-      data.id = d.id;
-      return data;
+  function startAttemptsListener(){
+    db.collection('attempts').where('eventId', '==', CURRENT_EVENT_ID).onSnapshot(function(snap){
+      setConnNote('', false);
+      allAttempts = snap.docs.map(function(d){
+        var data = d.data() || {};
+        data.id = d.id;
+        return data;
+      });
+      renderAll();
+    }, function(err){
+      setConnNote('Connection lost (' + err.message + '). Scores you already entered are safe; reload to retry.', true);
     });
-    renderAll();
-  }, function(err){
-    setConnNote('Connection lost (' + err.message + '). Scores you already entered are safe; reload to retry.', true);
+  }
+
+  db.collection('meta').doc('current').get().then(function(snap){
+    var m = snap.exists ? snap.data() : {};
+    CURRENT_EVENT_ID = m.eventId || 'default';
+    CURRENT_EVENT_LABEL = m.eventLabel || 'Live';
+    var eventNumber = m.eventNumber ? ('Event ' + m.eventNumber + ' · ') : '';
+    var eventDate = m.eventDate ? (m.eventDate + ' · ') : '';
+    document.getElementById('eventSub').textContent = eventNumber + eventDate + 'lowest total wins';
+    startAttemptsListener();
+  }).catch(function(){
+    CURRENT_EVENT_ID = 'default';
+    CURRENT_EVENT_LABEL = 'Live';
+    document.getElementById('eventSub').textContent = 'lowest total wins';
+    startAttemptsListener();
   });
 })();
 </script>
