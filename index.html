@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pingolf Live</title>
+<style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<style>
+  :root{
+    --bg:#f5f1e6;
+    --surface:#ffffff;
+    --surface-2:#ece5d2;
+    --text:#1c1a12;
+    --text-dim:#6b6450;
+    --border:#ddd3b8;
+    --accent:#136b3e;
+    --accent-ink:#ffffff;
+    --gold:#b8862f;
+    --bad:#a13f22;
+    --shadow:0 1px 2px rgba(28,26,18,.06), 0 6px 20px rgba(28,26,18,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#141309;
+      --surface:#1e1c11;
+      --surface-2:#292616;
+      --text:#f2eddd;
+      --text-dim:#a89f84;
+      --border:#3a361f;
+      --accent:#3fae6f;
+      --accent-ink:#0d1a10;
+      --gold:#e0ac3f;
+      --bad:#e0805a;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#141309;
+    --surface:#1e1c11;
+    --surface-2:#292616;
+    --text:#f2eddd;
+    --text-dim:#a89f84;
+    --border:#3a361f;
+    --accent:#3fae6f;
+    --accent-ink:#0d1a10;
+    --gold:#e0ac3f;
+    --bad:#e0805a;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Inter",system-ui,-apple-system,Segoe UI,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 16px 48px;}
+  h1,h2,h3{text-wrap:balance;font-family:"Teko",Impact,"Arial Narrow",sans-serif;font-weight:600;letter-spacing:.01em;margin:0;}
+  .tnum{font-variant-numeric:tabular-nums;}
+
+  header.top{
+    background:linear-gradient(180deg,var(--surface) 0%, var(--surface) 100%);
+    border-bottom:3px solid var(--gold);
+    padding:18px 16px 14px;
+    position:sticky;top:0;z-index:5;
+  }
+  header.top .inner{max-width:640px;margin:0 auto;}
+  .brand-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+  .brand-row h1{font-size:34px;line-height:1;color:var(--text);}
+  .brand-row .place{font-size:13px;color:var(--text-dim);}
+  .sub{font-size:13px;color:var(--text-dim);margin-top:2px;}
+
+  .tabs{display:flex;gap:6px;margin-top:14px;background:var(--surface-2);padding:4px;border-radius:10px;}
+  .tab-btn{
+    flex:1;padding:9px 10px;border:none;border-radius:7px;background:transparent;color:var(--text-dim);
+    font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+  }
+  .tab-btn.active{background:var(--accent);color:var(--accent-ink);}
+
+  section.panel{display:none;padding-top:18px;}
+  section.panel.active{display:block;}
+
+  label.field-label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:6px;}
+  input[type="text"], input[type="number"], select{
+    width:100%;padding:11px 12px;border-radius:9px;border:1px solid var(--border);
+    background:var(--surface);color:var(--text);font-family:inherit;font-size:16px;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  select{appearance:auto;}
+
+  .name-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow);}
+  .total-row{display:flex;align-items:flex-end;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);}
+  .total-value{font-family:"Teko",sans-serif;font-size:44px;line-height:1;color:var(--accent);}
+  .total-note{font-size:12px;color:var(--text-dim);text-align:right;max-width:55%;}
+  .progress-row{display:flex;align-items:center;justify-content:space-between;margin-top:12px;font-size:13px;color:var(--text-dim);}
+  .progress-row strong{color:var(--text);}
+  .undo-btn{background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:7px;padding:6px 10px;font-size:12px;font-family:inherit;cursor:pointer;}
+  .undo-btn:disabled{opacity:.4;}
+
+  .hole-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
+  @media (max-width:420px){.hole-grid{grid-template-columns:repeat(2,1fr);}}
+  .hole-tile{
+    background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:10px 8px;
+    text-align:center;cursor:pointer;position:relative;box-shadow:var(--shadow);
+  }
+  .hole-tile:disabled{opacity:.45;cursor:not-allowed;}
+  .hole-tile .hn{font-family:"Teko",sans-serif;font-size:26px;line-height:1;color:var(--text-dim);}
+  .hole-tile .mname{font-size:11.5px;font-weight:600;margin-top:2px;min-height:28px;line-height:1.25;}
+  .hole-tile .mtarget{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .hole-tile .badge{
+    position:absolute;top:-7px;right:-7px;background:var(--accent);color:var(--accent-ink);
+    font-family:"Teko",sans-serif;font-size:17px;min-width:24px;height:24px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);
+  }
+  .hole-tile .badge.mull{background:var(--gold);}
+  .hole-tile.done{border-color:var(--accent);}
+
+  .overlay{
+    position:fixed;inset:0;background:rgba(10,9,4,.55);display:flex;align-items:flex-end;justify-content:center;
+    z-index:20;
+  }
+  .sheet{
+    background:var(--surface);width:100%;max-width:640px;border-radius:16px 16px 0 0;
+    padding:20px 18px 26px;box-shadow:var(--shadow);max-height:88vh;overflow-y:auto;
+  }
+  .sheet h2{font-size:26px;}
+  .sheet .target-line{color:var(--text-dim);font-size:14px;margin-top:2px;}
+  .note{background:var(--surface-2);border-radius:9px;padding:8px 10px;font-size:12.5px;color:var(--text-dim);margin-top:12px;}
+  .ball-btns{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
+  .ball-btn{
+    background:var(--accent);color:var(--accent-ink);border:none;border-radius:10px;padding:13px 14px;
+    font-family:inherit;font-weight:700;font-size:14.5px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;
+  }
+  .ball-btn .strokes-pill{font-family:"Teko",sans-serif;font-size:19px;}
+  .divider{display:flex;align-items:center;gap:10px;margin:16px 0 10px;color:var(--text-dim);font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border);}
+  .miss-row{display:flex;gap:8px;}
+  .save-btn{background:var(--text);color:var(--bg);border:none;border-radius:9px;padding:0 16px;font-family:inherit;font-weight:700;cursor:pointer;}
+  .close-btn{display:block;width:100%;text-align:center;margin-top:18px;background:none;border:none;color:var(--text-dim);font-family:inherit;font-size:14px;padding:8px;cursor:pointer;}
+
+  .lb-list{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
+  .lb-row{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 13px;box-shadow:var(--shadow);}
+  .lb-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .lb-rank{font-family:"Teko",sans-serif;font-size:24px;color:var(--gold);width:26px;flex-shrink:0;}
+  .lb-name{flex:1;font-weight:700;font-size:15px;}
+  .lb-thru{font-size:11.5px;color:var(--text-dim);}
+  .lb-total{font-family:"Teko",sans-serif;font-size:28px;color:var(--text);}
+  .lb-detail{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);display:none;}
+  .lb-detail.open{display:block;}
+  .attempt-line{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:4px 0;color:var(--text-dim);}
+  .attempt-line .an{flex:1;min-width:0;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .attempt-line .araw{color:var(--text-dim);flex-shrink:0;}
+  .attempt-line .as{font-family:"Teko",sans-serif;font-size:16px;color:var(--accent);width:20px;flex-shrink:0;text-align:right;}
+  .attempt-line .dropped{text-decoration:line-through;opacity:.5;}
+  .del-x{margin-left:auto;background:none;border:none;color:var(--bad);font-size:15px;cursor:pointer;padding:2px 6px;}
+  .empty-note{color:var(--text-dim);font-size:14px;text-align:center;padding:30px 10px;}
+
+  details.rules{margin-top:22px;background:var(--surface-2);border-radius:10px;padding:10px 14px;}
+  details.rules summary{font-size:13px;font-weight:700;cursor:pointer;color:var(--text-dim);}
+  details.rules p{font-size:13px;color:var(--text-dim);line-height:1.5;}
+
+  .conn-note{font-size:11.5px;color:var(--text-dim);text-align:center;margin-top:10px;}
+  .conn-note.err{color:var(--bad);}
+
+  body.tv-mode{background:#0c0b06;color:#f2eddd;}
+  body.tv-mode .wrap{max-width:none;width:100%;padding:1.4vw 2vw 2vw;box-sizing:border-box;}
+  body.tv-mode header.top{background:#0c0b06;border-bottom:.3vw solid var(--gold);padding:1.4vw 0 1.1vw;position:static;}
+  body.tv-mode .brand-row h1{font-size:clamp(28px,4.6vw,64px);color:#f2eddd;}
+  body.tv-mode .brand-row .place{font-size:clamp(13px,1.6vw,22px);color:#b8ab86;}
+  body.tv-mode .sub{font-size:clamp(11px,1.3vw,18px);color:#b8ab86;}
+  body.tv-mode .tabs{display:none;}
+  body.tv-mode #panel-score{display:none !important;}
+  body.tv-mode #panel-board{display:block !important;padding-top:1.6vw;}
+  body.tv-mode details.rules{display:none;}
+  body.tv-mode .lb-list{display:none;}
+  body.tv-mode .empty-note{font-size:clamp(16px,2vw,26px);padding:8vw 10px;}
+
+  .tv-board{width:100%;border-collapse:separate;border-spacing:0 .5vw;table-layout:fixed;}
+  .tv-board th, .tv-board td{padding:.6vw .5vw;text-align:center;font-variant-numeric:tabular-nums;}
+  .tv-board thead th{font-family:"Teko",sans-serif;font-weight:600;font-size:clamp(14px,1.7vw,24px);color:#b8ab86;letter-spacing:.02em;border-bottom:.15vw solid #3a361f;}
+  .tv-board thead th.th-player{text-align:left;font-family:"Inter",sans-serif;font-size:clamp(11px,1.1vw,15px);text-transform:uppercase;letter-spacing:.08em;}
+  .tv-board thead th.th-total{color:var(--gold);}
+  .tv-board col.col-player{width:22%;}
+  .tv-board col.col-hole{width:auto;}
+  .tv-board col.col-total{width:8%;}
+  .tv-board tbody tr td{background:#1c1a10;}
+  .tv-board tbody tr td:first-child{border-radius:.7vw 0 0 .7vw;}
+  .tv-board tbody tr td:last-child{border-radius:0 .7vw .7vw 0;}
+  .tv-board .tv-rank{font-family:"Teko",sans-serif;font-size:clamp(16px,2vw,28px);color:var(--gold);width:2.4vw;}
+  .tv-board .tv-name{text-align:left;font-weight:700;font-size:clamp(14px,1.9vw,26px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tv-board .tv-cell{font-family:"Teko",sans-serif;font-size:clamp(14px,1.8vw,24px);color:#5c5844;}
+  .tv-board .tv-cell.played{color:#f2eddd;}
+  .tv-board .tv-cell .pip{display:inline-flex;align-items:center;justify-content:center;width:1.9vw;height:1.9vw;min-width:22px;min-height:22px;border-radius:50%;}
+  .tv-board .tv-cell.hit .pip{background:var(--accent);color:#0d1a10;}
+  .tv-board .tv-cell.miss .pip{background:#2c2a1c;border:.12vw solid #4a4630;}
+  .tv-board .tv-cell.dropped{opacity:.4;text-decoration:line-through;}
+  .tv-board .tv-total-val{font-family:"Teko",sans-serif;font-size:clamp(20px,2.6vw,36px);color:var(--gold);font-weight:700;}
+  .tv-board .tv-thru{font-size:clamp(9px,.9vw,12px);color:#8a836c;display:block;font-family:"Inter",sans-serif;}
+
+  .tv-qr-corner{position:fixed;right:1.6vw;bottom:1.6vw;background:#1c1a10;border:1px solid #3a361f;border-radius:1vw;padding:1vw 1.2vw;display:flex;align-items:center;gap:1vw;box-shadow:0 .4vw 1.4vw rgba(0,0,0,.4);}
+  .tv-qr-corner img{width:clamp(64px,7vw,110px);height:clamp(64px,7vw,110px);border-radius:.4vw;}
+  .tv-qr-corner .tv-qr-text{font-family:"Inter",sans-serif;line-height:1.25;}
+  .tv-qr-corner .tv-qr-text b{display:block;font-size:clamp(13px,1.3vw,18px);color:#f2eddd;}
+  .tv-qr-corner .tv-qr-text span{display:block;font-size:clamp(10px,1vw,14px);color:#b8ab86;}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top"><div class="inner">
+    <div class="brand-row">
+      <h1>XGOLF PINGOLF</h1>
+      <span class="place">Chester Springs, PA</span>
+    </div>
+    <div class="sub">live scoring &middot; lowest total wins</div>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="score">Enter Score</button>
+      <button class="tab-btn" data-tab="board">Leaderboard</button>
+    </div>
+  </div></header>
+
+  <section class="panel active" id="panel-score">
+    <div class="name-card">
+      <label class="field-label" for="nameSelect">Played before?</label>
+      <select id="nameSelect">
+        <option value="">+ New player&hellip;</option>
+      </select>
+      <label class="field-label" for="nameInput" style="margin-top:10px;">Your name</label>
+      <input type="text" id="nameInput" placeholder="Type your name" autocomplete="off">
+      <div class="total-row" id="totalRow" style="display:none;">
+        <div>
+          <div class="field-label" style="margin-bottom:2px;">Current total</div>
+          <div class="total-value tnum" id="totalValue">0</div>
+        </div>
+        <div class="total-note" id="totalNote"></div>
+      </div>
+      <div class="progress-row">
+        <span>Holes played: <strong class="tnum" id="playedCount">0</strong> / 10</span>
+        <button class="undo-btn" id="undoBtn" disabled>Undo last entry</button>
+      </div>
+    </div>
+
+    <div class="hole-grid" id="holeGrid"></div>
+
+    <details class="rules">
+      <summary>How scoring works</summary>
+      <p>Hit the target on ball 1, 2, or 3 &mdash; that's your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4&ndash;8) are looked up automatically. Play 9 holes, plus one more &mdash; a 10th hole or a replay of one you already played (a <strong>Mulligan</strong>). Your best 9 of those 10 count toward your total.</p>
+    </details>
+    <div class="conn-note" id="connNote"></div>
+  </section>
+
+  <section class="panel" id="panel-board">
+    <div class="lb-list" id="lbList"><div class="empty-note">No scores yet &mdash; be the first on the board.</div></div>
+    <div id="tvBoardWrap" style="overflow-x:auto;"></div>
+  </section>
+
+  <div class="overlay" id="overlay" style="display:none;">
+    <div class="sheet">
+      <h2 id="sheetHoleName">Hole</h2>
+      <div class="target-line" id="sheetTarget">Target: 0</div>
+      <div class="note" id="sheetMullNote" style="display:none;"></div>
+      <div class="ball-btns">
+        <button class="ball-btn" data-ball="1">Hit it on Ball 1 <span class="strokes-pill">1</span></button>
+        <button class="ball-btn" data-ball="2">Hit it on Ball 2 <span class="strokes-pill">2</span></button>
+        <button class="ball-btn" data-ball="3">Hit it on Ball 3 <span class="strokes-pill">3</span></button>
+      </div>
+      <div class="divider">or, short of target</div>
+      <div class="miss-row">
+        <input type="number" id="missScore" placeholder="Final score" inputmode="numeric">
+        <button class="save-btn" id="missSave">Save</button>
+      </div>
+      <button class="close-btn" id="sheetClose">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+
+<script>
+(function(){
+  var firebaseConfig = {
+    apiKey: "AIzaSyAOL7_VvRNi_qkP3Ldocgatwxbpfk9X5l0",
+    authDomain: "pingolf-95ba1.firebaseapp.com",
+    projectId: "pingolf-95ba1",
+    storageBucket: "pingolf-95ba1.firebasestorage.app",
+    messagingSenderId: "883244078388",
+    appId: "1:883244078388:web:c124ecf833196aec4b8161"
+  };
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.firestore();
+
+  var HOLES = [
+    {n:1, name:"Wheel of Fortune", target:9000000, label:"9M"},
+    {n:2, name:"Star Wars", target:250000000, label:"250M"},
+    {n:3, name:"Star Wars: Fall of the Empire", target:50000000, label:"50M"},
+    {n:4, name:"SeaWitch", target:400000, label:"400K"},
+    {n:5, name:"Beatles", target:2000000, label:"2M"},
+    {n:6, name:"Joker Poker", target:125000, label:"125K"},
+    {n:7, name:"Medieval Madness", target:12000000, label:"12M"},
+    {n:8, name:"Pokemon", target:25000000, label:"25M"},
+    {n:9, name:"Venom", target:70000000, label:"70M"},
+    {n:10, name:"John Wick", target:25000000, label:"25M"},
+    {n:11, name:"Cyclopes", target:250000, label:"250K"},
+    {n:12, name:"Guardians of the Galaxy", target:40000000, label:"40M"},
+    {n:13, name:"Metallica", target:24000000, label:"24M"},
+    {n:14, name:"Game of Thrones", target:50000000, label:"50M"},
+    {n:15, name:"Mustang", target:50000, label:"50K"}
+  ];
+  var MAX_ATTEMPTS = 10, BEST_N = 9;
+
+  function chartStrokes(target, score){
+    if (score >= target) return 3;
+    if (score >= target*4/5) return 4;
+    if (score >= target*3/5) return 5;
+    if (score >= target*2/5) return 6;
+    if (score >= target*1/5) return 7;
+    return 8;
+  }
+  function fmtNum(n){ return n.toLocaleString("en-US"); }
+  function attemptScoreLabel(a){ return a.method === 'ball' ? ('Ball ' + a.ball) : fmtNum(a.rawScore); }
+  function playerKey(name){ return name.trim().toLowerCase(); }
+  function bestTotal(attempts){
+    var sorted = attempts.slice().sort(function(a,b){ return a.strokes - b.strokes; });
+    var counted = sorted.slice(0, Math.min(BEST_N, sorted.length));
+    return {
+      total: counted.reduce(function(s,a){ return s + a.strokes; }, 0),
+      thru: attempts.length,
+      countedN: counted.length,
+      countedIds: counted.map(function(a){ return a.id; })
+    };
+  }
+
+  var allAttempts = [];
+  var currentHole = null;
+
+  var nameInput = document.getElementById('nameInput');
+  var nameSelect = document.getElementById('nameSelect');
+  try { nameInput.value = localStorage.getItem('pingolf_name') || ''; } catch(e){}
+  nameInput.addEventListener('input', function(){
+    try { localStorage.setItem('pingolf_name', nameInput.value); } catch(e){}
+    renderScoreTab();
+  });
+  nameSelect.addEventListener('change', function(){
+    if (!nameSelect.value) { nameInput.value = ''; nameInput.focus(); }
+    else { nameInput.value = nameSelect.value; }
+    try { localStorage.setItem('pingolf_name', nameInput.value); } catch(e){}
+    renderScoreTab();
+  });
+  function refreshNameSelect(){
+    var seen = {}, names = [];
+    allAttempts.forEach(function(a){
+      if (!seen[a.playerKey]) { seen[a.playerKey] = true; names.push(a.playerName); }
+    });
+    names.sort(function(a,b){ return a.localeCompare(b); });
+    var current = nameInput.value;
+    nameSelect.innerHTML = '<option value="">+ New player&hellip;</option>' +
+      names.map(function(n){ return '<option value="' + n.replace(/"/g,'&quot;') + '">' + n + '</option>'; }).join('');
+    var match = names.find(function(n){ return playerKey(n) === playerKey(current); });
+    nameSelect.value = match || '';
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+      document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  function myAttempts(){
+    var key = playerKey(nameInput.value || '');
+    if (!key) return [];
+    return allAttempts.filter(function(a){ return a.playerKey === key; });
+  }
+
+  function renderScoreTab(){
+    var mine = myAttempts();
+    document.getElementById('playedCount').textContent = mine.length;
+    document.getElementById('undoBtn').disabled = mine.length === 0;
+
+    var totalRow = document.getElementById('totalRow');
+    if (mine.length > 0) {
+      var res = bestTotal(mine);
+      totalRow.style.display = 'flex';
+      document.getElementById('totalValue').textContent = res.total;
+      document.getElementById('totalNote').textContent = mine.length > BEST_N ?
+        ('best ' + BEST_N + ' of ' + mine.length + ' holes') :
+        ('thru ' + mine.length + ' hole' + (mine.length === 1 ? '' : 's'));
+    } else {
+      totalRow.style.display = 'none';
+    }
+
+    var grid = document.getElementById('holeGrid');
+    grid.innerHTML = '';
+    var nameReady = playerKey(nameInput.value || '').length > 0;
+    var atCap = mine.length >= MAX_ATTEMPTS;
+
+    HOLES.forEach(function(h){
+      var attemptsHere = mine.filter(function(a){ return a.hole === h.n; });
+      var btn = document.createElement('button');
+      btn.className = 'hole-tile' + (attemptsHere.length ? ' done' : '');
+      btn.disabled = !nameReady || atCap;
+      var best = null;
+      if (attemptsHere.length) {
+        best = attemptsHere.slice().sort(function(a,b){ return a.strokes - b.strokes; })[0];
+      }
+      var scoreLine = best ? (best.method === 'ball' ? ('Ball ' + best.ball + ' hit target') : ('Score: ' + fmtNum(best.rawScore))) : ('Target ' + h.label);
+      btn.innerHTML =
+        '<div class="hn tnum">' + h.n + '</div>' +
+        '<div class="mname">' + h.name + '</div>' +
+        '<div class="mtarget">' + scoreLine + '</div>' +
+        (attemptsHere.length ? '<div class="badge' + (attemptsHere.length > 1 ? ' mull' : '') + '">' + best.strokes + '</div>' : '');
+      btn.addEventListener('click', function(){ openSheet(h); });
+      grid.appendChild(btn);
+    });
+  }
+
+  function openSheet(hole){
+    currentHole = hole;
+    document.getElementById('sheetHoleName').textContent = hole.n + '. ' + hole.name;
+    document.getElementById('sheetTarget').textContent = 'Target: ' + fmtNum(hole.target);
+    document.getElementById('missScore').value = '';
+    var mine = myAttempts().filter(function(a){ return a.hole === hole.n; });
+    var mullNote = document.getElementById('sheetMullNote');
+    if (mine.length > 0) {
+      mullNote.style.display = 'block';
+      mullNote.textContent = 'Already played (best: ' + Math.min.apply(null, mine.map(function(a){ return a.strokes; })) + ' strokes). This attempt counts as your Mulligan.';
+    } else {
+      mullNote.style.display = 'none';
+    }
+    document.getElementById('overlay').style.display = 'flex';
+  }
+  function closeSheet(){ document.getElementById('overlay').style.display = 'none'; currentHole = null; }
+  document.getElementById('sheetClose').addEventListener('click', closeSheet);
+  document.getElementById('overlay').addEventListener('click', function(e){ if (e.target.id === 'overlay') closeSheet(); });
+
+  function setConnNote(msg, isErr){
+    var el = document.getElementById('connNote');
+    el.textContent = msg || '';
+    el.className = 'conn-note' + (isErr ? ' err' : '');
+  }
+
+  function submitAttempt(strokes, method, extra){
+    if (!currentHole) return;
+    var name = nameInput.value.trim();
+    if (!name) return;
+    var mine = myAttempts();
+    if (mine.length >= MAX_ATTEMPTS) { closeSheet(); return; }
+    var isMulligan = mine.some(function(a){ return a.hole === currentHole.n; });
+    var data = {
+      playerKey: playerKey(name),
+      playerName: name,
+      hole: currentHole.n,
+      holeName: currentHole.name,
+      target: currentHole.target,
+      strokes: strokes,
+      method: method,
+      mulligan: isMulligan,
+      ts: Date.now()
+    };
+    if (extra) Object.assign(data, extra);
+    closeSheet();
+    db.collection('attempts').add(data).catch(function(err){
+      setConnNote('Could not save that score (' + err.message + '). Check your connection and try again.', true);
+    });
+  }
+
+  document.querySelectorAll('.ball-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      submitAttempt(parseInt(btn.dataset.ball, 10), 'ball', {ball: parseInt(btn.dataset.ball, 10)});
+    });
+  });
+  document.getElementById('missSave').addEventListener('click', function(){
+    var val = parseInt(document.getElementById('missScore').value, 10);
+    if (isNaN(val) || val < 0) return;
+    var strokes = chartStrokes(currentHole.target, val);
+    submitAttempt(strokes, 'chart', {rawScore: val});
+  });
+
+  document.getElementById('undoBtn').addEventListener('click', function(){
+    var mine = myAttempts();
+    if (!mine.length) return;
+    mine.sort(function(a,b){ return b.ts - a.ts; });
+    var last = mine[0];
+    db.collection('attempts').doc(last.id).delete().catch(function(){});
+  });
+
+  function renderLeaderboard(){
+    var byPlayer = {};
+    allAttempts.forEach(function(a){
+      if (!byPlayer[a.playerKey]) byPlayer[a.playerKey] = {name: a.playerName, attempts: []};
+      byPlayer[a.playerKey].name = a.playerName;
+      byPlayer[a.playerKey].attempts.push(a);
+    });
+    var players = Object.keys(byPlayer).map(function(k){
+      var p = byPlayer[k];
+      var res = bestTotal(p.attempts);
+      return {key:k, name:p.name, attempts:p.attempts, res:res};
+    });
+    players.sort(function(a,b){ return a.res.total - b.res.total || b.res.thru - a.res.thru; });
+
+    var list = document.getElementById('lbList');
+    if (!players.length){
+      list.innerHTML = '<div class="empty-note">No scores yet &mdash; be the first on the board.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    players.forEach(function(p, i){
+      var row = document.createElement('div');
+      row.className = 'lb-row';
+      var sortedAttempts = p.attempts.slice().sort(function(a,b){ return a.strokes - b.strokes; });
+      var lines = sortedAttempts.map(function(a){
+        var dropped = p.res.countedIds.indexOf(a.id) === -1;
+        return '<div class="attempt-line' + (dropped ? ' dropped' : '') + '">' +
+          '<span class="an">' + a.holeName + (a.mulligan ? ' (Mull.)' : '') + '</span>' +
+          '<span class="araw tnum">' + attemptScoreLabel(a) + '</span>' +
+          '<span class="as tnum">' + a.strokes + '</span>' +
+          '<button class="del-x" data-id="' + a.id + '" title="Remove entry">&times;</button>' +
+          '</div>';
+      }).join('');
+      row.innerHTML =
+        '<div class="lb-top">' +
+          '<div class="lb-rank">' + (i+1) + '</div>' +
+          '<div><div class="lb-name">' + p.name + '</div><div class="lb-thru">thru ' + p.res.thru + (p.res.thru > BEST_N ? ' (best 9 counted)' : '') + '</div></div>' +
+          '<div class="lb-total tnum">' + p.res.total + '</div>' +
+        '</div>' +
+        '<div class="lb-detail">' + lines + '</div>';
+      row.querySelector('.lb-top').addEventListener('click', function(){
+        row.querySelector('.lb-detail').classList.toggle('open');
+      });
+      row.querySelectorAll('.del-x').forEach(function(x){
+        x.addEventListener('click', function(e){
+          e.stopPropagation();
+          var id = x.dataset.id;
+          db.collection('attempts').doc(id).delete().catch(function(){});
+        });
+      });
+      list.appendChild(row);
+    });
+  }
+
+  function renderTvBoard(){
+    var wrap = document.getElementById('tvBoardWrap');
+    if (!wrap) return;
+    var byPlayer = {};
+    allAttempts.forEach(function(a){
+      if (!byPlayer[a.playerKey]) byPlayer[a.playerKey] = {name: a.playerName, attempts: []};
+      byPlayer[a.playerKey].name = a.playerName;
+      byPlayer[a.playerKey].attempts.push(a);
+    });
+    var players = Object.keys(byPlayer).map(function(k){
+      var p = byPlayer[k];
+      var res = bestTotal(p.attempts);
+      return {name:p.name, attempts:p.attempts, res:res};
+    });
+    if (!players.length) { wrap.innerHTML = '<div class="empty-note">Waiting for the first score&hellip;</div>'; return; }
+    players.sort(function(a,b){ return a.res.total - b.res.total || b.res.thru - a.res.thru; });
+
+    var head = '<th class="th-rank"></th><th class="th-player">Player</th>' +
+      HOLES.map(function(h){ return '<th>' + h.n + '</th>'; }).join('') +
+      '<th class="th-total">Total</th>';
+
+    var rows = players.map(function(p, i){
+      var byHole = {};
+      p.attempts.forEach(function(a){
+        if (!byHole[a.hole] || a.strokes < byHole[a.hole].strokes) byHole[a.hole] = a;
+      });
+      var cells = HOLES.map(function(h){
+        var a = byHole[h.n];
+        if (!a) return '<td class="tv-cell">&mdash;</td>';
+        var hit = a.strokes <= 3;
+        var dropped = p.res.countedIds.indexOf(a.id) === -1;
+        return '<td class="tv-cell played ' + (hit ? 'hit' : 'miss') + (dropped ? ' dropped' : '') + '">' +
+          '<span class="pip">' + a.strokes + '</span></td>';
+      }).join('');
+      return '<tr>' +
+        '<td class="tv-rank">' + (i + 1) + '</td>' +
+        '<td class="tv-name">' + p.name + '</td>' +
+        cells +
+        '<td><span class="tv-total-val">' + p.res.total + '</span>' +
+          '<span class="tv-thru">thru ' + p.res.thru + '</span></td>' +
+      '</tr>';
+    }).join('');
+
+    wrap.innerHTML = '<table class="tv-board"><colgroup><col class="col-rank">' +
+      '<col class="col-player">' +
+      HOLES.map(function(){ return '<col class="col-hole">'; }).join('') +
+      '<col class="col-total"></colgroup>' +
+      '<thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function renderAll(){
+    renderScoreTab();
+    renderLeaderboard();
+    refreshNameSelect();
+    if (tvMode) renderTvBoard();
+  }
+
+  var tvMode = /tv/i.test(window.location.hash);
+  if (tvMode) {
+    document.body.classList.add('tv-mode');
+    document.body.setAttribute('data-theme', 'dark');
+    document.getElementById('panel-board').classList.add('active');
+  }
+
+  renderAll();
+  setConnNote('Connecting…', false);
+
+  db.collection('attempts').onSnapshot(function(snap){
+    setConnNote('', false);
+    allAttempts = snap.docs.map(function(d){
+      var data = d.data() || {};
+      data.id = d.id;
+      return data;
+    });
+    renderAll();
+  }, function(err){
+    setConnNote('Connection lost (' + err.message + '). Scores you already entered are safe; reload to retry.', true);
+  });
+})();
+</script>
+</body>
+</html>
