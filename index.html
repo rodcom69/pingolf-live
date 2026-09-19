@@ -235,12 +235,9 @@
 
   <section class="panel active" id="panel-score">
     <div class="name-card">
-      <label class="field-label" for="nameSelect">Played before?</label>
-      <select id="nameSelect">
-        <option value="">+ New player&hellip;</option>
-      </select>
-      <label class="field-label" for="nameInput" style="margin-top:10px;">Your name</label>
-      <input type="text" id="nameInput" placeholder="Type your name" autocomplete="off">
+      <label class="field-label" for="nameInput">Your name</label>
+      <input type="text" id="nameInput" list="nameList" placeholder="Type your name" autocomplete="off">
+      <datalist id="nameList"></datalist>
       <div class="total-row" id="totalRow" style="display:none;">
         <div>
           <div class="field-label" style="margin-bottom:2px;">Current total</div>
@@ -354,15 +351,9 @@
   var currentHole = null;
 
   var nameInput = document.getElementById('nameInput');
-  var nameSelect = document.getElementById('nameSelect');
+  var nameList = document.getElementById('nameList');
   try { nameInput.value = localStorage.getItem('pingolf_name') || ''; } catch(e){}
   nameInput.addEventListener('input', function(){
-    try { localStorage.setItem('pingolf_name', nameInput.value); } catch(e){}
-    renderScoreTab();
-  });
-  nameSelect.addEventListener('change', function(){
-    if (!nameSelect.value) { nameInput.value = ''; nameInput.focus(); }
-    else { nameInput.value = nameSelect.value; }
     try { localStorage.setItem('pingolf_name', nameInput.value); } catch(e){}
     renderScoreTab();
   });
@@ -372,11 +363,7 @@
       if (!seen[a.playerKey]) { seen[a.playerKey] = true; names.push(a.playerName); }
     });
     names.sort(function(a,b){ return a.localeCompare(b); });
-    var current = nameInput.value;
-    nameSelect.innerHTML = '<option value="">+ New player&hellip;</option>' +
-      names.map(function(n){ return '<option value="' + n.replace(/"/g,'&quot;') + '">' + n + '</option>'; }).join('');
-    var match = names.find(function(n){ return playerKey(n) === playerKey(current); });
-    nameSelect.value = match || '';
+    nameList.innerHTML = names.map(function(n){ return '<option value="' + n.replace(/"/g,'&quot;') + '">'; }).join('');
   }
 
   var TAB_NAMES = ['score', 'board', 'rules'];
