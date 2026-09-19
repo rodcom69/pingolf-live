@@ -140,11 +140,16 @@
   .close-btn{display:block;width:100%;text-align:center;margin-top:18px;background:none;border:none;color:var(--text-dim);font-family:inherit;font-size:14px;padding:8px;cursor:pointer;}
 
   .lb-list{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
-  .obj-list{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
-  .obj-row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:10px 13px;box-shadow:var(--shadow);}
-  .obj-num{font-family:"Teko",sans-serif;font-size:24px;color:var(--text-dim);width:22px;flex-shrink:0;text-align:center;}
+  .obj-list{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  .obj-card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 13px;box-shadow:var(--shadow);}
+  .obj-head{display:flex;align-items:baseline;gap:10px;}
+  .obj-num{font-family:"Teko",sans-serif;font-size:22px;color:var(--text-dim);width:20px;flex-shrink:0;text-align:center;}
   .obj-name{flex:1;font-weight:600;font-size:14px;}
-  .obj-target{font-family:"Teko",sans-serif;font-size:22px;color:var(--accent);flex-shrink:0;}
+  .obj-target{font-size:11px;color:var(--text-dim);flex-shrink:0;}
+  .obj-target b{font-family:"Teko",sans-serif;font-size:18px;color:var(--accent);font-weight:600;}
+  .obj-ranges{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+  .obj-range{flex:1 1 auto;min-width:31%;background:var(--surface-2);border-radius:7px;padding:5px 8px;font-size:11px;color:var(--text-dim);white-space:nowrap;}
+  .obj-range b{font-family:"Teko",sans-serif;font-size:16px;color:var(--text);margin-right:5px;}
   .lb-row{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 13px;box-shadow:var(--shadow);}
   .lb-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
   .lb-rank{font-family:"Teko",sans-serif;font-size:24px;color:var(--gold);width:26px;flex-shrink:0;}
@@ -325,6 +330,16 @@
   ];
   var MAX_ATTEMPTS = 10, BEST_N = 9;
 
+  function strokeRanges(target){
+    var b4 = Math.round(target*4/5), b3 = Math.round(target*3/5), b2 = Math.round(target*2/5), b1 = Math.round(target*1/5);
+    return [
+      {s:4, lo:b4, hi:target-1},
+      {s:5, lo:b3, hi:b4-1},
+      {s:6, lo:b2, hi:b3-1},
+      {s:7, lo:b1, hi:b2-1},
+      {s:8, lo:0, hi:b1-1}
+    ];
+  }
   function chartStrokes(target, score){
     if (score >= target) return 3;
     if (score >= target*4/5) return 4;
@@ -618,10 +633,17 @@
   }
 
   document.getElementById('objList').innerHTML = HOLES.map(function(h){
-    return '<div class="obj-row">' +
-      '<div class="obj-num tnum">' + h.n + '</div>' +
-      '<div class="obj-name">' + h.name + '</div>' +
-      '<div class="obj-target tnum">' + h.label + '</div>' +
+    var ranges = strokeRanges(h.target);
+    var rangeHtml = ranges.map(function(r){
+      return '<div class="obj-range"><b>' + r.s + '</b>' + fmtNum(r.lo) + '&ndash;' + fmtNum(r.hi) + '</div>';
+    }).join('');
+    return '<div class="obj-card">' +
+      '<div class="obj-head">' +
+        '<div class="obj-num tnum">' + h.n + '</div>' +
+        '<div class="obj-name">' + h.name + '</div>' +
+        '<div class="obj-target">target<br><b class="tnum">' + h.label + '</b></div>' +
+      '</div>' +
+      '<div class="obj-ranges">' + rangeHtml + '</div>' +
       '</div>';
   }).join('');
 
