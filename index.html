@@ -190,7 +190,9 @@
 
   .tv-board{width:100%;border-collapse:separate;border-spacing:0 .5vw;table-layout:fixed;}
   .tv-board th, .tv-board td{padding:.6vw .5vw;text-align:center;font-variant-numeric:tabular-nums;}
-  .tv-board thead th{font-family:"Teko",sans-serif;font-weight:600;font-size:clamp(14px,1.7vw,24px);color:#b8ab86;letter-spacing:.02em;border-bottom:.15vw solid #3a361f;}
+  .tv-board thead th{background:#1c1a10;font-family:"Teko",sans-serif;font-weight:600;font-size:clamp(14px,1.7vw,24px);color:#b8ab86;letter-spacing:.02em;border-bottom:.15vw solid #3a361f;}
+  .tv-board thead th:first-child{border-radius:.7vw 0 0 .7vw;}
+  .tv-board thead th:last-child{border-radius:0 .7vw .7vw 0;}
   .tv-board thead th.th-player{text-align:left;font-family:"Inter",sans-serif;font-size:clamp(11px,1.1vw,15px);text-transform:uppercase;letter-spacing:.08em;}
   .tv-board thead th.th-thru{font-family:"Inter",sans-serif;font-size:clamp(10px,1vw,13px);text-transform:uppercase;letter-spacing:.06em;}
   .tv-board thead th.th-total{color:var(--gold);}
@@ -207,11 +209,12 @@
   .tv-board .tv-cell{font-family:"Teko",sans-serif;font-size:clamp(14px,1.8vw,24px);color:#5c5844;}
   .tv-board .tv-cell.played{color:#f2eddd;}
   .tv-board .tv-cell .pip{display:inline-flex;align-items:center;justify-content:center;width:1.9vw;height:1.9vw;min-width:22px;min-height:22px;border-radius:50%;}
-  .tv-board .tv-cell.hit .pip{background:var(--accent);color:#0d1a10;}
+  .tv-board .tv-cell.hit .pip{background:var(--accent);color:#eafff2;font-weight:700;}
   .tv-board .tv-cell.ace .pip{background:var(--gold);color:#241c06;font-weight:700;box-shadow:0 0 0 .2vw rgba(224,172,63,.4), 0 0 1vw rgba(224,172,63,.65);}
   .tv-board .tv-cell.ace{color:var(--gold);}
-  .tv-board .tv-cell.miss .pip{background:#2c2a1c;border:.12vw solid #4a4630;}
-  .tv-board .tv-cell.dropped{opacity:.4;text-decoration:line-through;}
+  .tv-board .tv-cell.fair .pip{background:#5a5636;color:#fbf6e4;font-weight:700;}
+  .tv-board .tv-cell.poor .pip{background:#7a3a26;color:#ffe9df;font-weight:700;}
+  .tv-board .tv-cell.dropped .pip{opacity:.4;text-decoration:line-through;}
   .tv-board .tv-total-val{font-family:"Teko",sans-serif;font-size:clamp(20px,2.6vw,36px);color:var(--gold);font-weight:700;}
 
   .tv-qr-corner{position:fixed;right:1.6vw;bottom:1.6vw;background:#1c1a10;border:1px solid #3a361f;border-radius:1vw;padding:1vw 1.2vw;display:flex;align-items:center;gap:1vw;box-shadow:0 .4vw 1.4vw rgba(0,0,0,.4);}
@@ -597,10 +600,9 @@
       var cells = HOLES.map(function(h){
         var a = byHole[h.n];
         if (!a) return '<td class="tv-cell">&mdash;</td>';
-        var hit = a.strokes <= 3;
-        var ace = a.strokes === 1;
+        var tier = a.strokes === 1 ? 'ace' : a.strokes <= 3 ? 'hit' : a.strokes <= 6 ? 'fair' : 'poor';
         var dropped = p.res.countedIds.indexOf(a.id) === -1;
-        return '<td class="tv-cell played ' + (hit ? 'hit' : 'miss') + (ace ? ' ace' : '') + (dropped ? ' dropped' : '') + '">' +
+        return '<td class="tv-cell played ' + tier + (dropped ? ' dropped' : '') + '">' +
           '<span class="pip">' + a.strokes + '</span></td>';
       }).join('');
       return '<tr>' +
