@@ -166,6 +166,7 @@
   .attempt-line.ace .an{color:var(--gold);font-weight:700;}
   .attempt-line.dropped{text-decoration:line-through;opacity:.5;}
   .del-x{margin-left:auto;background:none;border:none;color:var(--bad);font-size:15px;cursor:pointer;padding:2px 6px;}
+  .del-x.armed{font-size:12px;font-weight:700;border:1px solid var(--bad);border-radius:6px;}
   .empty-note{color:var(--text-dim);font-size:14px;text-align:center;padding:30px 10px;}
 
   details.rules{margin-top:22px;background:var(--surface-2);border-radius:10px;padding:10px 14px;}
@@ -365,6 +366,14 @@
     return 8;
   }
   function fmtNum(n){ return n.toLocaleString("en-US"); }
+  function esc(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  // Organizer mode (#admin in the URL) shows the delete button on every entry.
+  // This only changes the UI; the Firestore rules are what actually protect data.
+  var adminMode = /admin/i.test(window.location.hash);
   function attemptScoreLabel(a){ return a.method === 'ball' ? ('Ball ' + a.ball) : fmtNum(a.rawScore); }
   function playerKey(name){ return name.trim().toLowerCase(); }
   function bestTotal(attempts){
@@ -389,6 +398,7 @@
   nameInput.addEventListener('input', function(){
     try { localStorage.setItem('pingolf_name', nameInput.value); } catch(e){}
     renderScoreTab();
+    renderLeaderboard();
   });
   nameSelect.addEventListener('change', function(){
     if (!nameSelect.value) {
@@ -401,6 +411,7 @@
     }
     try { localStorage.setItem('pingolf_name', nameInput.value); } catch(e){}
     renderScoreTab();
+    renderLeaderboard();
   });
   function refreshNameSelect(){
     var seen = {}, names = [];
@@ -409,7 +420,7 @@
     });
     names.sort(function(a,b){ return a.localeCompare(b); });
     nameSelect.innerHTML = '<option value="">+ New player</option>' +
-      names.map(function(n){ return '<option value="' + n.replace(/"/g,'&quot;') + '">' + n + '</option>'; }).join('');
+      names.map(function(n){ return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
     var match = names.find(function(n){ return playerKey(n) === playerKey(nameInput.value); });
     if (match) {
       nameSelect.value = match;
@@ -465,7 +476,7 @@
 
     var grid = document.getElementById('holeGrid');
     grid.innerHTML = '';
-    var nameReady = playerKey(nameInput.value || '').length > 0;
+    var nameReady = playerKey(nameInput.value || '').length > 0 && CURRENT_EVENT_ID !== null;
     var atCap = mine.length >= MAX_ATTEMPTS;
 
     HOLES.forEach(function(h){
@@ -518,6 +529,11 @@
     if (!currentHole) return;
     var name = nameInput.value.trim();
     if (!name) return;
+    if (CURRENT_EVENT_ID === null) {
+      closeSheet();
+      setConnNote('Still connecting to the scoreboard. Your score was not saved; try again in a moment.', true);
+      return;
+    }
     var mine = myAttempts();
     var editId = currentEditId;
     if (!editId) {
@@ -588,20 +604,21 @@
       var row = document.createElement('div');
       row.className = 'lb-row';
       var sortedAttempts = p.attempts.slice().sort(function(a,b){ return a.strokes - b.strokes; });
+      var canDelete = adminMode || p.key === playerKey(nameInput.value || '');
       var lines = sortedAttempts.map(function(a){
         var dropped = p.res.countedIds.indexOf(a.id) === -1;
         var ace = a.strokes === 1;
         return '<div class="attempt-line' + (dropped ? ' dropped' : '') + (ace ? ' ace' : '') + '">' +
-          '<span class="an">' + a.holeName + '</span>' +
-          '<span class="araw tnum">' + attemptScoreLabel(a) + '</span>' +
-          '<span class="as tnum">' + (ace ? '★ ' : '') + a.strokes + '</span>' +
-          '<button class="del-x" data-id="' + a.id + '" title="Remove entry">&times;</button>' +
+          '<span class="an">' + esc(a.holeName) + '</span>' +
+          '<span class="araw tnum">' + esc(attemptScoreLabel(a)) + '</span>' +
+          '<span class="as tnum">' + (ace ? '★ ' : '') + esc(a.strokes) + '</span>' +
+          (canDelete ? '<button class="del-x" data-id="' + esc(a.id) + '" title="Remove entry">&times;</button>' : '') +
           '</div>';
       }).join('');
       row.innerHTML =
         '<div class="lb-top">' +
           '<div class="lb-rank">' + (i+1) + '</div>' +
-          '<div><div class="lb-name">' + p.name + '</div><div class="lb-thru">thru ' + p.res.thru + (p.res.thru > BEST_N ? ' (best 9 counted)' : '') + '</div></div>' +
+          '<div><div class="lb-name">' + esc(p.name) + '</div><div class="lb-thru">thru ' + p.res.thru + (p.res.thru > BEST_N ? ' (best 9 counted)' : '') + '</div></div>' +
           '<div class="lb-total tnum">' + p.res.total + '</div>' +
         '</div>' +
         '<div class="lb-detail">' + lines + '</div>';
@@ -611,8 +628,18 @@
       row.querySelectorAll('.del-x').forEach(function(x){
         x.addEventListener('click', function(e){
           e.stopPropagation();
-          var id = x.dataset.id;
-          db.collection('attempts').doc(id).delete().catch(function(){});
+          if (!x.classList.contains('armed')) {
+            // First tap only arms the button; a second tap within 4s deletes.
+            x.classList.add('armed');
+            x.textContent = 'Delete?';
+            setTimeout(function(){
+              if (x.isConnected) { x.classList.remove('armed'); x.innerHTML = '&times;'; }
+            }, 4000);
+            return;
+          }
+          db.collection('attempts').doc(x.dataset.id).delete().catch(function(err){
+            setConnNote('Could not remove that entry (' + err.message + ').', true);
+          });
         });
       });
       list.appendChild(row);
@@ -653,7 +680,7 @@
       }).join('');
       return '<tr>' +
         '<td class="tv-rank">' + (i + 1) + '</td>' +
-        '<td class="tv-name">' + p.name + '</td>' +
+        '<td class="tv-name">' + esc(p.name) + '</td>' +
         '<td class="tv-thru-cell">' + p.res.thru + '</td>' +
         cells +
         '<td><span class="tv-total-val">' + p.res.total + '</span></td>' +
@@ -693,7 +720,7 @@
       var sel = document.getElementById('historyEventSelect');
       if (!historyEvents.length) { sel.innerHTML = '<option value="">No events yet</option>'; return; }
       sel.innerHTML = historyEvents.map(function(e){
-        return '<option value="' + e.id + '">' + e.label + (e.id === CURRENT_EVENT_ID ? ' (current)' : '') + '</option>';
+        return '<option value="' + esc(e.id) + '">' + esc(e.label) + (e.id === CURRENT_EVENT_ID ? ' (current)' : '') + '</option>';
       }).join('');
       renderHistoryBoard(historyEvents[0].id);
     });
@@ -755,20 +782,28 @@
     });
   }
 
-  db.collection('meta').doc('current').get().then(function(snap){
-    var m = snap.exists ? snap.data() : {};
-    CURRENT_EVENT_ID = m.eventId || 'default';
-    CURRENT_EVENT_LABEL = m.eventLabel || 'Live';
-    var eventNumber = m.eventNumber ? ('Event ' + m.eventNumber + ' · ') : '';
-    var eventDate = m.eventDate ? (m.eventDate + ' · ') : '';
-    document.getElementById('eventSub').textContent = eventNumber + eventDate + 'lowest total wins';
-    startAttemptsListener();
-  }).catch(function(){
-    CURRENT_EVENT_ID = 'default';
-    CURRENT_EVENT_LABEL = 'Live';
-    document.getElementById('eventSub').textContent = 'lowest total wins';
-    startAttemptsListener();
-  });
+  // Find the current event before allowing any scoring. If the lookup fails
+  // (bad venue wifi), keep retrying rather than guessing an event, so scores
+  // never land somewhere the live board isn't showing.
+  var metaTries = 0;
+  function loadCurrentEvent(){
+    db.collection('meta').doc('current').get().then(function(snap){
+      var m = snap.exists ? snap.data() : {};
+      CURRENT_EVENT_ID = m.eventId || 'default';
+      CURRENT_EVENT_LABEL = m.eventLabel || 'Live';
+      var eventNumber = m.eventNumber ? ('Event ' + m.eventNumber + ' · ') : '';
+      var eventDate = m.eventDate ? (m.eventDate + ' · ') : '';
+      document.getElementById('eventSub').textContent = eventNumber + eventDate + 'lowest total wins';
+      startAttemptsListener();
+      renderAll();
+    }).catch(function(){
+      metaTries++;
+      var wait = Math.min(30, 3 * metaTries);
+      setConnNote("Can't reach the scoreboard. Retrying in " + wait + 's…', true);
+      setTimeout(loadCurrentEvent, wait * 1000);
+    });
+  }
+  loadCurrentEvent();
 })();
 </script>
 </body>
