@@ -66,6 +66,7 @@
   .tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.03em;padding:1px 6px;border-radius:999px;margin-left:4px;vertical-align:1px;}
   .tag.mull{background:var(--gold);color:#1c1a12;}
   .tag.adm{background:var(--surface-2);color:var(--text-dim);}
+  .warn-txt{color:var(--bad);font-weight:600;}
   .tag.void{background:var(--bad);color:#fff;}
   .sect{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:14px 0 4px;}
   .empty{color:var(--text-dim);text-align:center;padding:30px 10px;}
@@ -150,11 +151,24 @@
 <div class="overlay" id="renameOverlay">
   <div class="sheet">
     <h2>Rename player</h2>
-    <p class="dim small">Changes the name on all of this player's scores in this event. Use an existing name to merge two spellings into one player.</p>
+    <p class="dim small">Changes the name on all of this player's scores in this event. Use an existing name to merge two spellings into one player. If the new name hasn't signed up, use Set PIN afterward so they can sign in under it.</p>
     <input type="text" id="renameInput" autocomplete="off">
     <div class="row" style="margin-top:14px;">
       <button class="btn" id="renameCancel" style="flex:1;">Cancel</button>
       <button class="btn primary" id="renameSave" style="flex:1;">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Set number sheet -->
+<div class="overlay" id="codeOverlay">
+  <div class="sheet">
+    <h2>PIN for <span id="codeWho"></span></h2>
+    <p class="dim small">4 digits. They'll use it with their name to sign in on the scorecard. This replaces any PIN they had.</p>
+    <input type="text" id="codeInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="4 digits">
+    <div class="row" style="margin-top:14px;">
+      <button class="btn" id="codeCancel" style="flex:1;">Cancel</button>
+      <button class="btn primary" id="codeSave" style="flex:1;">Save</button>
     </div>
   </div>
 </div>
@@ -175,6 +189,7 @@
   var unsub = null;
   var openPlayers = {};
   var sheet = null;             // what the edit sheet is doing
+  var registered = {};          // players/{key} -> name (who has signed up)
 
   function $(id){ return document.getElementById(id); }
   function setStatus(msg, kind){ var el = $('status'); el.textContent = msg || ''; el.className = 'status' + (kind ? ' ' + kind : ''); }
@@ -197,6 +212,11 @@
       try { sessionStorage.setItem('pingolf_admin_pin', p); } catch(e){}
       $('gate').hidden = true; $('main').hidden = false; $('lockBtn').hidden = false;
       loadEvents();
+      db.collection('players').onSnapshot(function(snap){
+        registered = {};
+        snap.docs.forEach(function(d){ registered[d.id] = d.data().name || d.id; });
+        if (currentEvent) render();
+      });
     }).catch(function(err){
       pin = null;
       try { sessionStorage.removeItem('pingolf_admin_pin'); } catch(e){}
@@ -256,28 +276,35 @@
       if (!byPlayer[a.playerKey]) byPlayer[a.playerKey] = {key: a.playerKey, name: a.playerName, all: []};
       byPlayer[a.playerKey].all.push(a);
     });
+    // Signed-up players with no scores yet show too (live event only).
+    if (currentEvent.id === liveEventId) Object.keys(registered).forEach(function(k){
+      if (!byPlayer[k]) byPlayer[k] = {key: k, name: registered[k], all: []};
+    });
     var players = Object.keys(byPlayer).map(function(k){
       var p = byPlayer[k];
       p.live = p.all.filter(function(a){ return !a.void; });
       p.res = scoreRound(p.live);
-      p.removed = p.live.length === 0;
+      p.empty = p.all.length === 0;
+      p.removed = !p.empty && p.live.length === 0;
+      p.signedUp = !!registered[k];
       return p;
     });
-    players.sort(function(a,b){ return (a.removed - b.removed) || rankPlayers(a,b); });
+    players.sort(function(a,b){ return (a.removed - b.removed) || (a.empty - b.empty) || rankPlayers(a,b); });
     var wrap = $('players');
     if (!players.length) { wrap.innerHTML = '<div class="card empty">No scores in this event yet.</div>'; return; }
     wrap.innerHTML = '';
     var rank = 0;
     players.forEach(function(p){
-      if (!p.removed) rank++;
+      if (!p.removed && !p.empty) rank++;
       var el = document.createElement('div');
       el.className = 'card player' + (openPlayers[p.key] ? ' open' : '');
       el.innerHTML =
         '<div class="p-top">' +
-          '<div class="p-rank">' + (p.removed ? '–' : rank) + '</div>' +
+          '<div class="p-rank">' + (p.removed || p.empty ? '–' : rank) + '</div>' +
           '<div style="flex:1;min-width:0;"><div class="p-name">' + esc(p.name) + (p.removed ? ' <span class="tag void">REMOVED</span>' : '') + '</div>' +
-            '<div class="dim small">thru ' + p.res.thru + ' · ' + p.res.mulligansUsed + ' mulligan' + (p.res.mulligansUsed === 1 ? '' : 's') + '</div></div>' +
-          '<div><div class="p-total">' + (p.removed ? '' : p.res.total) + '</div><div class="dim small" style="text-align:right;">' + (p.removed ? '' : fmtPar(p.res.toPar)) + '</div></div>' +
+            '<div class="dim small">' + (p.empty ? 'signed up · no scores yet' : 'thru ' + p.res.thru + ' · ' + p.res.mulligansUsed + ' mulligan' + (p.res.mulligansUsed === 1 ? '' : 's')) +
+            (p.signedUp ? '' : ' · <span class="warn-txt">not signed up</span>') + '</div></div>' +
+          '<div><div class="p-total">' + (p.removed || p.empty ? '' : p.res.total) + '</div><div class="dim small" style="text-align:right;">' + (p.removed || p.empty ? '' : fmtPar(p.res.toPar)) + '</div></div>' +
         '</div>' +
         '<div class="p-body"></div>';
       el.querySelector('.p-top').addEventListener('click', function(){
@@ -313,6 +340,7 @@
     p.res.countedIds.forEach(function(id){ counted[id] = true; });
     var html = '<div class="p-actions">' +
       '<button class="btn sm" data-act="rename">Rename</button>' +
+      '<button class="btn sm" data-act="setCode">' + (p.signedUp ? 'Reset PIN' : 'Set PIN') + '</button>' +
       (p.removed ? '<button class="btn sm" data-act="restoreAll">Restore player</button>'
                  : '<button class="btn sm danger" data-act="removeAll">Remove player</button>') +
       '</div><div class="sect">Holes</div>';
@@ -345,6 +373,7 @@
         else if (act === 'removeAll') confirmTap(b, 'Remove all?', function(){ setVoid(p.all.filter(function(x){ return !x.void; }), true); });
         else if (act === 'restoreAll') setVoid(p.all.filter(function(x){ return x.void; }), false);
         else if (act === 'rename') openRename(p);
+        else if (act === 'setCode') openCode(p);
       });
     });
   }
@@ -383,6 +412,27 @@
         batch.update(db.collection('attempts').doc(a.id), Object.assign({playerName: name, playerKey: playerKey(name)}, stamp));
       });
     }).then(done('Renamed to ' + name + '.')).catch(failed);
+  });
+
+  // ---------- Set a player's PIN ----------
+  // Signs the player up (or replaces their PIN) so they can sign in on the scorecard.
+  var coding = null;
+  function openCode(p){ coding = p; $('codeWho').textContent = p.name; $('codeInput').value = ''; $('codeOverlay').classList.add('show'); $('codeInput').focus(); }
+  $('codeCancel').addEventListener('click', function(){ $('codeOverlay').classList.remove('show'); });
+  $('codeSave').addEventListener('click', function(){
+    var code = $('codeInput').value.trim();
+    if (!/^[0-9]{4}$/.test(code) || !coding) { setStatus('The PIN must be 4 digits.', 'err'); return; }
+    var p = coding;
+    var name = (registered[p.key] || p.name).trim().replace(/\s+/g, ' ');
+    var key = playerKey(name);
+    $('codeOverlay').classList.remove('show');
+    adminBatch(function(batch, stamp){
+      var u = {unlockId: stamp.unlockId};
+      batch.set(db.collection('players').doc(key), Object.assign({name: name, at: FV.serverTimestamp()}, u));
+      batch.set(db.collection('playerSecrets').doc(key), Object.assign({pin: code}, u));
+    }).then(done(name + ' can now sign in with that PIN.')).catch(function(err){
+      setStatus('Not saved: the organizer PIN was rejected.', 'err');
+    });
   });
 
   // ---------- Edit / add sheet ----------

@@ -95,6 +95,14 @@
   select{appearance:auto;}
 
   .name-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow);}
+  .signin-btn{width:100%;margin-top:12px;padding:12px;border:none;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;}
+  .signin-btn:disabled{opacity:.5;}
+  .pin-input{-webkit-text-security:disc;letter-spacing:.3em;}
+  .signin-note{font-size:12px;color:var(--text-dim);margin-top:8px;line-height:1.4;}
+  .signin-note.err{color:var(--bad);}
+  .me-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .me-row[hidden]{display:none;}
+  .me-name{font-size:20px;font-weight:700;color:var(--text);overflow-wrap:anywhere;}
   .total-row{display:flex;align-items:flex-end;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);}
   .total-value{font-family:"Teko",sans-serif;font-size:44px;line-height:1;color:var(--accent);}
   .total-note{font-size:12px;color:var(--text-dim);text-align:right;max-width:55%;}
@@ -282,13 +290,17 @@
 
   <section class="panel active" id="panel-score">
     <div class="name-card">
-      <label class="field-label" for="nameSelect">Already started? Select yourself</label>
-      <select id="nameSelect">
-        <option value="">+ New player</option>
-      </select>
-      <div id="newNameWrap" style="margin-top:10px;">
-        <label class="field-label" for="nameInput">Enter your name</label>
-        <input type="text" id="nameInput" placeholder="Type your name" autocomplete="off">
+      <div id="signInWrap">
+        <label class="field-label" for="nameInput">Your name</label>
+        <input type="text" id="nameInput" placeholder="First and last name" autocomplete="off" maxlength="40">
+        <label class="field-label" for="codeInput" style="margin-top:10px;">4-digit PIN</label>
+        <input type="text" id="codeInput" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="off" maxlength="4" class="pin-input">
+        <button class="signin-btn" id="signInBtn">Start</button>
+        <div class="signin-note" id="signInNote">First time? Pick any 4 digits. Only someone with your PIN can enter your scores. Use it to get back in on any phone.</div>
+      </div>
+      <div class="me-row" id="meRow" hidden>
+        <div><div class="field-label" style="margin-bottom:2px;">Playing as</div><div class="me-name" id="meName"></div></div>
+        <button class="undo-btn" id="switchBtn">Not you?</button>
       </div>
       <div class="total-row" id="totalRow" style="display:none;">
         <div>
@@ -372,45 +384,75 @@
   var currentEditId = null;
   var sheetMode = 'new';
 
+  // Who is playing on this phone: {key, name, code}. Every save is signed with
+  // their PIN; the database rules reject saves for anyone else.
+  var FV = firebase.firestore.FieldValue;
+  var me = null;
+  try { me = JSON.parse(localStorage.getItem('pingolf_me') || 'null'); } catch(e){ me = null; }
+  if (me && !(me.key && me.name && me.code)) me = null;
   var nameInput = document.getElementById('nameInput');
-  var nameSelect = document.getElementById('nameSelect');
-  var newNameWrap = document.getElementById('newNameWrap');
+  var codeInput = document.getElementById('codeInput');
   try { nameInput.value = localStorage.getItem('pingolf_name') || ''; } catch(e){}
-  nameInput.addEventListener('input', function(){
-    try { localStorage.setItem('pingolf_name', nameInput.value); } catch(e){}
-    renderScoreTab();
-    renderLeaderboard();
-  });
-  nameSelect.addEventListener('change', function(){
-    if (!nameSelect.value) {
-      newNameWrap.hidden = false;
-      nameInput.value = '';
-      nameInput.focus();
-    } else {
-      newNameWrap.hidden = true;
-      nameInput.value = nameSelect.value;
-    }
-    try { localStorage.setItem('pingolf_name', nameInput.value); } catch(e){}
-    renderScoreTab();
-    renderLeaderboard();
-  });
-  function refreshNameSelect(){
-    var seen = {}, names = [];
-    allAttempts.forEach(function(a){
-      if (!seen[a.playerKey]) { seen[a.playerKey] = true; names.push(a.playerName); }
-    });
-    names.sort(function(a,b){ return a.localeCompare(b); });
-    nameSelect.innerHTML = '<option value="">+ New player</option>' +
-      names.map(function(n){ return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
-    var match = names.find(function(n){ return playerKey(n) === playerKey(nameInput.value); });
-    if (match) {
-      nameSelect.value = match;
-      newNameWrap.hidden = true;
-    } else {
-      nameSelect.value = '';
-      newNameWrap.hidden = false;
-    }
+
+  function showMe(){
+    document.getElementById('signInWrap').hidden = !!me;
+    document.getElementById('meRow').hidden = !me;
+    document.getElementById('meName').textContent = me ? me.name : '';
   }
+  function signInNote(msg, isErr){
+    var el = document.getElementById('signInNote');
+    el.textContent = msg; el.className = 'signin-note' + (isErr ? ' err' : '');
+  }
+  // A one-time "this is me" doc that goes in the same batch as a save.
+  function proofRef(id){
+    return id ? db.collection('playerUnlock').doc(id) : db.collection('playerUnlock').doc();
+  }
+  function proofData(){ return {playerKey: me.key, pin: me.code, at: FV.serverTimestamp()}; }
+
+  document.getElementById('signInBtn').addEventListener('click', function(){
+    var name = nameInput.value.trim().replace(/\s+/g, ' ').slice(0, 40);
+    var code = codeInput.value.trim();
+    if (!name) { signInNote('Type your name first.', true); nameInput.focus(); return; }
+    if (!/^[0-9]{4}$/.test(code)) { signInNote('Your PIN is 4 digits.', true); codeInput.focus(); return; }
+    var key = playerKey(name);
+    var btn = this; btn.disabled = true; signInNote('Checking\u2026');
+    var done = function(realName){
+      me = {key: key, name: realName, code: code};
+      try { localStorage.setItem('pingolf_me', JSON.stringify(me)); localStorage.setItem('pingolf_name', realName); } catch(e){}
+      codeInput.value = ''; btn.disabled = false;
+      showMe(); renderScoreTab(); renderLeaderboard();
+    };
+    db.collection('players').doc(key).get().then(function(snap){
+      if (snap.exists) {
+        // Returning player: check the PIN.
+        var batch = db.batch();
+        batch.set(proofRef(), {playerKey: key, pin: code, at: FV.serverTimestamp()});
+        return batch.commit().then(function(){ done(snap.data().name || name); }, function(){
+          btn.disabled = false;
+          signInNote(snap.data().name + ' is already signed up and that PIN doesn\'t match. Try again, or ask the organizer to reset it.', true);
+        });
+      }
+      // New player: lock this name to this PIN.
+      var batch = db.batch();
+      batch.set(db.collection('players').doc(key), {name: name, at: FV.serverTimestamp()});
+      batch.set(db.collection('playerSecrets').doc(key), {pin: code});
+      return batch.commit().then(function(){ done(name); }, function(){
+        btn.disabled = false;
+        signInNote('Could not sign you up. Check your connection and try again.', true);
+      });
+    }).catch(function(err){
+      btn.disabled = false;
+      signInNote('Could not reach the scoreboard (' + err.message + '). Try again.', true);
+    });
+  });
+  document.getElementById('switchBtn').addEventListener('click', function(){
+    me = null;
+    try { localStorage.removeItem('pingolf_me'); } catch(e){}
+    nameInput.value = ''; codeInput.value = '';
+    signInNote('Enter your name and your 4-digit PIN.');
+    showMe(); renderScoreTab(); renderLeaderboard();
+  });
+  showMe();
 
   var TAB_NAMES = ['score', 'board', 'rules', 'history'];
   function activateTab(name){
@@ -433,8 +475,8 @@
   }
 
   function myAttempts(){
-    var key = playerKey(nameInput.value || '');
-    if (!key) return [];
+    if (!me) return [];
+    var key = me.key;
     return allAttempts.filter(function(a){ return a.playerKey === key; });
   }
 
@@ -457,7 +499,7 @@
 
     var grid = document.getElementById('holeGrid');
     grid.innerHTML = '';
-    var nameReady = playerKey(nameInput.value || '').length > 0 && CURRENT_EVENT_ID !== null;
+    var nameReady = !!me && CURRENT_EVENT_ID !== null;
 
     HOLES.forEach(function(h){
       var a = res.byHole[h.n];
@@ -619,8 +661,8 @@
 
   function submitAttempt(strokes, method, extra){
     if (!currentHole) return;
-    var name = nameInput.value.trim();
-    if (!name) return;
+    if (!me) return;
+    var name = me.name;
     if (CURRENT_EVENT_ID === null) {
       closeSheet();
       setConnNote('Still connecting to the scoreboard. Your score was not saved; try again in a moment.', true);
@@ -643,7 +685,7 @@
           otherMulls.some(function(m){ return m.hole === currentHole.n; })) { closeSheet(); return; }
     } else if (!editId && res.originals[currentHole.n]) { closeSheet(); return; }
     var data = {
-      playerKey: playerKey(name),
+      playerKey: me.key,
       playerName: name,
       hole: currentHole.n,
       holeName: currentHole.name,
@@ -658,9 +700,14 @@
     if (isMull) data.mulligan = true;
     if (editing) data.ts = editing.ts;
     closeSheet();
-    var op = editId ? db.collection('attempts').doc(editId).set(data) : db.collection('attempts').add(data);
-    op.catch(function(err){
-      setConnNote('Could not save that score (' + err.message + '). Check your connection and try again.', true);
+    var batch = db.batch(), pref = proofRef();
+    batch.set(pref, proofData());
+    data.proof = pref.id;
+    batch.set(editId ? db.collection('attempts').doc(editId) : db.collection('attempts').doc(), data);
+    batch.commit().catch(function(err){
+      setConnNote(/permission/i.test(err.message)
+        ? 'Not saved: your sign-in didn\'t match. Tap \u201cNot you?\u201d and sign in again, or ask the organizer.'
+        : 'Could not save that score (' + err.message + '). Check your connection and try again.', true);
     });
   }
 
@@ -685,7 +732,10 @@
   document.getElementById('undoBtn').addEventListener('click', function(){
     var last = lastUndoable();
     if (!last) { updateUndo(); return; }
-    db.collection('attempts').doc(last.id).delete().catch(function(err){
+    var batch = db.batch();
+    batch.set(proofRef('del_' + last.id), proofData());
+    batch.delete(db.collection('attempts').doc(last.id));
+    batch.commit().catch(function(err){
       setConnNote('Could not undo (' + err.message + ').', true);
     });
   });
@@ -828,7 +878,6 @@
   function renderAll(){
     renderScoreTab();
     renderLeaderboard();
-    refreshNameSelect();
     renderTvBoard();
   }
 

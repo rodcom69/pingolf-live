@@ -2,6 +2,10 @@ rules_version = '2';
 
 // Pingolf Live. Paste into Firebase console > Firestore Database > Rules > Publish.
 // There are no logins. What these rules do:
+//  - each player signs up once with name + a 4-digit PIN. The PIN is kept in
+//    playerSecrets/{name}, which no client can read. Every score a player saves
+//    carries a one-time playerUnlock doc with that PIN, so a player can only
+//    add or change scores under their own name.
 //  - players add scores to the CURRENT event (meta/current.eventId) only
 //  - a player can fix or undo an entry for 2 minutes after saving it; then it's locked
 //  - the organizer page (admin.html) can change anything, but every change must come
@@ -14,7 +18,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function currentEventId() {
-      return get(/databases/$(database)/documents/meta/current).data.eventId;
+      return get(db('meta/current')).data.eventId;
     }
     function nowMs() {
       return request.time.toMillis();
@@ -23,8 +27,8 @@ service cloud.firestore {
     function hasValidShape(d) {
       return d.keys().hasOnly(['playerKey', 'playerName', 'hole', 'holeName', 'target',
                                'strokes', 'method', 'eventId', 'eventLabel', 'ts',
-                               'ball', 'rawScore', 'mulligan', 'void', 'unlockId', 'editedByAdmin'])
-        && d.playerName is string && d.playerName.size() > 0 && d.playerName.size() <= 40
+                               'ball', 'rawScore', 'mulligan', 'void', 'unlockId', 'editedByAdmin', 'proof'])
+        && validName(d.playerName)
         && d.playerKey is string && d.playerKey.size() > 0 && d.playerKey.size() <= 40
         && d.hole is int && d.hole >= 1 && d.hole <= 18
         && d.strokes is int && d.strokes >= 1 && d.strokes <= 8
@@ -35,18 +39,37 @@ service cloud.firestore {
         && d.eventId is string;
     }
 
-    // A player write: current event, no organizer-only fields.
+    function db(p) {
+      return path('/databases/' + database + '/documents/' + p);
+    }
+    function validName(n) {
+      return n is string && n.size() > 0 && n.size() <= 40 && n.matches('^\\S(.*\\S)?$');
+    }
+    function validPin(n) {
+      return n is string && n.matches('^[0-9]{4}$');
+    }
+    // The same request created playerUnlock/{id} for this player (with the right PIN).
+    function playerProved(unlockId, key) {
+      return getAfter(db('playerUnlock/' + unlockId)).data.playerKey == key
+        && getAfter(db('playerUnlock/' + unlockId)).data.at == request.time;
+    }
+    // The same request created adminUnlock/{id} with the right PIN.
+    function adminProved(d) {
+      return d.unlockId is string
+        && getAfter(db('adminUnlock/' + d.unlockId)).data.at == request.time;
+    }
+
+    // A player write: current event, no organizer-only fields, signed with their PIN.
     function isPlayerWrite(d) {
       return hasValidShape(d)
         && !('void' in d) && !('unlockId' in d) && !('editedByAdmin' in d)
-        && d.eventId == currentEventId();
+        && d.eventId == currentEventId()
+        && d.proof is string && playerProved(d.proof, d.playerKey);
     }
 
     // An organizer write: the same batch created adminUnlock/{unlockId} with the right PIN.
     function isAdminWrite(d) {
-      return hasValidShape(d)
-        && d.unlockId is string
-        && getAfter(/databases/$(database)/documents/adminUnlock/$(d.unlockId)).data.at == request.time;
+      return hasValidShape(d) && adminProved(d);
     }
 
     function inEditWindow(d) {
@@ -66,20 +89,59 @@ service cloud.firestore {
                     || isAdminWrite(request.resource.data);
       allow update: if (isPlayerWrite(request.resource.data)
                         && resource.data.eventId == currentEventId()
+                        && resource.data.playerKey == request.resource.data.playerKey
                         && !('editedByAdmin' in resource.data)
                         && request.resource.data.ts == resource.data.ts
                         && inEditWindow(resource.data))
                     || isAdminWrite(request.resource.data);
+      // Undo: the same request creates playerUnlock/del_{attemptId} for the owner.
       allow delete: if resource.data.eventId == currentEventId()
                     && !('editedByAdmin' in resource.data)
-                    && inEditWindow(resource.data);
+                    && inEditWindow(resource.data)
+                    && playerProved('del_' + attemptId, resource.data.playerKey);
+    }
+
+    // Registered players (names only; anyone can see who has signed up).
+    // Sign-up writes players/{key} and playerSecrets/{key} in one batch.
+    match /players/{key} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['name', 'at'])
+                    && validName(request.resource.data.name)
+                    && request.resource.data.name.lower() == key
+                    && request.resource.data.at == request.time
+                    && existsAfter(db('playerSecrets/' + key));
+      // organizer: register a player or reset their PIN
+      allow create, update: if request.resource.data.keys().hasOnly(['name', 'at', 'unlockId'])
+                    && validName(request.resource.data.name)
+                    && request.resource.data.name.lower() == key
+                    && adminProved(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Each player's PIN. Never readable.
+    match /playerSecrets/{key} {
+      allow create: if request.resource.data.keys().hasOnly(['pin'])
+                    && validPin(request.resource.data.pin)
+                    && getAfter(db('players/' + key)).data.at == request.time;
+      allow create, update: if request.resource.data.keys().hasOnly(['pin', 'unlockId'])
+                    && validPin(request.resource.data.pin)
+                    && adminProved(request.resource.data);
+      allow read, delete: if false;
+    }
+
+    // One doc per player save. Write-only: the PIN in it can't be read back.
+    match /playerUnlock/{unlockId} {
+      allow create: if request.resource.data.keys().hasOnly(['playerKey', 'pin', 'at'])
+                    && request.resource.data.at == request.time
+                    && request.resource.data.pin == get(db('playerSecrets/' + request.resource.data.playerKey)).data.pin;
+      allow read, update, delete: if false;
     }
 
     // One doc per organizer change. Write-only: the PIN in it can't be read back.
     match /adminUnlock/{unlockId} {
       allow create: if request.resource.data.keys().hasOnly(['pin', 'at'])
                     && request.resource.data.at == request.time
-                    && request.resource.data.pin == get(/databases/$(database)/documents/secrets/admin).data.pin;
+                    && request.resource.data.pin == get(db('secrets/admin')).data.pin;
       allow read, update, delete: if false;
     }
 
