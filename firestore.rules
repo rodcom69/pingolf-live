@@ -4,7 +4,7 @@ rules_version = '2';
 // There are no logins, so these rules can't tell players apart. What they do:
 //  - scores can only be written to the CURRENT event (meta/current.eventId),
 //    so past events can't be edited or deleted from the app
-//  - every score must have a sane shape (hole 1-17, strokes 1-8, short name)
+//  - every score must have a sane shape (hole 1-18, strokes 1-8, short name)
 //  - meta/current (which event is live) can only be changed from the console
 //  - everything else is closed
 service cloud.firestore {
@@ -17,13 +17,14 @@ service cloud.firestore {
     function isValidAttempt(d) {
       return d.keys().hasOnly(['playerKey', 'playerName', 'hole', 'holeName', 'target',
                                'strokes', 'method', 'eventId', 'eventLabel', 'ts',
-                               'ball', 'rawScore'])
+                               'ball', 'rawScore', 'mulligan'])
         && d.playerName is string && d.playerName.size() > 0 && d.playerName.size() <= 40
         && d.playerKey is string && d.playerKey.size() > 0 && d.playerKey.size() <= 40
-        && d.hole is int && d.hole >= 1 && d.hole <= 17
+        && d.hole is int && d.hole >= 1 && d.hole <= 18
         && d.strokes is int && d.strokes >= 1 && d.strokes <= 8
         && d.method in ['ball', 'chart']
         && d.ts is int
+        && (!('mulligan' in d) || d.mulligan == true)
         && d.eventId == currentEventId();
     }
 

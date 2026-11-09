@@ -115,6 +115,16 @@
     display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);
   }
   .hole-tile.done{border-color:var(--accent);}
+  .hole-tile .mull-tag{position:absolute;top:-7px;left:-7px;background:var(--gold);color:#1c1a12;font-size:10px;font-weight:800;
+    padding:3px 6px;border-radius:999px;border:2px solid var(--bg);letter-spacing:.03em;}
+  .mode-btns{display:flex;gap:6px;margin-top:12px;background:var(--surface-2);border-radius:10px;padding:4px;}
+  .mode-btn{flex:1;border:none;background:transparent;color:var(--text-dim);font-family:inherit;font-weight:700;font-size:13px;padding:9px 6px;border-radius:7px;cursor:pointer;}
+  .mode-btn.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow);}
+  .mode-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .lb-topar{font-size:12px;color:var(--text-dim);text-align:right;}
+  .attempt-line .mtag{font-size:10px;font-weight:800;color:var(--gold);flex-shrink:0;}
+  .tv-cell.mull .pip{box-shadow:0 0 0 2px var(--gold);}
+  .tv-topar{font-size:.75em;color:var(--text-dim);}
 
   .overlay{
     position:fixed;inset:0;background:rgba(10,9,4,.55);display:flex;align-items:flex-end;justify-content:center;
@@ -256,7 +266,7 @@
         <div class="total-note" id="totalNote"></div>
       </div>
       <div class="progress-row">
-        <span>Holes played: <strong class="tnum" id="playedCount">0</strong> / 10</span>
+        <span>Holes played: <strong class="tnum" id="playedCount">0</strong> / 18 &middot; Mulligans left: <strong class="tnum" id="mullCount">2</strong></span>
         <button class="undo-btn" id="undoBtn" disabled>Undo last entry</button>
       </div>
     </div>
@@ -290,6 +300,10 @@
     <div class="sheet">
       <h2 id="sheetHoleName">Hole</h2>
       <div class="target-line" id="sheetTarget">Target: 0</div>
+      <div class="mode-btns" id="sheetModes" hidden>
+        <button class="mode-btn active" data-mode="fix">Fix my entry</button>
+        <button class="mode-btn" data-mode="mull">Use a mulligan</button>
+      </div>
       <div class="note" id="sheetEditNote" hidden></div>
       <div class="ball-btns">
         <button class="ball-btn" data-ball="1">Hit it on Ball 1 <span class="strokes-pill">1</span></button>
@@ -325,27 +339,41 @@
   var CURRENT_EVENT_ID = null;
   var CURRENT_EVENT_LABEL = 'Live';
 
+  // Dec 12, 2026 course: all 18 machines on the X-Golf floor.
+  // Holes 14-18 are new since the Sept practice round; their targets are first guesses.
   var HOLES = [
     {n:1, name:"Cyclopes", target:200000, label:"200K"},
     {n:2, name:"Wheel of Fortune", target:9000000, label:"9M"},
-    {n:3, name:"Star Wars: Fall of the Empire", target:50000000, label:"50M"},
-    {n:4, name:"Star Wars", target:325000000, label:"325M"},
-    {n:5, name:"SeaWitch", target:400000, label:"400K"},
-    {n:6, name:"Beatles", target:2000000, label:"2M"},
-    {n:7, name:"Joker Poker", target:100000, label:"100K"},
-    {n:8, name:"Medieval Madness", target:12000000, label:"12M"},
-    {n:9, name:"Pokemon", target:25000000, label:"25M"},
-    {n:10, name:"John Wick", target:25000000, label:"25M"},
-    {n:11, name:"Venom", target:55000000, label:"55M"},
-    {n:12, name:"Guardians of the Galaxy", target:25000000, label:"25M"},
-    {n:13, name:"Metallica", target:24000000, label:"24M"},
-    {n:14, name:"Ali", target:300000, label:"300K"},
-    {n:15, name:"NBA Fast Break", target:75, label:"75"},
-    {n:16, name:"Game of Thrones", target:50000000, label:"50M"},
-    {n:17, name:"Mustang", target:60000, label:"60K"}
+    {n:3, name:"SeaWitch", target:400000, label:"400K"},
+    {n:4, name:"Beatles", target:2000000, label:"2M"},
+    {n:5, name:"Joker Poker", target:100000, label:"100K"},
+    {n:6, name:"Medieval Madness", target:12000000, label:"12M"},
+    {n:7, name:"John Wick", target:25000000, label:"25M"},
+    {n:8, name:"Guardians of the Galaxy", target:25000000, label:"25M"},
+    {n:9, name:"Metallica", target:24000000, label:"24M"},
+    {n:10, name:"Ali", target:300000, label:"300K"},
+    {n:11, name:"NBA Fast Break", target:75, label:"75"},
+    {n:12, name:"Game of Thrones", target:50000000, label:"50M"},
+    {n:13, name:"Mustang", target:60000, label:"60K"},
+    {n:14, name:"Black Knight: Sword of Rage", target:40000000, label:"40M"},
+    {n:15, name:"Dune", target:50000000, label:"50M"},
+    {n:16, name:"Transformers", target:20000000, label:"20M"},
+    {n:17, name:"Uncanny X-Men", target:75000000, label:"75M"},
+    {n:18, name:"Walking Dead", target:40000000, label:"40M"}
   ];
-  var MAX_ATTEMPTS = 10, BEST_N = 9;
-  var RULES_TEXT = 'Hit the target on ball 1, 2, or 3 — that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4–8) are looked up automatically. Play any 10 of the 17 holes — each hole once, no replays. Your worst hole is dropped; the best 9 of your 10 count toward your total.';
+  // The Sept 19 practice round used a 17-hole layout; keep it so History lines up.
+  var HOLES_SEPT_2026 = [
+    {n:1, name:"Cyclopes"}, {n:2, name:"Wheel of Fortune"}, {n:3, name:"Star Wars: Fall of the Empire"},
+    {n:4, name:"Star Wars"}, {n:5, name:"SeaWitch"}, {n:6, name:"Beatles"}, {n:7, name:"Joker Poker"},
+    {n:8, name:"Medieval Madness"}, {n:9, name:"Pokemon"}, {n:10, name:"John Wick"}, {n:11, name:"Venom"},
+    {n:12, name:"Guardians of the Galaxy"}, {n:13, name:"Metallica"}, {n:14, name:"Ali"},
+    {n:15, name:"NBA Fast Break"}, {n:16, name:"Game of Thrones"}, {n:17, name:"Mustang"}
+  ];
+  function holesForEvent(eventId){
+    return eventId === 'evt_practice_20260919' ? HOLES_SEPT_2026 : HOLES;
+  }
+  var MAX_MULLIGANS = 2, PAR = 3;
+  var RULES_TEXT = 'Hit the target on ball 1, 2, or 3 — that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4–8) are looked up automatically. Play all 18 holes. You get 2 mulligans: replay any 2 different holes, and the replay score replaces your first one, better or worse. Par is 3 per hole (54 total). Lowest total wins.';
 
   function strokeRanges(target){
     var b4 = Math.round(target*4/5), b3 = Math.round(target*3/5), b2 = Math.round(target*2/5), b1 = Math.round(target*1/5);
@@ -376,20 +404,34 @@
   var adminMode = /admin/i.test(window.location.hash);
   function attemptScoreLabel(a){ return a.method === 'ball' ? ('Ball ' + a.ball) : fmtNum(a.rawScore); }
   function playerKey(name){ return name.trim().toLowerCase(); }
-  function bestTotal(attempts){
-    var sorted = attempts.slice().sort(function(a,b){ return a.strokes - b.strokes; });
-    var counted = sorted.slice(0, Math.min(BEST_N, sorted.length));
+  // Work out which entry counts on each hole. A mulligan entry replaces the
+  // first one; if a hole somehow has two plain entries, the newest counts.
+  function scoreRound(attempts){
+    var byHole = {};
+    attempts.forEach(function(a){
+      var cur = byHole[a.hole];
+      if (!cur) { byHole[a.hole] = a; return; }
+      if (!!a.mulligan !== !!cur.mulligan) { if (a.mulligan) byHole[a.hole] = a; return; }
+      if (a.ts > cur.ts) byHole[a.hole] = a;
+    });
+    var counted = Object.keys(byHole).map(function(k){ return byHole[k]; });
+    var total = counted.reduce(function(s,a){ return s + a.strokes; }, 0);
     return {
-      total: counted.reduce(function(s,a){ return s + a.strokes; }, 0),
-      thru: attempts.length,
-      countedN: counted.length,
-      countedIds: counted.map(function(a){ return a.id; })
+      total: total,
+      thru: counted.length,
+      toPar: total - PAR * counted.length,
+      byHole: byHole,
+      countedIds: counted.map(function(a){ return a.id; }),
+      mulligansUsed: attempts.filter(function(a){ return a.mulligan; }).length
     };
   }
+  function fmtPar(n){ return n === 0 ? 'E' : (n > 0 ? '+' + n : String(n)); }
+  function rankPlayers(a, b){ return a.res.toPar - b.res.toPar || b.res.thru - a.res.thru || a.name.localeCompare(b.name); }
 
   var allAttempts = [];
   var currentHole = null;
   var currentEditId = null;
+  var sheetMode = 'new';
 
   var nameInput = document.getElementById('nameInput');
   var nameSelect = document.getElementById('nameSelect');
@@ -459,17 +501,17 @@
 
   function renderScoreTab(){
     var mine = myAttempts();
-    document.getElementById('playedCount').textContent = mine.length;
+    var res = scoreRound(mine);
+    document.getElementById('playedCount').textContent = res.thru;
+    document.getElementById('mullCount').textContent = Math.max(0, MAX_MULLIGANS - res.mulligansUsed);
     document.getElementById('undoBtn').disabled = mine.length === 0;
 
     var totalRow = document.getElementById('totalRow');
     if (mine.length > 0) {
-      var res = bestTotal(mine);
       totalRow.style.display = 'flex';
       document.getElementById('totalValue').textContent = res.total;
-      document.getElementById('totalNote').textContent = mine.length > BEST_N ?
-        ('best ' + BEST_N + ' of ' + mine.length + ' holes') :
-        ('thru ' + mine.length + ' hole' + (mine.length === 1 ? '' : 's'));
+      document.getElementById('totalNote').textContent =
+        fmtPar(res.toPar) + ' to par · thru ' + res.thru + ' hole' + (res.thru === 1 ? '' : 's');
     } else {
       totalRow.style.display = 'none';
     }
@@ -477,47 +519,75 @@
     var grid = document.getElementById('holeGrid');
     grid.innerHTML = '';
     var nameReady = playerKey(nameInput.value || '').length > 0 && CURRENT_EVENT_ID !== null;
-    var atCap = mine.length >= MAX_ATTEMPTS;
 
     HOLES.forEach(function(h){
-      var attemptsHere = mine.filter(function(a){ return a.hole === h.n; });
+      var a = res.byHole[h.n];
       var btn = document.createElement('button');
-      btn.className = 'hole-tile' + (attemptsHere.length ? ' done' : '');
-      btn.disabled = !nameReady || (attemptsHere.length === 0 && atCap);
-      var best = null;
-      if (attemptsHere.length) {
-        best = attemptsHere.slice().sort(function(a,b){ return a.strokes - b.strokes; })[0];
-      }
-      var scoreLine = best ? (best.method === 'ball' ? ('Ball ' + best.ball + ' hit target') : ('Score: ' + fmtNum(best.rawScore))) : ('Target ' + h.label);
+      btn.className = 'hole-tile' + (a ? ' done' : '');
+      btn.disabled = !nameReady;
+      var scoreLine = a ? (a.method === 'ball' ? ('Ball ' + a.ball + ' hit target') : ('Score: ' + fmtNum(a.rawScore))) : ('Target ' + h.label);
       btn.innerHTML =
+        (a && a.mulligan ? '<div class="mull-tag">MULL</div>' : '') +
         '<div class="hn tnum">' + h.n + '</div>' +
         '<div class="mname">' + h.name + '</div>' +
         '<div class="mtarget">' + scoreLine + '</div>' +
-        (attemptsHere.length ? '<div class="badge">' + best.strokes + '</div>' : '');
+        (a ? '<div class="badge">' + a.strokes + '</div>' : '');
       btn.addEventListener('click', function(){ openSheet(h); });
       grid.appendChild(btn);
     });
   }
 
+  // Sheet modes: 'new' (first time on a hole), 'fix' (correct the entry that
+  // counts), 'mull' (replay the hole; saves a second entry that replaces it).
+  function setSheetMode(mode){
+    sheetMode = mode;
+    var mine = myAttempts();
+    var res = scoreRound(mine);
+    var counted = res.byHole[currentHole.n];
+    document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.mode === mode); });
+    var note = document.getElementById('sheetEditNote');
+    if (mode === 'fix') {
+      currentEditId = counted.id;
+      note.textContent = 'Fixing your ' + (counted.mulligan ? 'mulligan ' : '') + 'entry (currently ' + attemptScoreLabel(counted) + ' → ' + counted.strokes + ' strokes). Saving below replaces it. This does not use a mulligan.';
+    } else if (mode === 'mull') {
+      currentEditId = null;
+      var left = MAX_MULLIGANS - res.mulligansUsed;
+      note.textContent = 'Mulligan: replay this hole. Your new score replaces ' + counted.strokes + ' strokes, even if it\'s worse. Uses 1 of your ' + left + ' remaining.';
+    }
+  }
+
   function openSheet(hole){
-    var mine = myAttempts().filter(function(a){ return a.hole === hole.n; });
     currentHole = hole;
-    currentEditId = mine.length ? mine[0].id : null;
+    currentEditId = null;
     document.getElementById('sheetHoleName').textContent = hole.n + '. ' + hole.name;
     document.getElementById('sheetTarget').textContent = 'Target: ' + fmtNum(hole.target);
     document.getElementById('missScore').value = '';
-    var editNote = document.getElementById('sheetEditNote');
-    if (currentEditId) {
-      editNote.hidden = false;
-      editNote.textContent = 'Correcting your existing entry (currently ' + attemptScoreLabel(mine[0]) + ' → ' + mine[0].strokes + ' strokes). Saving below will replace it.';
+    var res = scoreRound(myAttempts());
+    var counted = res.byHole[hole.n];
+    var modes = document.getElementById('sheetModes');
+    var note = document.getElementById('sheetEditNote');
+    if (counted) {
+      modes.hidden = false;
+      note.hidden = false;
+      var mullBtn = modes.querySelector('[data-mode="mull"]');
+      var mullOk = !counted.mulligan && res.mulligansUsed < MAX_MULLIGANS;
+      mullBtn.disabled = !mullOk;
+      mullBtn.textContent = counted.mulligan ? 'Mulligan used here' :
+        (mullOk ? 'Use a mulligan (' + (MAX_MULLIGANS - res.mulligansUsed) + ' left)' : 'No mulligans left');
+      setSheetMode('fix');
     } else {
-      editNote.hidden = true;
+      sheetMode = 'new';
+      modes.hidden = true;
+      note.hidden = true;
     }
     document.getElementById('overlay').style.display = 'flex';
   }
-  function closeSheet(){ document.getElementById('overlay').style.display = 'none'; currentHole = null; currentEditId = null; }
+  function closeSheet(){ document.getElementById('overlay').style.display = 'none'; currentHole = null; currentEditId = null; sheetMode = 'new'; }
   document.getElementById('sheetClose').addEventListener('click', closeSheet);
   document.getElementById('overlay').addEventListener('click', function(e){ if (e.target.id === 'overlay') closeSheet(); });
+  document.querySelectorAll('.mode-btn').forEach(function(b){
+    b.addEventListener('click', function(){ if (!b.disabled) setSheetMode(b.dataset.mode); });
+  });
 
   function setConnNote(msg, isErr){
     var el = document.getElementById('connNote');
@@ -535,10 +605,15 @@
       return;
     }
     var mine = myAttempts();
+    var res = scoreRound(mine);
     var editId = currentEditId;
+    var isMull = sheetMode === 'mull';
+    var editing = editId ? mine.find(function(a){ return a.id === editId; }) : null;
     if (!editId) {
-      if (mine.length >= MAX_ATTEMPTS) { closeSheet(); return; }
-      if (mine.some(function(a){ return a.hole === currentHole.n; })) { closeSheet(); return; }
+      var here = mine.filter(function(a){ return a.hole === currentHole.n; });
+      if (isMull) {
+        if (here.length !== 1 || here[0].mulligan || res.mulligansUsed >= MAX_MULLIGANS) { closeSheet(); return; }
+      } else if (here.length) { closeSheet(); return; }
     }
     var data = {
       playerKey: playerKey(name),
@@ -553,6 +628,7 @@
       ts: Date.now()
     };
     if (extra) Object.assign(data, extra);
+    if (isMull || (editing && editing.mulligan)) data.mulligan = true;
     closeSheet();
     var op = editId ? db.collection('attempts').doc(editId).set(data) : db.collection('attempts').add(data);
     op.catch(function(err){
@@ -589,10 +665,10 @@
     });
     var players = Object.keys(byPlayer).map(function(k){
       var p = byPlayer[k];
-      var res = bestTotal(p.attempts);
+      var res = scoreRound(p.attempts);
       return {key:k, name:p.name, attempts:p.attempts, res:res};
     });
-    players.sort(function(a,b){ return a.res.total - b.res.total || b.res.thru - a.res.thru; });
+    players.sort(rankPlayers);
 
     var list = document.getElementById('lbList');
     if (!players.length){
@@ -603,13 +679,14 @@
     players.forEach(function(p, i){
       var row = document.createElement('div');
       row.className = 'lb-row';
-      var sortedAttempts = p.attempts.slice().sort(function(a,b){ return a.strokes - b.strokes; });
+      var sortedAttempts = p.attempts.slice().sort(function(a,b){ return a.hole - b.hole || a.ts - b.ts; });
       var canDelete = adminMode || p.key === playerKey(nameInput.value || '');
       var lines = sortedAttempts.map(function(a){
         var dropped = p.res.countedIds.indexOf(a.id) === -1;
         var ace = a.strokes === 1;
         return '<div class="attempt-line' + (dropped ? ' dropped' : '') + (ace ? ' ace' : '') + '">' +
-          '<span class="an">' + esc(a.holeName) + '</span>' +
+          '<span class="an">' + esc(a.hole) + '. ' + esc(a.holeName) + '</span>' +
+          (a.mulligan ? '<span class="mtag">MULL</span>' : '') +
           '<span class="araw tnum">' + esc(attemptScoreLabel(a)) + '</span>' +
           '<span class="as tnum">' + (ace ? '★ ' : '') + esc(a.strokes) + '</span>' +
           (canDelete ? '<button class="del-x" data-id="' + esc(a.id) + '" title="Remove entry">&times;</button>' : '') +
@@ -618,8 +695,9 @@
       row.innerHTML =
         '<div class="lb-top">' +
           '<div class="lb-rank">' + (i+1) + '</div>' +
-          '<div><div class="lb-name">' + esc(p.name) + '</div><div class="lb-thru">thru ' + p.res.thru + (p.res.thru > BEST_N ? ' (best 9 counted)' : '') + '</div></div>' +
-          '<div class="lb-total tnum">' + p.res.total + '</div>' +
+          '<div style="flex:1;min-width:0;"><div class="lb-name">' + esc(p.name) + '</div><div class="lb-thru">thru ' + p.res.thru +
+            (p.res.mulligansUsed ? ' · ' + p.res.mulligansUsed + ' mulligan' + (p.res.mulligansUsed === 1 ? '' : 's') : '') + '</div></div>' +
+          '<div><div class="lb-total tnum">' + p.res.total + '</div><div class="lb-topar">' + fmtPar(p.res.toPar) + '</div></div>' +
         '</div>' +
         '<div class="lb-detail">' + lines + '</div>';
       row.querySelector('.lb-top').addEventListener('click', function(){
@@ -646,7 +724,8 @@
     });
   }
 
-  function buildBoardHtml(attemptsList){
+  function buildBoardHtml(attemptsList, holes){
+    holes = holes || HOLES;
     var byPlayer = {};
     attemptsList.forEach(function(a){
       if (!byPlayer[a.playerKey]) byPlayer[a.playerKey] = {name: a.playerName, attempts: []};
@@ -655,27 +734,23 @@
     });
     var players = Object.keys(byPlayer).map(function(k){
       var p = byPlayer[k];
-      var res = bestTotal(p.attempts);
+      var res = scoreRound(p.attempts);
       return {name:p.name, attempts:p.attempts, res:res};
     });
     if (!players.length) return '';
-    players.sort(function(a,b){ return a.res.total - b.res.total || b.res.thru - a.res.thru; });
+    players.sort(rankPlayers);
 
     var head = '<th class="th-rank"></th><th class="th-player">Player</th><th class="th-thru">Thru</th>' +
-      HOLES.map(function(h){ return '<th>' + h.n + '</th>'; }).join('') +
+      holes.map(function(h){ return '<th>' + h.n + '</th>'; }).join('') +
       '<th class="th-total">Total</th>';
 
     var rows = players.map(function(p, i){
-      var byHole = {};
-      p.attempts.forEach(function(a){
-        if (!byHole[a.hole] || a.strokes < byHole[a.hole].strokes) byHole[a.hole] = a;
-      });
-      var cells = HOLES.map(function(h){
+      var byHole = p.res.byHole;
+      var cells = holes.map(function(h){
         var a = byHole[h.n];
         if (!a) return '<td class="tv-cell">&mdash;</td>';
         var tier = a.strokes === 1 ? 'ace' : a.strokes <= 3 ? 'hit' : a.strokes <= 6 ? 'fair' : 'poor';
-        var dropped = p.res.countedIds.indexOf(a.id) === -1;
-        return '<td class="tv-cell played ' + tier + (dropped ? ' dropped' : '') + '">' +
+        return '<td class="tv-cell played ' + tier + (a.mulligan ? ' mull' : '') + '">' +
           '<span class="pip">' + a.strokes + '</span></td>';
       }).join('');
       return '<tr>' +
@@ -683,14 +758,14 @@
         '<td class="tv-name">' + esc(p.name) + '</td>' +
         '<td class="tv-thru-cell">' + p.res.thru + '</td>' +
         cells +
-        '<td><span class="tv-total-val">' + p.res.total + '</span></td>' +
+        '<td><span class="tv-total-val">' + p.res.total + '</span> <span class="tv-topar">' + fmtPar(p.res.toPar) + '</span></td>' +
       '</tr>';
     }).join('');
 
     return '<table class="tv-board"><colgroup><col class="col-rank">' +
       '<col class="col-player">' +
       '<col class="col-thru">' +
-      HOLES.map(function(){ return '<col class="col-hole">'; }).join('') +
+      holes.map(function(){ return '<col class="col-hole">'; }).join('') +
       '<col class="col-total"></colgroup>' +
       '<thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>';
   }
@@ -728,7 +803,7 @@
   function renderHistoryBoard(eventId){
     var ev = historyEvents.find(function(e){ return e.id === eventId; });
     var wrap = document.getElementById('historyBoardWrap');
-    wrap.innerHTML = ev ? (buildBoardHtml(ev.attempts) || '<div class="empty-note">No scores in this event.</div>') : '';
+    wrap.innerHTML = ev ? (buildBoardHtml(ev.attempts, holesForEvent(ev.id)) || '<div class="empty-note">No scores in this event.</div>') : '';
   }
   document.getElementById('historyEventSelect').addEventListener('change', function(){
     renderHistoryBoard(this.value);
