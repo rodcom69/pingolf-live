@@ -209,8 +209,6 @@
   .attempt-line.ace .as{color:var(--gold);font-weight:700;text-shadow:0 0 8px rgba(184,134,47,.5);}
   .attempt-line.ace .an{color:var(--gold);font-weight:700;}
   .attempt-line.dropped{text-decoration:line-through;opacity:.5;}
-  .del-x{margin-left:auto;background:none;border:none;color:var(--bad);font-size:15px;cursor:pointer;padding:2px 6px;}
-  .del-x.armed{font-size:12px;font-weight:700;border:1px solid var(--bad);border-radius:6px;}
   .empty-note{color:var(--text-dim);font-size:14px;text-align:center;padding:30px 10px;}
 
   details.rules{margin-top:22px;background:var(--surface-2);border-radius:10px;padding:10px 14px;}
@@ -301,7 +299,7 @@
       </div>
       <div class="progress-row">
         <span>Holes <strong class="tnum" id="playedCount">0</strong>/18 &middot; Mulligans left <strong class="tnum" id="mullCount">2</strong></span>
-        <button class="undo-btn" id="undoBtn" disabled>Undo last entry</button>
+        <button class="undo-btn" id="undoBtn" disabled>Undo</button>
       </div>
     </div>
 
@@ -360,121 +358,14 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="course.js"></script>
 
 <script>
 (function(){
-  var firebaseConfig = {
-    apiKey: "AIzaSyAOL7_VvRNi_qkP3Ldocgatwxbpfk9X5l0",
-    authDomain: "pingolf-95ba1.firebaseapp.com",
-    projectId: "pingolf-95ba1",
-    storageBucket: "pingolf-95ba1.firebasestorage.app",
-    messagingSenderId: "883244078388",
-    appId: "1:883244078388:web:c124ecf833196aec4b8161"
-  };
   firebase.initializeApp(firebaseConfig);
   var db = firebase.firestore();
   var CURRENT_EVENT_ID = null;
   var CURRENT_EVENT_LABEL = 'Live';
-
-  // Dec 12, 2026 course: all 18 machines, numbered in X-Golf walking order.
-  // Black Knight, Dune, Walking Dead, X-Men and Transformers are new; their targets are first guesses.
-  var HOLES = [
-    {n:1, name:"Black Knight: Sword of Rage", target:40000000, label:"40M"},
-    {n:2, name:"Cyclopes", target:200000, label:"200K"},
-    {n:3, name:"Wheel of Fortune", target:9000000, label:"9M"},
-    {n:4, name:"Dune", target:50000000, label:"50M"},
-    {n:5, name:"Walking Dead", target:40000000, label:"40M"},
-    {n:6, name:"SeaWitch", target:400000, label:"400K"},
-    {n:7, name:"Beatles", target:2000000, label:"2M"},
-    {n:8, name:"Joker Poker", target:100000, label:"100K"},
-    {n:9, name:"Medieval Madness", target:12000000, label:"12M"},
-    {n:10, name:"Uncanny X-Men", target:75000000, label:"75M"},
-    {n:11, name:"Transformers", target:100000000, label:"100M"},
-    {n:12, name:"John Wick", target:25000000, label:"25M"},
-    {n:13, name:"Guardians of the Galaxy", target:25000000, label:"25M"},
-    {n:14, name:"Metallica", target:24000000, label:"24M"},
-    {n:15, name:"Ali", target:300000, label:"300K"},
-    {n:16, name:"NBA Fast Break", target:75, label:"75"},
-    {n:17, name:"Game of Thrones", target:50000000, label:"50M"},
-    {n:18, name:"Mustang", target:60000, label:"60K"}
-  ];
-  // The Sept 19 practice round used a 17-hole layout; keep it so History lines up.
-  var HOLES_SEPT_2026 = [
-    {n:1, name:"Cyclopes"}, {n:2, name:"Wheel of Fortune"}, {n:3, name:"Star Wars: Fall of the Empire"},
-    {n:4, name:"Star Wars"}, {n:5, name:"SeaWitch"}, {n:6, name:"Beatles"}, {n:7, name:"Joker Poker"},
-    {n:8, name:"Medieval Madness"}, {n:9, name:"Pokemon"}, {n:10, name:"John Wick"}, {n:11, name:"Venom"},
-    {n:12, name:"Guardians of the Galaxy"}, {n:13, name:"Metallica"}, {n:14, name:"Ali"},
-    {n:15, name:"NBA Fast Break"}, {n:16, name:"Game of Thrones"}, {n:17, name:"Mustang"}
-  ];
-  function holeImg(h){ return 'img/h' + (h.n < 10 ? '0' : '') + h.n + '.jpg'; }
-  function holesForEvent(eventId){
-    return eventId === 'evt_practice_20260919' ? HOLES_SEPT_2026 : HOLES;
-  }
-  var MAX_MULLIGANS = 2, PAR = 3;
-  var RULES_TEXT = 'Hit the target on ball 1, 2, or 3 \u2014 that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4\u20138) are looked up automatically. Play all 18 holes. Once all 18 are done, you get 2 mulligans: pick any game, play it again, and enter the score. It replaces that hole on your card only if it\'s better. Each mulligan must be a different game. Par is 3 per hole (54 total). Lowest total wins.';
-
-  function strokeRanges(target){
-    var b4 = Math.round(target*4/5), b3 = Math.round(target*3/5), b2 = Math.round(target*2/5), b1 = Math.round(target*1/5);
-    return [
-      {s:4, lo:b4, hi:target-1},
-      {s:5, lo:b3, hi:b4-1},
-      {s:6, lo:b2, hi:b3-1},
-      {s:7, lo:b1, hi:b2-1},
-      {s:8, lo:0, hi:b1-1}
-    ];
-  }
-  function chartStrokes(target, score){
-    if (score >= target) return 3;
-    if (score >= target*4/5) return 4;
-    if (score >= target*3/5) return 5;
-    if (score >= target*2/5) return 6;
-    if (score >= target*1/5) return 7;
-    return 8;
-  }
-  function fmtNum(n){ return n.toLocaleString("en-US"); }
-  function esc(v){
-    return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-    });
-  }
-  // Organizer mode (#admin in the URL) shows the delete button on every entry.
-  // This only changes the UI; the Firestore rules are what actually protect data.
-  var adminMode = /admin/i.test(window.location.hash);
-  function attemptScoreLabel(a){ return a.method === 'ball' ? ('Ball ' + a.ball) : fmtNum(a.rawScore); }
-  function playerKey(name){ return name.trim().toLowerCase(); }
-  // Work out which entry counts on each hole. Each hole has one regular entry
-  // (the newest, if a double-tap ever saved two). Mulligans are extra entries,
-  // used in the order played; one replaces its hole only if it took fewer strokes.
-  function scoreRound(attempts){
-    var originals = {};
-    attempts.forEach(function(a){
-      if (a.mulligan) return;
-      if (!originals[a.hole] || a.ts > originals[a.hole].ts) originals[a.hole] = a;
-    });
-    var mulls = attempts.filter(function(a){ return a.mulligan; })
-      .sort(function(a,b){ return a.ts - b.ts; }).slice(0, MAX_MULLIGANS);
-    var byHole = {};
-    Object.keys(originals).forEach(function(k){ byHole[k] = originals[k]; });
-    mulls.forEach(function(m){
-      if (byHole[m.hole] && m.strokes < byHole[m.hole].strokes) byHole[m.hole] = m;
-    });
-    var counted = Object.keys(byHole).map(function(k){ return byHole[k]; });
-    var total = counted.reduce(function(s,a){ return s + a.strokes; }, 0);
-    var thru = Object.keys(originals).length;
-    return {
-      total: total,
-      thru: thru,
-      complete: thru >= HOLES.length,
-      toPar: total - PAR * counted.length,
-      byHole: byHole,
-      originals: originals,
-      mulls: mulls,
-      countedIds: counted.map(function(a){ return a.id; }),
-      mulligansUsed: mulls.length
-    };
-  }
-  function fmtPar(n){ return n === 0 ? 'E' : (n > 0 ? '+' + n : String(n)); }
-  function rankPlayers(a, b){ return a.res.toPar - b.res.toPar || b.res.thru - a.res.thru || a.name.localeCompare(b.name); }
 
   var allAttempts = [];
   var currentHole = null;
@@ -552,7 +443,7 @@
     var res = scoreRound(mine);
     document.getElementById('playedCount').textContent = res.thru;
     document.getElementById('mullCount').textContent = Math.max(0, MAX_MULLIGANS - res.mulligansUsed);
-    document.getElementById('undoBtn').disabled = mine.length === 0;
+    updateUndo();
 
     var totalRow = document.getElementById('totalRow');
     if (mine.length > 0) {
@@ -633,6 +524,17 @@
   document.getElementById('missScore').addEventListener('input', updatePreview);
 
   // Tapping a hole: first entry, or fix the regular entry already there.
+  // Shown when an entry is past the 2-minute window: no buttons, just a note.
+  function lockSheet(a){
+    sheetMode = 'locked';
+    currentEditId = null;
+    var note = document.getElementById('sheetEditNote');
+    note.hidden = false;
+    note.textContent = 'Locked: you entered ' + attemptScoreLabel(a) + ' \u2192 ' + a.strokes + ' strokes. Scores can only be changed within 2 minutes of saving. Ask the organizer if it needs fixing.';
+    document.querySelectorAll('.ball-btn, #missSave').forEach(function(b){ b.disabled = true; });
+    document.getElementById('missScore').disabled = true;
+  }
+
   function openSheet(hole){
     var res = scoreRound(myAttempts());
     var orig = res.originals[hole.n];
@@ -642,10 +544,11 @@
     document.getElementById('missScore').value = '';
     showSheetHole(hole);
     var note = document.getElementById('sheetEditNote');
-    if (orig) {
+    if (orig && !canStillChange(orig)) {
+      lockSheet(orig);
+    } else if (orig) {
       note.hidden = false;
-      note.textContent = 'Fixing your entry (currently ' + attemptScoreLabel(orig) + ' \u2192 ' + orig.strokes + ' strokes). Saving below replaces it.' +
-        (res.byHole[hole.n] !== orig ? ' Your mulligan on this hole still counts while it\'s better.' : '');
+      note.textContent = 'Fixing your entry (currently ' + attemptScoreLabel(orig) + ' \u2192 ' + orig.strokes + ' strokes). Saving below replaces it. You can change it for 2 minutes after saving.';
     } else {
       note.hidden = true;
     }
@@ -671,7 +574,10 @@
     note.hidden = false;
     note.textContent = existing ? 'Fixing this mulligan entry. It replaces the hole only if it\'s better than your card.' :
       'Pick the game you replayed, then enter how it went. It replaces that hole only if it\'s better.';
-    if (existing) { showSheetHole(HOLES.find(function(h){ return h.n === existing.hole; })); }
+    if (existing) {
+      showSheetHole(HOLES.find(function(h){ return h.n === existing.hole; }));
+      if (!canStillChange(existing)) { document.getElementById('sheetGameWrap').hidden = true; lockSheet(existing); document.getElementById('overlay').style.display = 'flex'; return; }
+    }
     else {
       currentHole = null;
       document.getElementById('sheetArt').hidden = true;
@@ -700,6 +606,7 @@
     document.getElementById('overlay').style.display = 'none';
     currentHole = null; currentEditId = null; sheetMode = 'new';
     document.querySelectorAll('.ball-btn, #missSave').forEach(function(b){ b.disabled = false; });
+    document.getElementById('missScore').disabled = false;
   }
   document.getElementById('sheetClose').addEventListener('click', closeSheet);
   document.getElementById('overlay').addEventListener('click', function(e){ if (e.target.id === 'overlay') closeSheet(); });
@@ -722,6 +629,13 @@
     var mine = myAttempts();
     var res = scoreRound(mine);
     var editId = currentEditId;
+    if (sheetMode === 'locked') { closeSheet(); return; }
+    var editing = editId ? mine.find(function(a){ return a.id === editId; }) : null;
+    if (editId && (!editing || !canStillChange(editing))) {
+      closeSheet();
+      setConnNote('That score is locked now (more than 2 minutes old). Ask the organizer to fix it.', true);
+      return;
+    }
     var isMull = sheetMode === 'mull';
     if (isMull) {
       var otherMulls = res.mulls.filter(function(m){ return m.id !== editId; });
@@ -742,6 +656,7 @@
     };
     if (extra) Object.assign(data, extra);
     if (isMull) data.mulligan = true;
+    if (editing) data.ts = editing.ts;
     closeSheet();
     var op = editId ? db.collection('attempts').doc(editId).set(data) : db.collection('attempts').add(data);
     op.catch(function(err){
@@ -761,12 +676,18 @@
     submitAttempt(strokes, 'chart', {rawScore: val});
   });
 
+  function lastUndoable(){
+    var mine = myAttempts().filter(function(a){ return !a.void; }).sort(function(a,b){ return b.ts - a.ts; });
+    return mine.length && canStillChange(mine[0]) ? mine[0] : null;
+  }
+  function updateUndo(){ document.getElementById('undoBtn').disabled = !lastUndoable(); }
+  setInterval(updateUndo, 5000);
   document.getElementById('undoBtn').addEventListener('click', function(){
-    var mine = myAttempts();
-    if (!mine.length) return;
-    mine.sort(function(a,b){ return b.ts - a.ts; });
-    var last = mine[0];
-    db.collection('attempts').doc(last.id).delete().catch(function(){});
+    var last = lastUndoable();
+    if (!last) { updateUndo(); return; }
+    db.collection('attempts').doc(last.id).delete().catch(function(err){
+      setConnNote('Could not undo (' + err.message + ').', true);
+    });
   });
 
   function renderLeaderboard(){
@@ -793,7 +714,6 @@
       var row = document.createElement('div');
       row.className = 'lb-row';
       var sortedAttempts = p.attempts.slice().sort(function(a,b){ return a.hole - b.hole || a.ts - b.ts; });
-      var canDelete = adminMode || p.key === playerKey(nameInput.value || '');
       var lines = sortedAttempts.map(function(a){
         var dropped = p.res.countedIds.indexOf(a.id) === -1;
         var ace = a.strokes === 1;
@@ -802,7 +722,6 @@
           (a.mulligan ? '<span class="mtag">MULL</span>' : '') +
           '<span class="araw tnum">' + esc(attemptScoreLabel(a)) + '</span>' +
           '<span class="as tnum">' + (ace ? '★ ' : '') + esc(a.strokes) + '</span>' +
-          (canDelete ? '<button class="del-x" data-id="' + esc(a.id) + '" title="Remove entry">&times;</button>' : '') +
           '</div>';
       }).join('');
       row.innerHTML =
@@ -815,23 +734,6 @@
         '<div class="lb-detail">' + lines + '</div>';
       row.querySelector('.lb-top').addEventListener('click', function(){
         row.querySelector('.lb-detail').classList.toggle('open');
-      });
-      row.querySelectorAll('.del-x').forEach(function(x){
-        x.addEventListener('click', function(e){
-          e.stopPropagation();
-          if (!x.classList.contains('armed')) {
-            // First tap only arms the button; a second tap within 4s deletes.
-            x.classList.add('armed');
-            x.textContent = 'Delete?';
-            setTimeout(function(){
-              if (x.isConnected) { x.classList.remove('armed'); x.innerHTML = '&times;'; }
-            }, 4000);
-            return;
-          }
-          db.collection('attempts').doc(x.dataset.id).delete().catch(function(err){
-            setConnNote('Could not remove that entry (' + err.message + ').', true);
-          });
-        });
       });
       list.appendChild(row);
     });
@@ -898,6 +800,7 @@
       var byEvent = {};
       snap.docs.forEach(function(d){
         var a = d.data();
+        if (a.void) return;
         var key = a.eventId || 'unknown';
         if (!byEvent[key]) byEvent[key] = {id: key, label: a.eventLabel || key, minTs: a.ts, attempts: []};
         if (a.ts < byEvent[key].minTs) byEvent[key].minTs = a.ts;
@@ -964,7 +867,7 @@
         var data = d.data() || {};
         data.id = d.id;
         return data;
-      });
+      }).filter(function(a){ return !a.void; });
       renderAll();
     }, function(err){
       setConnNote('Connection lost (' + err.message + '). Scores you already entered are safe; reload to retry.', true);

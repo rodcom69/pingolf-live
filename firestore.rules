@@ -1,11 +1,14 @@
 rules_version = '2';
 
 // Pingolf Live. Paste into Firebase console > Firestore Database > Rules > Publish.
-// There are no logins, so these rules can't tell players apart. What they do:
-//  - scores can only be written to the CURRENT event (meta/current.eventId),
-//    so past events can't be edited or deleted from the app
+// There are no logins. What these rules do:
+//  - players add scores to the CURRENT event (meta/current.eventId) only
+//  - a player can fix or undo an entry for 2 minutes after saving it; then it's locked
+//  - the organizer page (admin.html) can change anything, but every change must come
+//    with a one-time unlock doc carrying the admin PIN. The PIN lives in secrets/admin,
+//    which no client can read; the rules compare it here.
 //  - every score must have a sane shape (hole 1-18, strokes 1-8, short name)
-//  - meta/current (which event is live) can only be changed from the console
+//  - meta (which event is live) can only be changed from the console
 //  - everything else is closed
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -13,11 +16,14 @@ service cloud.firestore {
     function currentEventId() {
       return get(/databases/$(database)/documents/meta/current).data.eventId;
     }
+    function nowMs() {
+      return request.time.toMillis();
+    }
 
-    function isValidAttempt(d) {
+    function hasValidShape(d) {
       return d.keys().hasOnly(['playerKey', 'playerName', 'hole', 'holeName', 'target',
                                'strokes', 'method', 'eventId', 'eventLabel', 'ts',
-                               'ball', 'rawScore', 'mulligan'])
+                               'ball', 'rawScore', 'mulligan', 'void', 'unlockId', 'editedByAdmin'])
         && d.playerName is string && d.playerName.size() > 0 && d.playerName.size() <= 40
         && d.playerKey is string && d.playerKey.size() > 0 && d.playerKey.size() <= 40
         && d.hole is int && d.hole >= 1 && d.hole <= 18
@@ -25,7 +31,26 @@ service cloud.firestore {
         && d.method in ['ball', 'chart']
         && d.ts is int
         && (!('mulligan' in d) || d.mulligan == true)
+        && (!('void' in d) || d.void is bool)
+        && d.eventId is string;
+    }
+
+    // A player write: current event, no organizer-only fields.
+    function isPlayerWrite(d) {
+      return hasValidShape(d)
+        && !('void' in d) && !('unlockId' in d) && !('editedByAdmin' in d)
         && d.eventId == currentEventId();
+    }
+
+    // An organizer write: the same batch created adminUnlock/{unlockId} with the right PIN.
+    function isAdminWrite(d) {
+      return hasValidShape(d)
+        && d.unlockId is string
+        && getAfter(/databases/$(database)/documents/adminUnlock/$(d.unlockId)).data.at == request.time;
+    }
+
+    function inEditWindow(d) {
+      return nowMs() - d.ts < 120000;
     }
 
     match /meta/{docId} {
@@ -35,10 +60,27 @@ service cloud.firestore {
 
     match /attempts/{attemptId} {
       allow read: if true;
-      allow create: if isValidAttempt(request.resource.data);
-      allow update: if resource.data.eventId == currentEventId()
-                    && isValidAttempt(request.resource.data);
-      allow delete: if resource.data.eventId == currentEventId();
+      allow create: if (isPlayerWrite(request.resource.data)
+                        && request.resource.data.ts > nowMs() - 120000
+                        && request.resource.data.ts < nowMs() + 120000)
+                    || isAdminWrite(request.resource.data);
+      allow update: if (isPlayerWrite(request.resource.data)
+                        && resource.data.eventId == currentEventId()
+                        && !('editedByAdmin' in resource.data)
+                        && request.resource.data.ts == resource.data.ts
+                        && inEditWindow(resource.data))
+                    || isAdminWrite(request.resource.data);
+      allow delete: if resource.data.eventId == currentEventId()
+                    && !('editedByAdmin' in resource.data)
+                    && inEditWindow(resource.data);
+    }
+
+    // One doc per organizer change. Write-only: the PIN in it can't be read back.
+    match /adminUnlock/{unlockId} {
+      allow create: if request.resource.data.keys().hasOnly(['pin', 'at'])
+                    && request.resource.data.at == request.time
+                    && request.resource.data.pin == get(/databases/$(database)/documents/secrets/admin).data.pin;
+      allow read, update, delete: if false;
     }
 
     match /{document=**} {

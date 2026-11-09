@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Pingolf Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Teko:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f1e6; --surface:#ffffff; --surface-2:#efe9d8; --text:#1c1a12; --text-dim:#6b6450; --border:#ddd3b8;
+    --accent:#136b3e; --accent-ink:#ffffff; --gold:#b8862f; --bad:#b3261e; --shadow:0 1px 2px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark; --bg:#141309; --surface:#1e1c11; --surface-2:#2a2717; --text:#f2eddd; --text-dim:#a89f84;
+      --border:#3a361f; --accent:#3fae6f; --accent-ink:#0d1a10; --gold:#e0ac3f; --bad:#ef7877; --shadow:none;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark; --bg:#141309; --surface:#1e1c11; --surface-2:#2a2717; --text:#f2eddd; --text-dim:#a89f84;
+    --border:#3a361f; --accent:#3fae6f; --accent-ink:#0d1a10; --gold:#e0ac3f; --bad:#ef7877; --shadow:none;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 "Inter",system-ui,-apple-system,sans-serif;-webkit-tap-highlight-color:transparent;}
+  .wrap{max-width:720px;margin:0 auto;padding:0 12px calc(40px + env(safe-area-inset-bottom,0px));}
+  header{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:3px solid var(--gold);padding:12px;}
+  header .inner{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  h1,h2{font-family:"Teko",Impact,sans-serif;font-weight:600;margin:0;line-height:1;}
+  h1{font-size:28px;flex:1;}
+  h2{font-size:24px;}
+  .dim{color:var(--text-dim);}
+  .small{font-size:12.5px;}
+  button{font-family:inherit;cursor:pointer;}
+  .btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 12px;font-size:14px;font-weight:600;}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);}
+  .btn.danger{color:var(--bad);border-color:var(--bad);background:transparent;}
+  .btn.sm{padding:5px 9px;font-size:12.5px;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  input,select{width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:16px;}
+  label.fl{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:0 0 6px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow);margin-top:12px;}
+  .row{display:flex;gap:8px;align-items:center;}
+  .status{font-size:13px;margin-top:10px;min-height:18px;}
+  .status.err{color:var(--bad);}
+  .status.ok{color:var(--accent);}
+
+  .player{margin-top:10px;}
+  .p-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .p-rank{font-family:"Teko",sans-serif;font-size:24px;color:var(--gold);width:26px;flex-shrink:0;}
+  .p-name{font-weight:700;font-size:16px;}
+  .p-total{font-family:"Teko",sans-serif;font-size:28px;text-align:right;line-height:1;}
+  .p-body{display:none;margin-top:12px;border-top:1px dashed var(--border);padding-top:10px;}
+  .player.open .p-body{display:block;}
+  .p-actions{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+  .hole-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
+  .hole-row:last-child{border-bottom:none;}
+  .hole-row img{width:44px;height:28px;object-fit:cover;border-radius:5px;flex-shrink:0;background:#000;}
+  .hole-row .hn{width:22px;text-align:right;font-family:"Teko",sans-serif;font-size:19px;color:var(--text-dim);flex-shrink:0;}
+  .hole-row .nm{flex:1;min-width:0;}
+  .hole-row .nm b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hole-row .st{font-family:"Teko",sans-serif;font-size:22px;width:26px;text-align:center;flex-shrink:0;}
+  .hole-row.void .nm, .hole-row.void .st{text-decoration:line-through;opacity:.5;}
+  .hole-row.notcounted .st{opacity:.45;}
+  .tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.03em;padding:1px 6px;border-radius:999px;margin-left:4px;vertical-align:1px;}
+  .tag.mull{background:var(--gold);color:#1c1a12;}
+  .tag.adm{background:var(--surface-2);color:var(--text-dim);}
+  .tag.void{background:var(--bad);color:#fff;}
+  .sect{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:14px 0 4px;}
+  .empty{color:var(--text-dim);text-align:center;padding:30px 10px;}
+
+  .overlay{position:fixed;inset:0;background:rgba(10,9,4,.55);display:none;align-items:flex-end;justify-content:center;z-index:20;}
+  .overlay.show{display:flex;}
+  .sheet{background:var(--surface);width:100%;max-width:640px;border-radius:16px 16px 0 0;padding:16px 16px calc(22px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow-y:auto;}
+  .sheet img.art{display:block;width:100%;max-height:140px;object-fit:cover;border-radius:10px;margin-bottom:10px;background:#000;}
+  .balls{display:flex;gap:8px;margin-top:12px;}
+  .balls .btn{flex:1;padding:12px 6px;}
+  .preview{font-size:13px;color:var(--text-dim);margin-top:6px;min-height:18px;}
+  .preview b{color:var(--text);}
+  [hidden]{display:none !important;}
+</style>
+</head>
+<body>
+<header><div class="inner">
+  <h1>PINGOLF ADMIN</h1>
+  <a class="btn sm" href="./" style="text-decoration:none;">Scorecard</a>
+  <button class="btn sm" id="lockBtn" hidden>Lock</button>
+</div></header>
+
+<div class="wrap">
+  <!-- PIN gate -->
+  <div class="card" id="gate">
+    <h2>Organizer sign-in</h2>
+    <p class="dim small" style="margin:6px 0 12px;">Enter the admin PIN. It stays unlocked in this browser tab until you lock it or close the tab.</p>
+    <form id="pinForm" class="row">
+      <input type="password" id="pinInput" inputmode="numeric" autocomplete="current-password" placeholder="PIN">
+      <button class="btn primary" type="submit">Unlock</button>
+    </form>
+    <div class="status" id="gateStatus"></div>
+  </div>
+
+  <!-- Main -->
+  <div id="main" hidden>
+    <div class="card">
+      <label class="fl" for="eventSelect">Event</label>
+      <select id="eventSelect"></select>
+      <div class="status" id="status"></div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div style="flex:1;"><b>Add a player's score</b><div class="dim small">For someone who isn't on the board yet</div></div>
+        <button class="btn sm" id="newPlayerBtn">Add</button>
+      </div>
+    </div>
+    <div id="players"></div>
+  </div>
+</div>
+
+<!-- Edit / add sheet -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <img class="art" id="sheetArt" alt="" hidden>
+    <h2 id="sheetTitle">Edit</h2>
+    <div class="dim small" id="sheetSub"></div>
+    <div id="nameWrap" style="margin-top:12px;" hidden>
+      <label class="fl" for="sheetName">Player name</label>
+      <input type="text" id="sheetName" autocomplete="off">
+    </div>
+    <div id="holeWrap" style="margin-top:12px;" hidden>
+      <label class="fl" for="sheetHole">Hole</label>
+      <select id="sheetHole"></select>
+    </div>
+    <div class="balls">
+      <button class="btn primary" data-ball="1">Ball 1 · 1</button>
+      <button class="btn primary" data-ball="2">Ball 2 · 2</button>
+      <button class="btn primary" data-ball="3">Ball 3 · 3</button>
+    </div>
+    <div class="dim small" style="margin:14px 0 6px;">or, short of target, the final score:</div>
+    <div class="row">
+      <input type="number" id="sheetScore" inputmode="numeric" placeholder="Final score">
+      <button class="btn" id="sheetSave" style="flex-shrink:0;">Save</button>
+    </div>
+    <div class="preview" id="sheetPreview"></div>
+    <button class="btn" id="sheetCancel" style="width:100%;margin-top:16px;">Cancel</button>
+  </div>
+</div>
+
+<!-- Rename sheet -->
+<div class="overlay" id="renameOverlay">
+  <div class="sheet">
+    <h2>Rename player</h2>
+    <p class="dim small">Changes the name on all of this player's scores in this event. Use an existing name to merge two spellings into one player.</p>
+    <input type="text" id="renameInput" autocomplete="off">
+    <div class="row" style="margin-top:14px;">
+      <button class="btn" id="renameCancel" style="flex:1;">Cancel</button>
+      <button class="btn primary" id="renameSave" style="flex:1;">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="course.js"></script>
+<script>
+(function(){
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.firestore();
+  var FV = firebase.firestore.FieldValue;
+
+  var pin = null;
+  var currentEvent = null;      // {id, label}
+  var liveEventId = null;
+  var attempts = [];            // all docs in the selected event, including voided
+  var unsub = null;
+  var openPlayers = {};
+  var sheet = null;             // what the edit sheet is doing
+
+  function $(id){ return document.getElementById(id); }
+  function setStatus(msg, kind){ var el = $('status'); el.textContent = msg || ''; el.className = 'status' + (kind ? ' ' + kind : ''); }
+
+  // Every organizer change goes in one batch with a fresh adminUnlock doc that
+  // carries the PIN. The database rules check the PIN and that the unlock doc
+  // was written in the same request; the PIN itself can never be read back.
+  function adminBatch(build){
+    var batch = db.batch();
+    var unlockRef = db.collection('adminUnlock').doc();
+    batch.set(unlockRef, {pin: pin, at: FV.serverTimestamp()});
+    build(batch, {unlockId: unlockRef.id, editedByAdmin: true});
+    return batch.commit();
+  }
+
+  // ---------- PIN gate ----------
+  function tryPin(p){
+    pin = p;
+    return adminBatch(function(){}).then(function(){
+      try { sessionStorage.setItem('pingolf_admin_pin', p); } catch(e){}
+      $('gate').hidden = true; $('main').hidden = false; $('lockBtn').hidden = false;
+      loadEvents();
+    }).catch(function(err){
+      pin = null;
+      try { sessionStorage.removeItem('pingolf_admin_pin'); } catch(e){}
+      $('gateStatus').className = 'status err';
+      $('gateStatus').textContent = /permission/i.test(err.message) ? 'Wrong PIN.' : ('Could not check the PIN (' + err.message + ').');
+    });
+  }
+  $('pinForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var p = $('pinInput').value.trim();
+    if (!p) return;
+    $('gateStatus').className = 'status'; $('gateStatus').textContent = 'Checking…';
+    tryPin(p);
+  });
+  $('lockBtn').addEventListener('click', function(){
+    try { sessionStorage.removeItem('pingolf_admin_pin'); } catch(e){}
+    location.reload();
+  });
+  try { var saved = sessionStorage.getItem('pingolf_admin_pin'); if (saved) tryPin(saved); } catch(e){}
+
+  // ---------- Events ----------
+  function loadEvents(){
+    Promise.all([db.collection('meta').doc('current').get(), db.collection('attempts').get()]).then(function(r){
+      var m = r[0].exists ? r[0].data() : {};
+      liveEventId = m.eventId || null;
+      var evs = {};
+      if (liveEventId) evs[liveEventId] = {id: liveEventId, label: m.eventLabel || liveEventId, ts: Infinity};
+      r[1].docs.forEach(function(d){
+        var a = d.data();
+        if (!a.eventId) return;
+        if (!evs[a.eventId]) evs[a.eventId] = {id: a.eventId, label: a.eventLabel || a.eventId, ts: a.ts};
+        evs[a.eventId].ts = Math.min(evs[a.eventId].ts, a.ts);
+      });
+      var list = Object.keys(evs).map(function(k){ return evs[k]; }).sort(function(a,b){ return b.ts - a.ts; });
+      $('eventSelect').innerHTML = list.map(function(e){
+        return '<option value="' + esc(e.id) + '">' + esc(e.label) + (e.id === liveEventId ? ' (live)' : '') + '</option>';
+      }).join('');
+      $('eventSelect').onchange = function(){ selectEvent(list.find(function(e){ return e.id === this.value; }, this)); };
+      if (list.length) selectEvent(list[0]);
+    });
+  }
+  function selectEvent(ev){
+    currentEvent = ev;
+    if (unsub) unsub();
+    unsub = db.collection('attempts').where('eventId', '==', ev.id).onSnapshot(function(snap){
+      attempts = snap.docs.map(function(d){ var a = d.data(); a.id = d.id; return a; });
+      render();
+    }, function(err){ setStatus('Lost connection (' + err.message + ')', 'err'); });
+  }
+  function eventHoles(){ return holesForEvent(currentEvent.id); }
+  function holeInfo(n){ return eventHoles().find(function(h){ return h.n === n; }) || {n:n, name:'Hole ' + n}; }
+
+  // ---------- Board ----------
+  function render(){
+    var byPlayer = {};
+    attempts.forEach(function(a){
+      if (!byPlayer[a.playerKey]) byPlayer[a.playerKey] = {key: a.playerKey, name: a.playerName, all: []};
+      byPlayer[a.playerKey].all.push(a);
+    });
+    var players = Object.keys(byPlayer).map(function(k){
+      var p = byPlayer[k];
+      p.live = p.all.filter(function(a){ return !a.void; });
+      p.res = scoreRound(p.live);
+      p.removed = p.live.length === 0;
+      return p;
+    });
+    players.sort(function(a,b){ return (a.removed - b.removed) || rankPlayers(a,b); });
+    var wrap = $('players');
+    if (!players.length) { wrap.innerHTML = '<div class="card empty">No scores in this event yet.</div>'; return; }
+    wrap.innerHTML = '';
+    var rank = 0;
+    players.forEach(function(p){
+      if (!p.removed) rank++;
+      var el = document.createElement('div');
+      el.className = 'card player' + (openPlayers[p.key] ? ' open' : '');
+      el.innerHTML =
+        '<div class="p-top">' +
+          '<div class="p-rank">' + (p.removed ? '–' : rank) + '</div>' +
+          '<div style="flex:1;min-width:0;"><div class="p-name">' + esc(p.name) + (p.removed ? ' <span class="tag void">REMOVED</span>' : '') + '</div>' +
+            '<div class="dim small">thru ' + p.res.thru + ' · ' + p.res.mulligansUsed + ' mulligan' + (p.res.mulligansUsed === 1 ? '' : 's') + '</div></div>' +
+          '<div><div class="p-total">' + (p.removed ? '' : p.res.total) + '</div><div class="dim small" style="text-align:right;">' + (p.removed ? '' : fmtPar(p.res.toPar)) + '</div></div>' +
+        '</div>' +
+        '<div class="p-body"></div>';
+      el.querySelector('.p-top').addEventListener('click', function(){
+        openPlayers[p.key] = !openPlayers[p.key];
+        el.classList.toggle('open');
+        if (openPlayers[p.key]) fillBody(el.querySelector('.p-body'), p);
+      });
+      if (openPlayers[p.key]) fillBody(el.querySelector('.p-body'), p);
+      wrap.appendChild(el);
+    });
+  }
+
+  function entryLine(a, counted){
+    var h = holeInfo(a.hole);
+    return '<div class="hole-row' + (a.void ? ' void' : '') + (!a.void && !counted ? ' notcounted' : '') + '">' +
+      '<div class="hn">' + a.hole + '</div>' +
+      '<img src="' + holeImg(h) + '" alt="">' +
+      '<div class="nm"><b>' + esc(a.holeName || h.name) + '</b><span class="dim">' + esc(attemptScoreLabel(a)) + '</span>' +
+        (a.mulligan ? '<span class="tag mull">MULL</span>' : '') +
+        (a.editedByAdmin ? '<span class="tag adm">EDITED</span>' : '') +
+        (a.void ? '<span class="tag void">VOID</span>' : '') +
+        (!a.void && !counted && a.mulligan ? '<span class="dim small"> · not better</span>' : '') +
+      '</div>' +
+      '<div class="st">' + a.strokes + '</div>' +
+      (a.void ? '<button class="btn sm" data-act="restore" data-id="' + esc(a.id) + '">Restore</button>'
+              : '<button class="btn sm" data-act="edit" data-id="' + esc(a.id) + '">Edit</button>' +
+                '<button class="btn sm danger" data-act="void" data-id="' + esc(a.id) + '">Void</button>') +
+    '</div>';
+  }
+
+  function fillBody(body, p){
+    var counted = {};
+    p.res.countedIds.forEach(function(id){ counted[id] = true; });
+    var html = '<div class="p-actions">' +
+      '<button class="btn sm" data-act="rename">Rename</button>' +
+      (p.removed ? '<button class="btn sm" data-act="restoreAll">Restore player</button>'
+                 : '<button class="btn sm danger" data-act="removeAll">Remove player</button>') +
+      '</div><div class="sect">Holes</div>';
+    eventHoles().forEach(function(h){
+      var regs = p.all.filter(function(a){ return a.hole === h.n && !a.mulligan; }).sort(function(a,b){ return a.ts - b.ts; });
+      if (!regs.length) {
+        html += '<div class="hole-row"><div class="hn">' + h.n + '</div><img src="' + holeImg(h) + '" alt="">' +
+          '<div class="nm"><b>' + esc(h.name) + '</b><span class="dim">not played</span></div><div class="st"></div>' +
+          (h.target ? '<button class="btn sm" data-act="add" data-hole="' + h.n + '">Add</button>' : '') + '</div>';
+      } else {
+        regs.forEach(function(a){ html += entryLine(a, counted[a.id]); });
+      }
+    });
+    var mulls = p.all.filter(function(a){ return a.mulligan; }).sort(function(a,b){ return a.ts - b.ts; });
+    html += '<div class="sect">Mulligans</div>';
+    mulls.forEach(function(a){ html += entryLine(a, counted[a.id]); });
+    var liveMulls = mulls.filter(function(a){ return !a.void; }).length;
+    if (liveMulls < MAX_MULLIGANS) html += '<div class="hole-row"><div class="nm dim">' + (MAX_MULLIGANS - liveMulls) + ' left</div><button class="btn sm" data-act="addMull">Add mulligan</button></div>';
+    body.innerHTML = html;
+
+    body.querySelectorAll('[data-act]').forEach(function(b){
+      b.addEventListener('click', function(e){
+        e.stopPropagation();
+        var act = b.dataset.act, a = attempts.find(function(x){ return x.id === b.dataset.id; });
+        if (act === 'edit') openSheet({mode:'edit', player:p, entry:a});
+        else if (act === 'add') openSheet({mode:'add', player:p, hole:parseInt(b.dataset.hole, 10)});
+        else if (act === 'addMull') openSheet({mode:'addMull', player:p});
+        else if (act === 'void') confirmTap(b, 'Void?', function(){ setVoid([a], true); });
+        else if (act === 'restore') setVoid([a], false);
+        else if (act === 'removeAll') confirmTap(b, 'Remove all?', function(){ setVoid(p.all.filter(function(x){ return !x.void; }), true); });
+        else if (act === 'restoreAll') setVoid(p.all.filter(function(x){ return x.void; }), false);
+        else if (act === 'rename') openRename(p);
+      });
+    });
+  }
+
+  // First tap arms the button, a second tap within 4s does it.
+  function confirmTap(btn, label, fn){
+    if (btn.dataset.armed) { fn(); return; }
+    var old = btn.textContent;
+    btn.dataset.armed = '1'; btn.textContent = label;
+    setTimeout(function(){ if (btn.isConnected) { delete btn.dataset.armed; btn.textContent = old; } }, 4000);
+  }
+
+  function done(msg){ return function(){ setStatus(msg, 'ok'); }; }
+  function failed(err){ setStatus('Not saved: ' + (/permission/i.test(err.message) ? 'the PIN was rejected or the entry is invalid.' : err.message), 'err'); }
+
+  function setVoid(list, on){
+    if (!list.length) return;
+    adminBatch(function(batch, stamp){
+      list.forEach(function(a){
+        batch.update(db.collection('attempts').doc(a.id), Object.assign({void: on ? true : FV.delete()}, stamp));
+      });
+    }).then(done(on ? 'Voided.' : 'Restored.')).catch(failed);
+  }
+
+  // ---------- Rename ----------
+  var renaming = null;
+  function openRename(p){ renaming = p; $('renameInput').value = p.name; $('renameOverlay').classList.add('show'); }
+  $('renameCancel').addEventListener('click', function(){ $('renameOverlay').classList.remove('show'); });
+  $('renameSave').addEventListener('click', function(){
+    var name = $('renameInput').value.trim().slice(0, 40);
+    if (!name || !renaming) return;
+    var p = renaming;
+    $('renameOverlay').classList.remove('show');
+    adminBatch(function(batch, stamp){
+      p.all.forEach(function(a){
+        batch.update(db.collection('attempts').doc(a.id), Object.assign({playerName: name, playerKey: playerKey(name)}, stamp));
+      });
+    }).then(done('Renamed to ' + name + '.')).catch(failed);
+  });
+
+  // ---------- Edit / add sheet ----------
+  function sheetHole(){
+    if (sheet.mode === 'edit') return holeInfo(sheet.entry.hole);
+    var n = parseInt($('sheetHole').value, 10);
+    return n ? holeInfo(n) : null;
+  }
+  function sheetTarget(){
+    if (sheet.mode === 'edit' && sheet.entry.target) return sheet.entry.target;
+    var h = sheetHole(); return h ? h.target : null;
+  }
+  function refreshSheet(){
+    var h = sheetHole(), t = sheetTarget();
+    $('sheetArt').hidden = !h;
+    if (h) $('sheetArt').src = holeImg(h);
+    var label = sheet.mode === 'edit' ? 'Edit' : (sheet.mode === 'addMull' ? 'Add mulligan' : 'Add score');
+    $('sheetTitle').textContent = label + (h ? ': ' + h.n + '. ' + h.name : '');
+    $('sheetSub').textContent = (sheet.player ? sheet.player.name + ' · ' : '') + (t ? 'Target ' + fmtNum(t) : 'Choose a hole');
+    var ok = !!t;
+    document.querySelectorAll('.balls .btn, #sheetSave').forEach(function(b){ b.disabled = !ok; });
+    updatePreview();
+  }
+  function updatePreview(){
+    var t = sheetTarget(), v = parseInt($('sheetScore').value, 10);
+    $('sheetPreview').innerHTML = (t && !isNaN(v) && v >= 0) ? ('<b>' + fmtNum(v) + '</b> = ' + chartStrokes(t, v) + ' strokes') : '';
+  }
+  function openSheet(s){
+    sheet = s;
+    $('sheetScore').value = '';
+    $('nameWrap').hidden = s.mode !== 'newPlayer';
+    $('sheetName').value = '';
+    var holeSel = $('sheetHole');
+    if (s.mode === 'edit') {
+      $('holeWrap').hidden = true;
+    } else {
+      $('holeWrap').hidden = false;
+      var have = {};
+      if (s.player) s.player.all.forEach(function(a){ if (!a.void) have[(a.mulligan ? 'm' : 'r') + a.hole] = true; });
+      var opts = eventHoles().filter(function(h){
+        if (!h.target) return false;
+        if (s.mode === 'addMull') return !have['m' + h.n];
+        return !have['r' + h.n];
+      });
+      holeSel.innerHTML = '<option value="">Choose a hole…</option>' + opts.map(function(h){
+        return '<option value="' + h.n + '">' + h.n + '. ' + esc(h.name) + '</option>';
+      }).join('');
+      holeSel.value = s.hole ? String(s.hole) : '';
+      if (s.mode === 'newPlayer') s.mode = 'add';
+    }
+    if (s.mode === 'add' && !s.player) s.mode = 'newPlayerAdd';
+    refreshSheet();
+    $('overlay').classList.add('show');
+  }
+  function closeSheet(){ $('overlay').classList.remove('show'); sheet = null; }
+  $('sheetCancel').addEventListener('click', closeSheet);
+  $('overlay').addEventListener('click', function(e){ if (e.target.id === 'overlay') closeSheet(); });
+  $('sheetHole').addEventListener('change', refreshSheet);
+  $('sheetScore').addEventListener('input', updatePreview);
+  $('newPlayerBtn').addEventListener('click', function(){ openSheet({mode:'newPlayer', player:null}); });
+
+  function saveSheet(fields){
+    var s = sheet, h = sheetHole(), t = sheetTarget();
+    if (!h || !t) return;
+    var ref, data;
+    if (s.mode === 'edit') {
+      ref = db.collection('attempts').doc(s.entry.id);
+      data = Object.assign({}, fields, fields.method === 'ball' ? {rawScore: FV.delete()} : {ball: FV.delete()});
+    } else {
+      var name = s.player ? s.player.name : $('sheetName').value.trim().slice(0, 40);
+      if (!name) { $('sheetName').focus(); return; }
+      ref = db.collection('attempts').doc();
+      data = Object.assign({
+        playerKey: playerKey(name), playerName: name, hole: h.n, holeName: h.name, target: t,
+        eventId: currentEvent.id, eventLabel: currentEvent.label, ts: Date.now()
+      }, fields);
+      if (s.mode === 'addMull') data.mulligan = true;
+    }
+    closeSheet();
+    adminBatch(function(batch, stamp){
+      if (s.mode === 'edit') batch.update(ref, Object.assign(data, stamp));
+      else batch.set(ref, Object.assign(data, stamp));
+    }).then(done('Saved.')).catch(failed);
+  }
+  document.querySelectorAll('.balls .btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      var n = parseInt(b.dataset.ball, 10);
+      saveSheet({strokes: n, method: 'ball', ball: n});
+    });
+  });
+  $('sheetSave').addEventListener('click', function(){
+    var v = parseInt($('sheetScore').value, 10), t = sheetTarget();
+    if (isNaN(v) || v < 0 || !t) return;
+    saveSheet({strokes: chartStrokes(t, v), method: 'chart', rawScore: v});
+  });
+})();
+</script>
+</body>
+</html>
