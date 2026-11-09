@@ -103,12 +103,13 @@
   @media (max-width:420px){.hole-grid{grid-template-columns:repeat(2,1fr);}}
   .hole-tile{
     background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:10px 8px;
-    text-align:center;cursor:pointer;position:relative;box-shadow:var(--shadow);
+    text-align:center;cursor:pointer;position:relative;box-shadow:var(--shadow);color:var(--text);font-family:inherit;
   }
   .hole-tile:disabled{opacity:.45;cursor:not-allowed;}
   .hole-tile .hn{font-family:"Teko",sans-serif;font-size:26px;line-height:1;color:var(--text-dim);}
   .hole-tile .mname{font-size:11.5px;font-weight:600;margin-top:2px;min-height:28px;line-height:1.25;}
-  .hole-tile .mtarget{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .hole-tile .mtarget{font-size:13px;font-weight:800;color:var(--text);margin-top:3px;}
+  .hole-tile.done .mtarget{font-size:11px;font-weight:600;color:var(--text-dim);}
   .hole-tile .badge{
     position:absolute;top:-7px;right:-7px;background:var(--accent);color:var(--accent-ink);
     font-family:"Teko",sans-serif;font-size:17px;min-width:24px;height:24px;border-radius:50%;
@@ -117,10 +118,16 @@
   .hole-tile.done{border-color:var(--accent);}
   .hole-tile .mull-tag{position:absolute;top:-7px;left:-7px;background:var(--gold);color:#1c1a12;font-size:10px;font-weight:800;
     padding:3px 6px;border-radius:999px;border:2px solid var(--bg);letter-spacing:.03em;}
-  .mode-btns{display:flex;gap:6px;margin-top:12px;background:var(--surface-2);border-radius:10px;padding:4px;}
-  .mode-btn{flex:1;border:none;background:transparent;color:var(--text-dim);font-family:inherit;font-weight:700;font-size:13px;padding:9px 6px;border-radius:7px;cursor:pointer;}
-  .mode-btn.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow);}
-  .mode-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .mull-section{display:flex;flex-direction:column;gap:10px;margin-top:18px;}
+  .mull-card{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font-family:inherit;color:var(--text);
+    background:var(--surface);border:1px dashed var(--gold);border-radius:11px;padding:12px 14px;cursor:pointer;box-shadow:var(--shadow);}
+  .mull-card.used{border-style:solid;}
+  .mull-card:disabled{opacity:.5;cursor:not-allowed;border-color:var(--border);}
+  .mull-card .mc-label{font-family:"Teko",sans-serif;font-size:22px;line-height:1;color:var(--gold);flex-shrink:0;width:92px;}
+  .mull-card .mc-body{flex:1;min-width:0;font-size:13px;}
+  .mull-card .mc-body b{display:block;font-size:14px;}
+  .mull-card .mc-sub{color:var(--text-dim);font-size:12px;margin-top:2px;}
+  .mull-card .mc-strokes{font-family:"Teko",sans-serif;font-size:26px;color:var(--accent);flex-shrink:0;}
   .lb-topar{font-size:12px;color:var(--text-dim);text-align:right;}
   .attempt-line .mtag{font-size:10px;font-weight:800;color:var(--gold);flex-shrink:0;}
   .tv-cell.mull .pip{box-shadow:0 0 0 2px var(--gold);}
@@ -135,7 +142,7 @@
     padding:20px 18px 26px;box-shadow:var(--shadow);max-height:88vh;overflow-y:auto;
   }
   .sheet h2{font-size:26px;}
-  .sheet .target-line{color:var(--text-dim);font-size:14px;margin-top:2px;}
+  .sheet .target-line{color:var(--text);font-size:18px;font-weight:800;margin-top:4px;}
   .note{background:var(--surface-2);border-radius:9px;padding:8px 10px;font-size:12.5px;color:var(--text-dim);margin-top:12px;}
   .ball-btns{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
   .ball-btn{
@@ -272,6 +279,7 @@
     </div>
 
     <div class="hole-grid" id="holeGrid"></div>
+    <div class="mull-section" id="mullSection"></div>
 
     <details class="rules">
       <summary>How scoring works</summary>
@@ -300,9 +308,9 @@
     <div class="sheet">
       <h2 id="sheetHoleName">Hole</h2>
       <div class="target-line" id="sheetTarget">Target: 0</div>
-      <div class="mode-btns" id="sheetModes" hidden>
-        <button class="mode-btn active" data-mode="fix">Fix my entry</button>
-        <button class="mode-btn" data-mode="mull">Use a mulligan</button>
+      <div id="sheetGameWrap" hidden style="margin-top:12px;">
+        <label class="field-label" for="sheetGame">Which game are you replaying?</label>
+        <select id="sheetGame"></select>
       </div>
       <div class="note" id="sheetEditNote" hidden></div>
       <div class="ball-btns">
@@ -352,7 +360,7 @@
     {n:8, name:"Joker Poker", target:100000, label:"100K"},
     {n:9, name:"Medieval Madness", target:12000000, label:"12M"},
     {n:10, name:"Uncanny X-Men", target:75000000, label:"75M"},
-    {n:11, name:"Transformers", target:20000000, label:"20M"},
+    {n:11, name:"Transformers", target:100000000, label:"100M"},
     {n:12, name:"John Wick", target:25000000, label:"25M"},
     {n:13, name:"Guardians of the Galaxy", target:25000000, label:"25M"},
     {n:14, name:"Metallica", target:24000000, label:"24M"},
@@ -373,7 +381,7 @@
     return eventId === 'evt_practice_20260919' ? HOLES_SEPT_2026 : HOLES;
   }
   var MAX_MULLIGANS = 2, PAR = 3;
-  var RULES_TEXT = 'Hit the target on ball 1, 2, or 3 — that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4–8) are looked up automatically. Play all 18 holes. You get 2 mulligans: replay any 2 different holes, and the replay score replaces your first one, better or worse. Par is 3 per hole (54 total). Lowest total wins.';
+  var RULES_TEXT = 'Hit the target on ball 1, 2, or 3 \u2014 that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4\u20138) are looked up automatically. Play all 18 holes. Once all 18 are done, you get 2 mulligans: pick any game, play it again, and enter the score. It replaces that hole on your card only if it\'s better. Each mulligan must be a different game. Par is 3 per hole (54 total). Lowest total wins.';
 
   function strokeRanges(target){
     var b4 = Math.round(target*4/5), b3 = Math.round(target*3/5), b2 = Math.round(target*2/5), b1 = Math.round(target*1/5);
@@ -404,25 +412,35 @@
   var adminMode = /admin/i.test(window.location.hash);
   function attemptScoreLabel(a){ return a.method === 'ball' ? ('Ball ' + a.ball) : fmtNum(a.rawScore); }
   function playerKey(name){ return name.trim().toLowerCase(); }
-  // Work out which entry counts on each hole. A mulligan entry replaces the
-  // first one; if a hole somehow has two plain entries, the newest counts.
+  // Work out which entry counts on each hole. Each hole has one regular entry
+  // (the newest, if a double-tap ever saved two). Mulligans are extra entries,
+  // used in the order played; one replaces its hole only if it took fewer strokes.
   function scoreRound(attempts){
-    var byHole = {};
+    var originals = {};
     attempts.forEach(function(a){
-      var cur = byHole[a.hole];
-      if (!cur) { byHole[a.hole] = a; return; }
-      if (!!a.mulligan !== !!cur.mulligan) { if (a.mulligan) byHole[a.hole] = a; return; }
-      if (a.ts > cur.ts) byHole[a.hole] = a;
+      if (a.mulligan) return;
+      if (!originals[a.hole] || a.ts > originals[a.hole].ts) originals[a.hole] = a;
+    });
+    var mulls = attempts.filter(function(a){ return a.mulligan; })
+      .sort(function(a,b){ return a.ts - b.ts; }).slice(0, MAX_MULLIGANS);
+    var byHole = {};
+    Object.keys(originals).forEach(function(k){ byHole[k] = originals[k]; });
+    mulls.forEach(function(m){
+      if (byHole[m.hole] && m.strokes < byHole[m.hole].strokes) byHole[m.hole] = m;
     });
     var counted = Object.keys(byHole).map(function(k){ return byHole[k]; });
     var total = counted.reduce(function(s,a){ return s + a.strokes; }, 0);
+    var thru = Object.keys(originals).length;
     return {
       total: total,
-      thru: counted.length,
+      thru: thru,
+      complete: thru >= HOLES.length,
       toPar: total - PAR * counted.length,
       byHole: byHole,
+      originals: originals,
+      mulls: mulls,
       countedIds: counted.map(function(a){ return a.id; }),
-      mulligansUsed: attempts.filter(function(a){ return a.mulligan; }).length
+      mulligansUsed: mulls.length
     };
   }
   function fmtPar(n){ return n === 0 ? 'E' : (n > 0 ? '+' + n : String(n)); }
@@ -511,7 +529,7 @@
       totalRow.style.display = 'flex';
       document.getElementById('totalValue').textContent = res.total;
       document.getElementById('totalNote').textContent =
-        fmtPar(res.toPar) + ' to par · thru ' + res.thru + ' hole' + (res.thru === 1 ? '' : 's');
+        fmtPar(res.toPar) + ' to par \u00b7 thru ' + res.thru + ' hole' + (res.thru === 1 ? '' : 's');
     } else {
       totalRow.style.display = 'none';
     }
@@ -535,59 +553,110 @@
       btn.addEventListener('click', function(){ openSheet(h); });
       grid.appendChild(btn);
     });
-  }
 
-  // Sheet modes: 'new' (first time on a hole), 'fix' (correct the entry that
-  // counts), 'mull' (replay the hole; saves a second entry that replaces it).
-  function setSheetMode(mode){
-    sheetMode = mode;
-    var mine = myAttempts();
-    var res = scoreRound(mine);
-    var counted = res.byHole[currentHole.n];
-    document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.mode === mode); });
-    var note = document.getElementById('sheetEditNote');
-    if (mode === 'fix') {
-      currentEditId = counted.id;
-      note.textContent = 'Fixing your ' + (counted.mulligan ? 'mulligan ' : '') + 'entry (currently ' + attemptScoreLabel(counted) + ' → ' + counted.strokes + ' strokes). Saving below replaces it. This does not use a mulligan.';
-    } else if (mode === 'mull') {
-      currentEditId = null;
-      var left = MAX_MULLIGANS - res.mulligansUsed;
-      note.textContent = 'Mulligan: replay this hole. Your new score replaces ' + counted.strokes + ' strokes, even if it\'s worse. Uses 1 of your ' + left + ' remaining.';
+    var sec = document.getElementById('mullSection');
+    sec.innerHTML = '';
+    for (var i = 0; i < MAX_MULLIGANS; i++) {
+      (function(slot){
+        var m = res.mulls[slot];
+        var card = document.createElement('button');
+        card.className = 'mull-card' + (m ? ' used' : '');
+        var body, right = '';
+        if (m) {
+          var orig = res.originals[m.hole];
+          var used = res.byHole[m.hole] === m;
+          body = '<b>' + m.hole + '. ' + esc(m.holeName) + '</b><div class="mc-sub">' + esc(attemptScoreLabel(m)) + ' \u00b7 ' +
+            (used ? ('replaced ' + orig.strokes + ' \u2192 ' + m.strokes) : ('not better, kept your ' + (orig ? orig.strokes : '\u2014'))) + '</div>';
+          right = '<div class="mc-strokes">' + m.strokes + '</div>';
+          card.disabled = !nameReady;
+        } else if (res.complete) {
+          body = '<b>Choose a game</b><div class="mc-sub">Replay any game; it counts only if it beats your card</div>';
+          card.disabled = !nameReady;
+        } else {
+          body = '<b>Locked</b><div class="mc-sub">Finish all 18 holes to unlock (' + res.thru + ' / 18 done)</div>';
+          card.disabled = true;
+        }
+        card.innerHTML = '<div class="mc-label">Mulligan ' + (slot + 1) + '</div><div class="mc-body">' + body + '</div>' + right;
+        card.addEventListener('click', function(){ openMulliganSheet(m || null); });
+        sec.appendChild(card);
+      })(i);
     }
   }
 
-  function openSheet(hole){
+  function showSheetHole(hole){
     currentHole = hole;
-    currentEditId = null;
-    document.getElementById('sheetHoleName').textContent = hole.n + '. ' + hole.name;
+    document.getElementById('sheetHoleName').textContent = (sheetMode === 'mull' ? 'Mulligan: ' : '') + hole.n + '. ' + hole.name;
     document.getElementById('sheetTarget').textContent = 'Target: ' + fmtNum(hole.target);
-    document.getElementById('missScore').value = '';
+  }
+
+  // Tapping a hole: first entry, or fix the regular entry already there.
+  function openSheet(hole){
     var res = scoreRound(myAttempts());
-    var counted = res.byHole[hole.n];
-    var modes = document.getElementById('sheetModes');
+    var orig = res.originals[hole.n];
+    sheetMode = orig ? 'fix' : 'new';
+    currentEditId = orig ? orig.id : null;
+    document.getElementById('sheetGameWrap').hidden = true;
+    showSheetHole(hole);
+    document.getElementById('missScore').value = '';
     var note = document.getElementById('sheetEditNote');
-    if (counted) {
-      modes.hidden = false;
+    if (orig) {
       note.hidden = false;
-      var mullBtn = modes.querySelector('[data-mode="mull"]');
-      var mullOk = !counted.mulligan && res.mulligansUsed < MAX_MULLIGANS;
-      mullBtn.disabled = !mullOk;
-      mullBtn.textContent = counted.mulligan ? 'Mulligan used here' :
-        (mullOk ? 'Use a mulligan (' + (MAX_MULLIGANS - res.mulligansUsed) + ' left)' : 'No mulligans left');
-      setSheetMode('fix');
+      note.textContent = 'Fixing your entry (currently ' + attemptScoreLabel(orig) + ' \u2192 ' + orig.strokes + ' strokes). Saving below replaces it.' +
+        (res.byHole[hole.n] !== orig ? ' Your mulligan on this hole still counts while it\'s better.' : '');
     } else {
-      sheetMode = 'new';
-      modes.hidden = true;
       note.hidden = true;
     }
     document.getElementById('overlay').style.display = 'flex';
   }
-  function closeSheet(){ document.getElementById('overlay').style.display = 'none'; currentHole = null; currentEditId = null; sheetMode = 'new'; }
+
+  // Mulligan slot: pick a game (not one the other mulligan used) and enter the score.
+  function openMulliganSheet(existing){
+    var res = scoreRound(myAttempts());
+    if (!existing && (!res.complete || res.mulligansUsed >= MAX_MULLIGANS)) return;
+    sheetMode = 'mull';
+    currentEditId = existing ? existing.id : null;
+    var taken = res.mulls.filter(function(m){ return m !== existing; }).map(function(m){ return m.hole; });
+    var sel = document.getElementById('sheetGame');
+    sel.innerHTML = '<option value="">Select a game\u2026</option>' + HOLES.filter(function(h){ return taken.indexOf(h.n) === -1; }).map(function(h){
+      var o = res.originals[h.n];
+      return '<option value="' + h.n + '">' + h.n + '. ' + esc(h.name) + (o ? ' (now ' + o.strokes + ')' : '') + '</option>';
+    }).join('');
+    sel.value = existing ? String(existing.hole) : '';
+    document.getElementById('sheetGameWrap').hidden = false;
+    document.getElementById('missScore').value = '';
+    var note = document.getElementById('sheetEditNote');
+    note.hidden = false;
+    note.textContent = existing ? 'Fixing this mulligan entry. It replaces the hole only if it\'s better than your card.' :
+      'Pick the game you replayed, then enter how it went. It replaces that hole only if it\'s better.';
+    if (existing) { showSheetHole(HOLES.find(function(h){ return h.n === existing.hole; })); }
+    else {
+      currentHole = null;
+      document.getElementById('sheetHoleName').textContent = 'Mulligan ' + (res.mulligansUsed + 1);
+      document.getElementById('sheetTarget').textContent = 'Choose a game first';
+    }
+    setSheetButtons();
+    document.getElementById('overlay').style.display = 'flex';
+  }
+  function setSheetButtons(){
+    var off = !currentHole;
+    document.querySelectorAll('.ball-btn, #missSave').forEach(function(b){ b.disabled = off; });
+  }
+  document.getElementById('sheetGame').addEventListener('change', function(){
+    var h = HOLES.find(function(x){ return String(x.n) === this.value; }, this);
+    if (h) showSheetHole(h); else {
+      currentHole = null;
+      document.getElementById('sheetTarget').textContent = 'Choose a game first';
+    }
+    setSheetButtons();
+  });
+
+  function closeSheet(){
+    document.getElementById('overlay').style.display = 'none';
+    currentHole = null; currentEditId = null; sheetMode = 'new';
+    document.querySelectorAll('.ball-btn, #missSave').forEach(function(b){ b.disabled = false; });
+  }
   document.getElementById('sheetClose').addEventListener('click', closeSheet);
   document.getElementById('overlay').addEventListener('click', function(e){ if (e.target.id === 'overlay') closeSheet(); });
-  document.querySelectorAll('.mode-btn').forEach(function(b){
-    b.addEventListener('click', function(){ if (!b.disabled) setSheetMode(b.dataset.mode); });
-  });
 
   function setConnNote(msg, isErr){
     var el = document.getElementById('connNote');
@@ -608,13 +677,11 @@
     var res = scoreRound(mine);
     var editId = currentEditId;
     var isMull = sheetMode === 'mull';
-    var editing = editId ? mine.find(function(a){ return a.id === editId; }) : null;
-    if (!editId) {
-      var here = mine.filter(function(a){ return a.hole === currentHole.n; });
-      if (isMull) {
-        if (here.length !== 1 || here[0].mulligan || res.mulligansUsed >= MAX_MULLIGANS) { closeSheet(); return; }
-      } else if (here.length) { closeSheet(); return; }
-    }
+    if (isMull) {
+      var otherMulls = res.mulls.filter(function(m){ return m.id !== editId; });
+      if (!res.complete || otherMulls.length >= MAX_MULLIGANS ||
+          otherMulls.some(function(m){ return m.hole === currentHole.n; })) { closeSheet(); return; }
+    } else if (!editId && res.originals[currentHole.n]) { closeSheet(); return; }
     var data = {
       playerKey: playerKey(name),
       playerName: name,
@@ -628,7 +695,7 @@
       ts: Date.now()
     };
     if (extra) Object.assign(data, extra);
-    if (isMull || (editing && editing.mulligan)) data.mulligan = true;
+    if (isMull) data.mulligan = true;
     closeSheet();
     var op = editId ? db.collection('attempts').doc(editId).set(data) : db.collection('attempts').add(data);
     op.catch(function(err){
