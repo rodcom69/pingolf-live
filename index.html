@@ -339,27 +339,27 @@
   var CURRENT_EVENT_ID = null;
   var CURRENT_EVENT_LABEL = 'Live';
 
-  // Dec 12, 2026 course: all 18 machines on the X-Golf floor.
-  // Holes 14-18 are new since the Sept practice round; their targets are first guesses.
+  // Dec 12, 2026 course: all 18 machines, numbered in X-Golf walking order.
+  // Black Knight, Dune, Walking Dead, X-Men and Transformers are new; their targets are first guesses.
   var HOLES = [
-    {n:1, name:"Cyclopes", target:200000, label:"200K"},
-    {n:2, name:"Wheel of Fortune", target:9000000, label:"9M"},
-    {n:3, name:"SeaWitch", target:400000, label:"400K"},
-    {n:4, name:"Beatles", target:2000000, label:"2M"},
-    {n:5, name:"Joker Poker", target:100000, label:"100K"},
-    {n:6, name:"Medieval Madness", target:12000000, label:"12M"},
-    {n:7, name:"John Wick", target:25000000, label:"25M"},
-    {n:8, name:"Guardians of the Galaxy", target:25000000, label:"25M"},
-    {n:9, name:"Metallica", target:24000000, label:"24M"},
-    {n:10, name:"Ali", target:300000, label:"300K"},
-    {n:11, name:"NBA Fast Break", target:75, label:"75"},
-    {n:12, name:"Game of Thrones", target:50000000, label:"50M"},
-    {n:13, name:"Mustang", target:60000, label:"60K"},
-    {n:14, name:"Black Knight: Sword of Rage", target:40000000, label:"40M"},
-    {n:15, name:"Dune", target:50000000, label:"50M"},
-    {n:16, name:"Transformers", target:20000000, label:"20M"},
-    {n:17, name:"Uncanny X-Men", target:75000000, label:"75M"},
-    {n:18, name:"Walking Dead", target:40000000, label:"40M"}
+    {n:1, name:"Black Knight: Sword of Rage", target:40000000, label:"40M"},
+    {n:2, name:"Cyclopes", target:200000, label:"200K"},
+    {n:3, name:"Wheel of Fortune", target:9000000, label:"9M"},
+    {n:4, name:"Dune", target:50000000, label:"50M"},
+    {n:5, name:"Walking Dead", target:40000000, label:"40M"},
+    {n:6, name:"SeaWitch", target:400000, label:"400K"},
+    {n:7, name:"Beatles", target:2000000, label:"2M"},
+    {n:8, name:"Joker Poker", target:100000, label:"100K"},
+    {n:9, name:"Medieval Madness", target:12000000, label:"12M"},
+    {n:10, name:"Uncanny X-Men", target:75000000, label:"75M"},
+    {n:11, name:"Transformers", target:20000000, label:"20M"},
+    {n:12, name:"John Wick", target:25000000, label:"25M"},
+    {n:13, name:"Guardians of the Galaxy", target:25000000, label:"25M"},
+    {n:14, name:"Metallica", target:24000000, label:"24M"},
+    {n:15, name:"Ali", target:300000, label:"300K"},
+    {n:16, name:"NBA Fast Break", target:75, label:"75"},
+    {n:17, name:"Game of Thrones", target:50000000, label:"50M"},
+    {n:18, name:"Mustang", target:60000, label:"60K"}
   ];
   // The Sept 19 practice round used a 17-hole layout; keep it so History lines up.
   var HOLES_SEPT_2026 = [
