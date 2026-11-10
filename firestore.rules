@@ -6,19 +6,19 @@ rules_version = '2';
 //    playerSecrets/{name}, which no client can read. Every score a player saves
 //    carries a one-time playerUnlock doc with that PIN, so a player can only
 //    add or change scores under their own name.
-//  - players add scores to the CURRENT event (meta/current.eventId) only
+//  - events live in events/{id}; players add scores only to an event whose status is 'open'
 //  - a player can fix or undo an entry for 2 minutes after saving it; then it's locked
 //  - the organizer page (admin.html) can change anything, but every change must come
 //    with a one-time unlock doc carrying the admin PIN. The PIN lives in secrets/admin,
 //    which no client can read; the rules compare it here.
-//  - every score must have a sane shape (hole 1-18, strokes 1-8, short name)
-//  - meta (which event is live) can only be changed from the console
+//  - every score must have a sane shape (hole 1-30, strokes 1-8, short name)
+//  - events can only be created or changed by the organizer page
 //  - everything else is closed
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function currentEventId() {
-      return get(db('meta/current')).data.eventId;
+    function eventOpen(eventId) {
+      return get(db('events/' + eventId)).data.status == 'open';
     }
     function nowMs() {
       return request.time.toMillis();
@@ -30,7 +30,7 @@ service cloud.firestore {
                                'ball', 'rawScore', 'mulligan', 'void', 'unlockId', 'editedByAdmin', 'proof'])
         && validName(d.playerName)
         && d.playerKey is string && d.playerKey.size() > 0 && d.playerKey.size() <= 40
-        && d.hole is int && d.hole >= 1 && d.hole <= 18
+        && d.hole is int && d.hole >= 1 && d.hole <= 30
         && d.strokes is int && d.strokes >= 1 && d.strokes <= 8
         && d.method in ['ball', 'chart']
         && d.ts is int
@@ -63,7 +63,7 @@ service cloud.firestore {
     function isPlayerWrite(d) {
       return hasValidShape(d)
         && !('void' in d) && !('unlockId' in d) && !('editedByAdmin' in d)
-        && d.eventId == currentEventId()
+        && eventOpen(d.eventId)
         && d.proof is string && playerProved(d.proof, d.playerKey);
     }
 
@@ -81,6 +81,19 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['name', 'location', 'date', 'time', 'course', 'status', 'test', 'unlockId'])
+                    && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
+                    && request.resource.data.location is string && request.resource.data.location.size() <= 80
+                    && request.resource.data.date is string && request.resource.data.time is string
+                    && request.resource.data.course is string
+                    && request.resource.data.status in ['upcoming', 'open', 'closed']
+                    && request.resource.data.test is bool
+                    && adminProved(request.resource.data);
+      allow delete: if false;
+    }
+
     match /attempts/{attemptId} {
       allow read: if true;
       allow create: if (isPlayerWrite(request.resource.data)
@@ -88,14 +101,14 @@ service cloud.firestore {
                         && request.resource.data.ts < nowMs() + 120000)
                     || isAdminWrite(request.resource.data);
       allow update: if (isPlayerWrite(request.resource.data)
-                        && resource.data.eventId == currentEventId()
+                        && resource.data.eventId == request.resource.data.eventId
                         && resource.data.playerKey == request.resource.data.playerKey
                         && !('editedByAdmin' in resource.data)
                         && request.resource.data.ts == resource.data.ts
                         && inEditWindow(resource.data))
                     || isAdminWrite(request.resource.data);
       // Undo: the same request creates playerUnlock/del_{attemptId} for the owner.
-      allow delete: if resource.data.eventId == currentEventId()
+      allow delete: if eventOpen(resource.data.eventId)
                     && !('editedByAdmin' in resource.data)
                     && inEditWindow(resource.data)
                     && playerProved('del_' + attemptId, resource.data.playerKey);

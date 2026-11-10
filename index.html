@@ -71,6 +71,10 @@
   .brand-row h1{font-size:34px;line-height:1;color:var(--text);}
   .brand-row .place{font-size:13px;color:var(--text-dim);}
   .sub{font-size:13px;color:var(--text-dim);margin-top:2px;}
+  .event-select{margin-top:8px;padding:8px 10px;font-weight:700;font-size:16px;}
+  .event-note{margin-top:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--gold);background:var(--surface-2);font-size:14px;line-height:1.4;}
+  .event-note b{display:block;font-size:15px;margin-bottom:2px;}
+  body.tv-mode .event-select{display:none;}
 
   .tabs{display:flex;gap:6px;margin-top:14px;background:var(--surface-2);padding:4px;border-radius:10px;}
   .tab-btn{
@@ -184,6 +188,7 @@
     background:var(--accent);color:var(--accent-ink);border:none;border-radius:10px;padding:13px 14px;
     font-family:inherit;font-weight:700;font-size:14.5px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;
   }
+  .ball-btn b{font-size:1.15em;}
   .ball-btn .strokes-pill{font-family:"Teko",sans-serif;font-size:19px;}
   .divider{display:flex;align-items:center;gap:10px;margin:16px 0 10px;color:var(--text-dim);font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
   .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border);}
@@ -279,7 +284,8 @@
       <h1>XGOLF PINGOLF</h1>
       <span class="place">Chester Springs, PA</span>
     </div>
-    <div class="sub" id="eventSub">Loading event&hellip;</div>
+    <select id="eventSelect" class="event-select" aria-label="Event"><option value="">Loading events&hellip;</option></select>
+    <div class="sub" id="eventSub"></div>
     <div class="tabs">
       <button class="tab-btn active" data-tab="score"><span class="long">Enter </span>Score</button>
       <button class="tab-btn" data-tab="board"><span class="long">Leader</span><span class="short">Board</span><span class="long">board</span></button>
@@ -315,6 +321,7 @@
       </div>
     </div>
 
+    <div class="event-note" id="eventNote" hidden></div>
     <div class="hole-grid" id="holeGrid"></div>
     <div class="mull-section" id="mullSection"></div>
 
@@ -336,7 +343,7 @@
   </section>
 
   <section class="panel" id="panel-history">
-    <label class="field-label" for="historyEventSelect">Past events</label>
+    <label class="field-label" for="historyEventSelect">Finished events</label>
     <select id="historyEventSelect"><option value="">Loading&hellip;</option></select>
     <div id="historyBoardWrap" style="overflow-x:auto;margin-top:14px;"></div>
   </section>
@@ -352,9 +359,9 @@
       </div>
       <div class="note" id="sheetEditNote" hidden></div>
       <div class="ball-btns">
-        <button class="ball-btn" data-ball="1">Hit it on Ball 1 <span class="strokes-pill">1</span></button>
-        <button class="ball-btn" data-ball="2">Hit it on Ball 2 <span class="strokes-pill">2</span></button>
-        <button class="ball-btn" data-ball="3">Hit it on Ball 3 <span class="strokes-pill">3</span></button>
+        <button class="ball-btn" data-ball="1"><span>Made target on Ball 1</span><span class="strokes-pill">1</span></button>
+        <button class="ball-btn" data-ball="2"><span>Made target on Ball 2</span><span class="strokes-pill">2</span></button>
+        <button class="ball-btn" data-ball="3"><span>Made target on Ball 3</span><span class="strokes-pill">3</span></button>
       </div>
       <div class="divider">or, short of target</div>
       <div class="miss-row">
@@ -376,8 +383,11 @@
 (function(){
   firebase.initializeApp(firebaseConfig);
   var db = firebase.firestore();
+  var EVENTS = [];               // from the database, newest first
+  var CURRENT_EVENT = null;      // the event this phone is looking at
   var CURRENT_EVENT_ID = null;
-  var CURRENT_EVENT_LABEL = 'Live';
+  var CURRENT_EVENT_LABEL = '';
+  function eventIsOpen(){ return !!CURRENT_EVENT && CURRENT_EVENT.status === 'open'; }
 
   var allAttempts = [];
   var currentHole = null;
@@ -499,14 +509,14 @@
 
     var grid = document.getElementById('holeGrid');
     grid.innerHTML = '';
-    var nameReady = !!me && CURRENT_EVENT_ID !== null;
+    var nameReady = !!me && eventIsOpen();
 
     HOLES.forEach(function(h){
       var a = res.byHole[h.n];
       var btn = document.createElement('button');
       btn.className = 'hole-tile' + (a ? ' done' : '');
       btn.disabled = !nameReady;
-      var scoreLine = a ? (a.method === 'ball' ? ('Ball ' + a.ball + ' hit target') : ('Score: ' + fmtNum(a.rawScore))) : ('Target ' + h.label);
+      var scoreLine = a ? (a.method === 'ball' ? ('Made ' + h.label + ' on ball ' + a.ball) : ('Score: ' + fmtNum(a.rawScore))) : ('Target ' + h.label);
       btn.innerHTML =
         (a && a.mulligan ? '<div class="mull-tag">MULL</div>' : '') +
         '<div class="art"><img src="' + holeImg(h) + '" alt="" loading="lazy"><div class="hn tnum">' + h.n + '</div></div>' +
@@ -548,8 +558,16 @@
     }
   }
 
+  // "Made 9M on Ball 1": the buttons name the hole's actual target.
+  function setBallLabels(hole){
+    document.querySelectorAll('.ball-btn').forEach(function(b){
+      var n = b.dataset.ball;
+      b.innerHTML = '<span>Made ' + (hole ? '<b>' + esc(hole.label) + '</b>' : 'target') + ' on Ball ' + n + '</span><span class="strokes-pill">' + n + '</span>';
+    });
+  }
   function showSheetHole(hole){
     currentHole = hole;
+    setBallLabels(hole);
     document.getElementById('sheetHoleName').textContent = (sheetMode === 'mull' ? 'Mulligan: ' : '') + hole.n + '. ' + hole.name;
     document.getElementById('sheetTarget').textContent = 'Target: ' + fmtNum(hole.target);
     var art = document.getElementById('sheetArt');
@@ -625,6 +643,7 @@
       document.getElementById('sheetArt').hidden = true;
       document.getElementById('scorePreview').textContent = '';
       document.getElementById('sheetHoleName').textContent = 'Mulligan ' + (res.mulligansUsed + 1);
+      setBallLabels(null);
       document.getElementById('sheetTarget').textContent = 'Choose a game first';
     }
     setSheetButtons();
@@ -638,6 +657,7 @@
     var h = HOLES.find(function(x){ return String(x.n) === this.value; }, this);
     if (h) showSheetHole(h); else {
       currentHole = null;
+      setBallLabels(null);
       document.getElementById('sheetArt').hidden = true;
       document.getElementById('sheetTarget').textContent = 'Choose a game first';
     }
@@ -663,9 +683,9 @@
     if (!currentHole) return;
     if (!me) return;
     var name = me.name;
-    if (CURRENT_EVENT_ID === null) {
+    if (!eventIsOpen()) {
       closeSheet();
-      setConnNote('Still connecting to the scoreboard. Your score was not saved; try again in a moment.', true);
+      setConnNote(CURRENT_EVENT ? 'This event isn\'t open for scores right now. Your score was not saved.' : 'Still connecting to the scoreboard. Your score was not saved; try again in a moment.', true);
       return;
     }
     var mine = myAttempts();
@@ -799,7 +819,7 @@
     });
     var players = Object.keys(byPlayer).map(function(k){
       var p = byPlayer[k];
-      var res = scoreRound(p.attempts);
+      var res = scoreRound(p.attempts, holes.length);
       return {name:p.name, attempts:p.attempts, res:res};
     });
     if (!players.length) return '';
@@ -842,34 +862,39 @@
     wrap.innerHTML = html || (tvMode ? '<div class="empty-note">Waiting for the first score&hellip;</div>' : '');
   }
 
-  var historyEvents = null;
+  // History: finished (closed) events from the events list.
+  var historyLoaded = {};
   function loadHistory(){
-    if (historyEvents) return;
-    historyEvents = [];
-    db.collection('attempts').get().then(function(snap){
-      var byEvent = {};
-      snap.docs.forEach(function(d){
-        var a = d.data();
-        if (a.void) return;
-        var key = a.eventId || 'unknown';
-        if (!byEvent[key]) byEvent[key] = {id: key, label: a.eventLabel || key, minTs: a.ts, attempts: []};
-        if (a.ts < byEvent[key].minTs) byEvent[key].minTs = a.ts;
-        byEvent[key].attempts.push(a);
-      });
-      historyEvents = Object.keys(byEvent).map(function(k){ return byEvent[k]; });
-      historyEvents.sort(function(a,b){ return b.minTs - a.minTs; });
-      var sel = document.getElementById('historyEventSelect');
-      if (!historyEvents.length) { sel.innerHTML = '<option value="">No events yet</option>'; return; }
-      sel.innerHTML = historyEvents.map(function(e){
-        return '<option value="' + esc(e.id) + '">' + esc(e.label) + (e.id === CURRENT_EVENT_ID ? ' (current)' : '') + '</option>';
-      }).join('');
-      renderHistoryBoard(historyEvents[0].id);
-    });
+    var sel = document.getElementById('historyEventSelect');
+    var done = EVENTS.filter(function(e){ return e.status === 'closed'; });
+    if (!done.length) {
+      sel.innerHTML = '<option value="">No finished events yet</option>';
+      document.getElementById('historyBoardWrap').innerHTML = '';
+      return;
+    }
+    var keep = sel.value;
+    sel.innerHTML = done.map(function(e){
+      return '<option value="' + esc(e.id) + '">' + esc(eventTitle(e)) + '</option>';
+    }).join('');
+    if (keep && done.some(function(e){ return e.id === keep; })) sel.value = keep;
+    renderHistoryBoard(sel.value);
   }
   function renderHistoryBoard(eventId){
-    var ev = historyEvents.find(function(e){ return e.id === eventId; });
+    var ev = EVENTS.find(function(e){ return e.id === eventId; });
     var wrap = document.getElementById('historyBoardWrap');
-    wrap.innerHTML = ev ? (buildBoardHtml(ev.attempts, holesForEvent(ev.id)) || '<div class="empty-note">No scores in this event.</div>') : '';
+    if (!ev) { wrap.innerHTML = ''; return; }
+    var show = function(list){
+      if (document.getElementById('historyEventSelect').value !== eventId) return;
+      var where = [ev.location, eventWhen(ev)].filter(Boolean).join(' \u00b7 ');
+      wrap.innerHTML = (where ? '<div class="sub" style="margin:8px 0;">' + esc(where) + '</div>' : '') +
+        (buildBoardHtml(list, courseHoles(ev.course)) || '<div class="empty-note">No scores in this event.</div>');
+    };
+    if (historyLoaded[eventId]) { show(historyLoaded[eventId]); return; }
+    wrap.innerHTML = '<div class="empty-note">Loading&hellip;</div>';
+    db.collection('attempts').where('eventId', '==', eventId).get().then(function(snap){
+      historyLoaded[eventId] = snap.docs.map(function(d){ var a = d.data(); a.id = d.id; return a; }).filter(function(a){ return !a.void; });
+      show(historyLoaded[eventId]);
+    }).catch(function(err){ wrap.innerHTML = '<div class="empty-note">Could not load (' + esc(err.message) + ').</div>'; });
   }
   document.getElementById('historyEventSelect').addEventListener('change', function(){
     renderHistoryBoard(this.value);
@@ -888,6 +913,7 @@
     document.getElementById('panel-board').classList.add('active');
   }
 
+  function renderObjectives(){
   document.getElementById('objList').innerHTML = HOLES.map(function(h){
     var ranges = strokeRanges(h.target);
     var rangeHtml = ranges.map(function(r){
@@ -903,14 +929,21 @@
       '<div class="obj-ranges">' + rangeHtml + '</div>' +
       '</div>';
   }).join('');
-  document.getElementById('rulesNoteShort').textContent = RULES_TEXT;
-  document.getElementById('rulesNoteFull').textContent = RULES_TEXT;
+  document.getElementById('rulesNoteShort').textContent = rulesText(HOLES);
+  document.getElementById('rulesNoteFull').textContent = rulesText(HOLES);
+  }
+  renderObjectives();
 
   renderAll();
   setConnNote('Connecting…', false);
 
+  var stopAttempts = null;
   function startAttemptsListener(){
-    db.collection('attempts').where('eventId', '==', CURRENT_EVENT_ID).onSnapshot(function(snap){
+    if (stopAttempts) stopAttempts();
+    allAttempts = [];
+    var forEvent = CURRENT_EVENT_ID;
+    stopAttempts = db.collection('attempts').where('eventId', '==', forEvent).onSnapshot(function(snap){
+      if (forEvent !== CURRENT_EVENT_ID) return;
       setConnNote('', false);
       allAttempts = snap.docs.map(function(d){
         var data = d.data() || {};
@@ -923,28 +956,82 @@
     });
   }
 
-  // Find the current event before allowing any scoring. If the lookup fails
-  // (bad venue wifi), keep retrying rather than guessing an event, so scores
-  // never land somewhere the live board isn't showing.
-  var metaTries = 0;
-  function loadCurrentEvent(){
-    db.collection('meta').doc('current').get().then(function(snap){
-      var m = snap.exists ? snap.data() : {};
-      CURRENT_EVENT_ID = m.eventId || 'default';
-      CURRENT_EVENT_LABEL = m.eventLabel || 'Live';
-      var eventNumber = m.eventNumber ? ('Event ' + m.eventNumber + ' · ') : '';
-      var eventDate = m.eventDate ? (m.eventDate + ' · ') : '';
-      document.getElementById('eventSub').textContent = eventNumber + eventDate + 'lowest total wins';
-      startAttemptsListener();
-      renderAll();
-    }).catch(function(){
-      metaTries++;
-      var wait = Math.min(30, 3 * metaTries);
-      setConnNote("Can't reach the scoreboard. Retrying in " + wait + 's…', true);
-      setTimeout(loadCurrentEvent, wait * 1000);
-    });
+  // ---------- Events ----------
+  // The picker lists open and upcoming events. A link with ?e=<id> (the QR code)
+  // picks that event, including a finished one; otherwise the phone remembers its
+  // last pick, or takes the first open event.
+  var linkedEventId = new URLSearchParams(location.search).get('e');
+  function wantedEventId(){
+    if (linkedEventId) return linkedEventId;
+    try { var saved = localStorage.getItem('pingolf_event'); if (saved) return saved; } catch(e){}
+    return null;
   }
-  loadCurrentEvent();
+  function pickerEvents(){
+    return EVENTS.filter(function(e){ return e.status !== 'closed' || (CURRENT_EVENT && e.id === CURRENT_EVENT.id); });
+  }
+  function renderEventPicker(){
+    var sel = document.getElementById('eventSelect');
+    var list = pickerEvents();
+    if (!list.length) { sel.innerHTML = '<option value="">No events yet</option>'; return; }
+    sel.innerHTML = list.map(function(e){
+      var tag = e.status === 'upcoming' ? ' (upcoming)' : e.status === 'closed' ? ' (finished)' : '';
+      return '<option value="' + esc(e.id) + '">' + esc(eventTitle(e) + tag) + '</option>';
+    }).join('');
+    if (CURRENT_EVENT) sel.value = CURRENT_EVENT.id;
+  }
+  function showEventInfo(){
+    var ev = CURRENT_EVENT;
+    document.getElementById('eventSub').textContent = ev ? [ev.location, eventWhen(ev), 'lowest total wins'].filter(Boolean).join(' \u00b7 ') : '';
+    var note = document.getElementById('eventNote');
+    if (!ev || ev.status === 'open') { note.hidden = true; return; }
+    note.hidden = false;
+    note.innerHTML = ev.status === 'upcoming'
+      ? '<b>Not open yet</b>Scoring opens ' + (ev.date ? 'on ' + esc(fmtEventDate(ev)) : 'when the event starts') + '. You can sign in and look at the targets now.'
+      : '<b>This event is finished</b>Scores are final. See the Leaderboard tab.';
+  }
+  function selectEvent(id, remember){
+    var ev = EVENTS.find(function(e){ return e.id === id; });
+    if (!ev) return;
+    var changed = !CURRENT_EVENT || CURRENT_EVENT.id !== ev.id || CURRENT_EVENT.course !== ev.course;
+    CURRENT_EVENT = ev;
+    CURRENT_EVENT_ID = ev.id;
+    CURRENT_EVENT_LABEL = eventTitle(ev);
+    if (remember) { try { localStorage.setItem('pingolf_event', ev.id); } catch(e){} }
+    // Keep the address bar pointing at this event, so a shared link opens it.
+    var url = new URL(location.href);
+    if (url.searchParams.get('e') !== ev.id) { url.searchParams.set('e', ev.id); history.replaceState(null, '', url); }
+    if (changed) {
+      useCourse(ev.course);
+      renderObjectives();
+      startAttemptsListener();
+    }
+    renderEventPicker();
+    showEventInfo();
+    renderAll();
+  }
+  document.getElementById('eventSelect').addEventListener('change', function(){
+    linkedEventId = null;
+    selectEvent(this.value, true);
+  });
+
+  db.collection('events').onSnapshot(function(snap){
+    EVENTS = sortEvents(snap.docs.map(function(d){ var e = d.data(); e.id = d.id; return e; }));
+    var want = CURRENT_EVENT ? CURRENT_EVENT.id : wantedEventId();
+    var ev = EVENTS.find(function(e){ return e.id === want; }) ||
+             EVENTS.find(function(e){ return e.status === 'open' && !e.test; }) ||
+             EVENTS.find(function(e){ return e.status === 'open'; }) ||
+             EVENTS.find(function(e){ return e.status === 'upcoming'; }) || EVENTS[0];
+    if (!ev) {
+      renderEventPicker();
+      setConnNote('No events have been set up yet.', false);
+      return;
+    }
+    setConnNote('', false);
+    selectEvent(ev.id, false);
+    if (document.getElementById('panel-history').classList.contains('active')) loadHistory();
+  }, function(err){
+    setConnNote("Can't reach the scoreboard (" + err.message + '). Reload to try again.', true);
+  });
 })();
 </script>
 </body>

@@ -69,6 +69,12 @@
   .warn-txt{color:var(--bad);font-weight:600;}
   .tag.void{background:var(--bad);color:#fff;}
   .sect{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:14px 0 4px;}
+  .ev-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);}
+  .ev-row:last-child{border-bottom:none;}
+  .ev-row .nm{flex:1;min-width:0;}
+  .ev-row .nm b{display:block;}
+  .ev-row select{width:auto;padding:6px 8px;font-size:13px;}
+  .st-open{color:var(--accent);font-weight:700;}
   .empty{color:var(--text-dim);text-align:center;padding:30px 10px;}
 
   .overlay{position:fixed;inset:0;background:rgba(10,9,4,.55);display:none;align-items:flex-end;justify-content:center;z-index:20;}
@@ -104,8 +110,13 @@
   <!-- Main -->
   <div id="main" hidden>
     <div class="card">
-      <label class="fl" for="eventSelect">Event</label>
+      <div class="row"><h2 style="flex:1;">Events</h2><button class="btn sm" id="newEventBtn">New event</button></div>
+      <div id="eventList" style="margin-top:8px;"></div>
+    </div>
+    <div class="card">
+      <label class="fl" for="eventSelect">Scores for</label>
       <select id="eventSelect"></select>
+      <div class="dim small" id="eventLink" style="margin-top:6px;"></div>
       <div class="status" id="status"></div>
     </div>
     <div class="card">
@@ -115,6 +126,15 @@
       </div>
     </div>
     <div id="players"></div>
+    <div class="card" id="moveCard" hidden>
+      <div class="row">
+        <div style="flex:1;"><b>Move all scores</b><div class="dim small">Moves every score shown above to another event (for example, test scores entered under the wrong event)</div></div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <select id="moveTo"></select>
+        <button class="btn sm danger" id="moveBtn" style="flex-shrink:0;">Move</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -160,6 +180,47 @@
   </div>
 </div>
 
+<!-- Event sheet -->
+<div class="overlay" id="evOverlay">
+  <div class="sheet">
+    <h2 id="evTitle">Event</h2>
+    <div style="margin-top:12px;">
+      <label class="fl" for="evName">Name</label>
+      <input type="text" id="evName" maxlength="60" placeholder="Pingolf">
+    </div>
+    <div style="margin-top:10px;">
+      <label class="fl" for="evLocation">Location</label>
+      <input type="text" id="evLocation" maxlength="80" placeholder="X-Golf, Chester Springs, PA">
+    </div>
+    <div class="row" style="margin-top:10px;align-items:flex-start;">
+      <div style="flex:1;"><label class="fl" for="evDate">Date</label><input type="date" id="evDate"></div>
+      <div style="flex:1;"><label class="fl" for="evTime">Time</label><input type="text" id="evTime" maxlength="20" placeholder="Noon"></div>
+    </div>
+    <div style="margin-top:10px;">
+      <label class="fl" for="evCourse">Course (machines and targets)</label>
+      <select id="evCourse"></select>
+    </div>
+    <div style="margin-top:10px;">
+      <label class="fl" for="evStatus">Status</label>
+      <select id="evStatus">
+        <option value="upcoming">Upcoming: listed, scores not open yet</option>
+        <option value="open">Open: players can enter scores</option>
+        <option value="closed">Finished: read-only, shown in History</option>
+      </select>
+    </div>
+    <label class="row small" style="margin-top:12px;gap:8px;"><input type="checkbox" id="evTest" style="width:auto;"> Test / practice event</label>
+    <div id="evIdWrap" style="margin-top:10px;">
+      <label class="fl" for="evId">Link name (can't be changed later)</label>
+      <input type="text" id="evId" maxlength="40" autocapitalize="off" placeholder="xgolf-2027-03-14">
+      <div class="dim small" style="margin-top:4px;">playpingolf.com/?e=<span id="evIdPreview"></span></div>
+    </div>
+    <div class="row" style="margin-top:14px;">
+      <button class="btn" id="evCancel" style="flex:1;">Cancel</button>
+      <button class="btn primary" id="evSave" style="flex:1;">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Set number sheet -->
 <div class="overlay" id="codeOverlay">
   <div class="sheet">
@@ -183,8 +244,8 @@
   var FV = firebase.firestore.FieldValue;
 
   var pin = null;
-  var currentEvent = null;      // {id, label}
-  var liveEventId = null;
+  var currentEvent = null;      // event whose scores are shown (from EVENTS, or a stray id found on scores)
+  var EVENTS = [];              // events/{id}, newest first
   var attempts = [];            // all docs in the selected event, including voided
   var unsub = null;
   var openPlayers = {};
@@ -238,52 +299,185 @@
   try { var saved = sessionStorage.getItem('pingolf_admin_pin'); if (saved) tryPin(saved); } catch(e){}
 
   // ---------- Events ----------
+  // ---------- Events ----------
+  var strayIds = [];            // event ids that have scores but no event doc
+  var eventsSeen = false;
   function loadEvents(){
-    Promise.all([db.collection('meta').doc('current').get(), db.collection('attempts').get()]).then(function(r){
-      var m = r[0].exists ? r[0].data() : {};
-      liveEventId = m.eventId || null;
-      var evs = {};
-      if (liveEventId) evs[liveEventId] = {id: liveEventId, label: m.eventLabel || liveEventId, ts: Infinity};
-      r[1].docs.forEach(function(d){
-        var a = d.data();
-        if (!a.eventId) return;
-        if (!evs[a.eventId]) evs[a.eventId] = {id: a.eventId, label: a.eventLabel || a.eventId, ts: a.ts};
-        evs[a.eventId].ts = Math.min(evs[a.eventId].ts, a.ts);
-      });
-      var list = Object.keys(evs).map(function(k){ return evs[k]; }).sort(function(a,b){ return b.ts - a.ts; });
-      $('eventSelect').innerHTML = list.map(function(e){
-        return '<option value="' + esc(e.id) + '">' + esc(e.label) + (e.id === liveEventId ? ' (live)' : '') + '</option>';
-      }).join('');
-      $('eventSelect').onchange = function(){ selectEvent(list.find(function(e){ return e.id === this.value; }, this)); };
-      if (list.length) selectEvent(list[0]);
+    db.collection('attempts').get().then(function(snap){
+      var ids = {};
+      snap.docs.forEach(function(d){ var id = d.data().eventId; if (id) ids[id] = true; });
+      strayIds = Object.keys(ids);
+      renderEventSelect();
     });
+    db.collection('events').onSnapshot(function(snap){
+      EVENTS = sortEvents(snap.docs.map(function(d){ var e = d.data(); e.id = d.id; return e; }));
+      eventsSeen = true;
+      renderEventList();
+      renderEventSelect();
+    }, function(err){ setStatus('Could not load events (' + err.message + ')', 'err'); });
   }
+  function allScoreEvents(){
+    var list = EVENTS.slice();
+    strayIds.forEach(function(id){
+      if (!EVENTS.some(function(e){ return e.id === id; })) list.push({id: id, name: id + ' (no event set up)', course: DEFAULT_COURSE, stray: true});
+    });
+    return list;
+  }
+  function renderEventSelect(){
+    var list = allScoreEvents();
+    $('eventSelect').innerHTML = list.map(function(e){
+      return '<option value="' + esc(e.id) + '">' + esc(e.stray ? e.name : eventTitle(e) + ' \u00b7 ' + e.status) + '</option>';
+    }).join('');
+    var keep = currentEvent && list.find(function(e){ return e.id === currentEvent.id; });
+    var pick = keep || list.find(function(e){ return e.status === 'open' && !e.test; }) || list.find(function(e){ return e.status === 'open'; }) || list[0];
+    if (pick) { $('eventSelect').value = pick.id; selectEvent(pick); }
+  }
+  $('eventSelect').onchange = function(){
+    var id = this.value;
+    selectEvent(allScoreEvents().find(function(e){ return e.id === id; }));
+  };
   function selectEvent(ev){
+    if (!ev) return;
+    var same = currentEvent && currentEvent.id === ev.id;
     currentEvent = ev;
+    $('eventLink').textContent = ev.stray ? '' : 'Player link: playpingolf.com/?e=' + ev.id;
+    $('moveTo').innerHTML = EVENTS.filter(function(e){ return e.id !== ev.id; }).map(function(e){
+      return '<option value="' + esc(e.id) + '">to ' + esc(eventTitle(e)) + '</option>';
+    }).join('');
+    if (same) { render(); return; }
     if (unsub) unsub();
     unsub = db.collection('attempts').where('eventId', '==', ev.id).onSnapshot(function(snap){
       attempts = snap.docs.map(function(d){ var a = d.data(); a.id = d.id; return a; });
       render();
     }, function(err){ setStatus('Lost connection (' + err.message + ')', 'err'); });
   }
-  function eventHoles(){ return holesForEvent(currentEvent.id); }
+
+  function renderEventList(){
+    var el = $('eventList');
+    if (!EVENTS.length) {
+      el.innerHTML = '<div class="dim small" style="margin-bottom:8px;">No events set up yet.</div>' +
+        '<button class="btn primary" id="starterBtn">Create Test Event + Dec 12 event</button>';
+      $('starterBtn').onclick = function(){
+        adminBatch(function(batch, stamp){
+          STARTER_EVENTS.forEach(function(e){
+            var d = Object.assign({}, e); delete d.id; d.unlockId = stamp.unlockId;
+            batch.set(db.collection('events').doc(e.id), d);
+          });
+        }).then(done('Events created.')).catch(failed);
+      };
+      return;
+    }
+    el.innerHTML = EVENTS.map(function(e){
+      return '<div class="ev-row"><div class="nm"><b>' + esc(eventTitle(e)) + '</b><span class="dim small">' +
+        esc([e.location, eventWhen(e)].filter(Boolean).join(' \u00b7 ')) + ' \u00b7 ?e=' + esc(e.id) + '</span></div>' +
+        '<select data-ev="' + esc(e.id) + '" class="' + (e.status === 'open' ? 'st-open' : '') + '">' +
+          EVENT_STATUSES.map(function(st){ return '<option value="' + st + '"' + (st === e.status ? ' selected' : '') + '>' + ({upcoming:'Upcoming', open:'Open', closed:'Finished'})[st] + '</option>'; }).join('') +
+        '</select><button class="btn sm" data-edit="' + esc(e.id) + '">Edit</button></div>';
+    }).join('');
+    el.querySelectorAll('select[data-ev]').forEach(function(sel){
+      sel.onchange = function(){
+        var ev = EVENTS.find(function(e){ return e.id === sel.dataset.ev; });
+        saveEvent(ev.id, Object.assign({}, ev, {status: sel.value}), 'Status changed.');
+      };
+    });
+    el.querySelectorAll('[data-edit]').forEach(function(b){
+      b.onclick = function(){ openEventSheet(EVENTS.find(function(e){ return e.id === b.dataset.edit; })); };
+    });
+  }
+  function saveEvent(id, ev, msg){
+    var d = {name: ev.name, location: ev.location || '', date: ev.date || '', time: ev.time || '',
+             course: ev.course, status: ev.status, test: !!ev.test};
+    return adminBatch(function(batch, stamp){
+      d.unlockId = stamp.unlockId;
+      batch.set(db.collection('events').doc(id), d);
+    }).then(done(msg)).catch(failed);
+  }
+
+  var editingEvent = null;
+  function slugify(t){ return t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
+  function openEventSheet(ev){
+    editingEvent = ev || null;
+    var last = EVENTS.find(function(e){ return !e.test; }) || {};
+    var e = ev || {name: 'Pingolf', location: last.location || '', date: '', time: last.time || '', course: last.course || DEFAULT_COURSE, status: 'upcoming', test: false};
+    $('evTitle').textContent = ev ? 'Edit event' : 'New event';
+    $('evName').value = e.name; $('evLocation').value = e.location || ''; $('evDate').value = e.date || ''; $('evTime').value = e.time || '';
+    $('evCourse').innerHTML = Object.keys(COURSES).map(function(k){ return '<option value="' + esc(k) + '">' + esc(COURSES[k].name) + '</option>'; }).join('') +
+      (COURSES[e.course] ? '' : '<option value="' + esc(e.course) + '">' + esc(e.course) + '</option>');
+    $('evCourse').value = e.course;
+    $('evStatus').value = e.status; $('evTest').checked = !!e.test;
+    $('evIdWrap').hidden = !!ev;
+    $('evId').value = ''; $('evId').dataset.auto = '1'; updateEvId();
+    $('evOverlay').classList.add('show');
+  }
+  function updateEvId(){
+    if ($('evId').dataset.auto) {
+      var loc = slugify(($('evLocation').value.split(',')[0] || 'event'));
+      $('evId').value = $('evTest').checked ? 'test-' + ($('evDate').value || Date.now().toString(36)) : (loc || 'event') + '-' + ($('evDate').value || 'tbd');
+    }
+    $('evIdPreview').textContent = $('evId').value;
+  }
+  ['evLocation', 'evDate', 'evTest'].forEach(function(id){ $(id).addEventListener('input', updateEvId); $(id).addEventListener('change', updateEvId); });
+  $('evId').addEventListener('input', function(){ delete this.dataset.auto; this.value = slugify(this.value); $('evIdPreview').textContent = this.value; });
+  $('evCancel').onclick = function(){ $('evOverlay').classList.remove('show'); };
+  $('newEventBtn').onclick = function(){ openEventSheet(null); };
+  $('evSave').onclick = function(){
+    var name = $('evName').value.trim();
+    if (!name) { setStatus('Give the event a name.', 'err'); return; }
+    var id = editingEvent ? editingEvent.id : slugify($('evId').value);
+    if (!id) { setStatus('Give the event a link name.', 'err'); return; }
+    if (!editingEvent && EVENTS.some(function(e){ return e.id === id; })) { setStatus('There is already an event with the link name ' + id + '.', 'err'); return; }
+    $('evOverlay').classList.remove('show');
+    saveEvent(id, {name: name, location: $('evLocation').value.trim(), date: $('evDate').value, time: $('evTime').value.trim(),
+                   course: $('evCourse').value, status: $('evStatus').value, test: $('evTest').checked},
+              editingEvent ? 'Event saved.' : 'Event created: playpingolf.com/?e=' + id);
+  };
+
+  // Move every score in the shown event to another event (in chunks; a batch holds 500 writes).
+  $('moveBtn').addEventListener('click', function(){
+    var to = EVENTS.find(function(e){ return e.id === $('moveTo').value; });
+    if (!to || !attempts.length) return;
+    var btn = this;
+    confirmTap(btn, 'Move ' + attempts.length + '?', function(){
+      var list = attempts.slice(), chunks = [];
+      for (var i = 0; i < list.length; i += 400) chunks.push(list.slice(i, i + 400));
+      var from = currentEvent;
+      chunks.reduce(function(p, chunk){
+        return p.then(function(){
+          return adminBatch(function(batch, stamp){
+            chunk.forEach(function(a){
+              batch.update(db.collection('attempts').doc(a.id), Object.assign({eventId: to.id, eventLabel: eventTitle(to)}, stamp));
+            });
+          });
+        });
+      }, Promise.resolve()).then(function(){
+        setStatus('Moved ' + list.length + ' scores to ' + eventTitle(to) + '.', 'ok');
+        strayIds = strayIds.filter(function(id){ return id !== from.id; });
+        currentEvent = null;
+        renderEventSelect();
+      }).catch(failed);
+    });
+  });
+
+  function eventHoles(){ return courseHoles(currentEvent.course); }
   function holeInfo(n){ return eventHoles().find(function(h){ return h.n === n; }) || {n:n, name:'Hole ' + n}; }
 
   // ---------- Board ----------
   function render(){
+    if (!currentEvent) return;
+    $('moveCard').hidden = !attempts.length || !$('moveTo').options.length;
     var byPlayer = {};
     attempts.forEach(function(a){
       if (!byPlayer[a.playerKey]) byPlayer[a.playerKey] = {key: a.playerKey, name: a.playerName, all: []};
       byPlayer[a.playerKey].all.push(a);
     });
     // Signed-up players with no scores yet show too (live event only).
-    if (currentEvent.id === liveEventId) Object.keys(registered).forEach(function(k){
+    if (currentEvent.status === 'open') Object.keys(registered).forEach(function(k){
       if (!byPlayer[k]) byPlayer[k] = {key: k, name: registered[k], all: []};
     });
     var players = Object.keys(byPlayer).map(function(k){
       var p = byPlayer[k];
       p.live = p.all.filter(function(a){ return !a.void; });
-      p.res = scoreRound(p.live);
+      p.res = scoreRound(p.live, eventHoles().length);
       p.empty = p.all.length === 0;
       p.removed = !p.empty && p.live.length === 0;
       p.signedUp = !!registered[k];
@@ -507,7 +701,7 @@
       ref = db.collection('attempts').doc();
       data = Object.assign({
         playerKey: playerKey(name), playerName: name, hole: h.n, holeName: h.name, target: t,
-        eventId: currentEvent.id, eventLabel: currentEvent.label, ts: Date.now()
+        eventId: currentEvent.id, eventLabel: currentEvent.stray ? currentEvent.id : eventTitle(currentEvent), ts: Date.now()
       }, fields);
       if (s.mode === 'addMull') data.mulligan = true;
     }
