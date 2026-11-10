@@ -193,6 +193,9 @@
   .divider{display:flex;align-items:center;gap:10px;margin:16px 0 10px;color:var(--text-dim);font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
   .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border);}
   .miss-row{display:flex;gap:8px;}
+  .miss-box{border:2px solid var(--gold);border-radius:12px;padding:12px;background:var(--surface-2);}
+  .miss-head{font-size:17px;font-weight:800;color:var(--text);line-height:1.25;}
+  .miss-sub{font-size:13.5px;color:var(--text);margin:4px 0 10px;line-height:1.35;}
   .save-btn{background:var(--text);color:var(--bg);border:none;border-radius:9px;padding:0 16px;font-family:inherit;font-weight:700;cursor:pointer;}
   .close-btn{display:block;width:100%;text-align:center;margin-top:18px;background:none;border:none;color:var(--text-dim);font-family:inherit;font-size:14px;padding:8px;cursor:pointer;}
 
@@ -363,12 +366,16 @@
         <button class="ball-btn" data-ball="2"><span>Made target on Ball 2</span><span class="strokes-pill">2</span></button>
         <button class="ball-btn" data-ball="3"><span>Made target on Ball 3</span><span class="strokes-pill">3</span></button>
       </div>
-      <div class="divider">or, short of target</div>
-      <div class="miss-row">
-        <input type="number" id="missScore" placeholder="Final score" inputmode="numeric">
-        <button class="save-btn" id="missSave">Save</button>
+      <div class="divider">or</div>
+      <div class="miss-box">
+        <div class="miss-head" id="missHead">Didn't make the target by Ball 3?</div>
+        <div class="miss-sub">Enter your <b>actual final score</b> after all 3 balls. Your strokes (4&ndash;8) are worked out for you.</div>
+        <div class="miss-row">
+          <input type="number" id="missScore" placeholder="Your final score" inputmode="numeric">
+          <button class="save-btn" id="missSave">Save</button>
+        </div>
+        <div class="score-preview" id="scorePreview"></div>
       </div>
-      <div class="score-preview" id="scorePreview"></div>
       <button class="close-btn" id="sheetClose">Cancel</button>
     </div>
   </div>
@@ -560,6 +567,7 @@
 
   // "Made 9M on Ball 1": the buttons name the hole's actual target.
   function setBallLabels(hole){
+    document.getElementById('missHead').textContent = hole ? "Didn't make " + hole.label + ' by Ball 3?' : "Didn't make the target by Ball 3?";
     document.querySelectorAll('.ball-btn').forEach(function(b){
       var n = b.dataset.ball;
       b.innerHTML = '<span>Made ' + (hole ? '<b>' + esc(hole.label) + '</b>' : 'target') + ' on Ball ' + n + '</span><span class="strokes-pill">' + n + '</span>';
