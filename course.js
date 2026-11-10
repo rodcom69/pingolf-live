@@ -18,8 +18,8 @@ var COURSES = {
   'xgolf-2026-12': {
     name: 'X-Golf · 18 machines (Dec 2026)',
     holes: [
-      {n:1, name:"Black Knight: Sword of Rage", target:40000000, label:"40M", img:"black-knight-sor"},
-      {n:2, name:"Cyclopes", target:200000, label:"200K", img:"cyclopes"},
+      {n:1, name:"Cyclopes", target:200000, label:"200K", img:"cyclopes"},
+      {n:2, name:"Mustang", target:60000, label:"60K", img:"mustang-em"},
       {n:3, name:"Wheel of Fortune", target:9000000, label:"9M", img:"wheel-of-fortune"},
       {n:4, name:"Dune", target:50000000, label:"50M", img:"dune"},
       {n:5, name:"Walking Dead", target:40000000, label:"40M", img:"walking-dead"},
@@ -35,7 +35,7 @@ var COURSES = {
       {n:15, name:"Ali", target:300000, label:"300K", img:"ali"},
       {n:16, name:"NBA Fast Break", target:75, label:"75", img:"nba-fast-break"},
       {n:17, name:"Game of Thrones", target:50000000, label:"50M", img:"game-of-thrones"},
-      {n:18, name:"Mustang", target:60000, label:"60K", img:"mustang-em"}
+      {n:18, name:"Black Knight: Sword of Rage", target:40000000, label:"40M", img:"black-knight-sor"}
     ]
   }
 };
