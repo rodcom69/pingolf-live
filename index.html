@@ -772,7 +772,7 @@
   });
 
   function lastUndoable(){
-    var mine = myAttempts().filter(function(a){ return !a.void; }).sort(function(a,b){ return b.ts - a.ts; });
+    var mine = myAttempts().filter(function(a){ return !a.void && !isHoleClosed(a.hole); }).sort(function(a,b){ return b.ts - a.ts; });
     return mine.length && canStillChange(mine[0]) ? mine[0] : null;
   }
   function updateUndo(){ document.getElementById('undoBtn').disabled = !lastUndoable(); }
@@ -951,8 +951,14 @@
       var next = window.scrollY + Math.round(window.innerHeight * 0.8);
       window.scrollTo({top: window.scrollY >= maxY - 4 ? 0 : Math.min(next, maxY), behavior: 'smooth'});
     }, 10000);
-    // Reload every 3 hours in case a sign player has been running for days.
-    setTimeout(function(){ location.reload(); }, 3 * 60 * 60 * 1000);
+    // Reload every 3 hours in case a sign player has been running for days, but only
+    // when the site answers: reloading while the Wi-Fi is down would leave an error page.
+    function safeReload(){
+      fetch('course.js?ping=' + Date.now(), {cache: 'no-store'})
+        .then(function(r){ if (r.ok) location.reload(); else setTimeout(safeReload, 5 * 60 * 1000); })
+        .catch(function(){ setTimeout(safeReload, 5 * 60 * 1000); });
+    }
+    setTimeout(safeReload, 3 * 60 * 60 * 1000);
   }
 
   function renderObjectives(){

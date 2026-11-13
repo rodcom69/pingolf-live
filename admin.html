@@ -478,6 +478,7 @@
   function renderHoles(){
     if (currentEvent.stray) { $('holesCard').hidden = true; return; }
     $('holesCard').hidden = false;
+    if ($('holesList').querySelector('[data-armed]')) return;
     var closed = eventClosed();
     $('holesToggle').textContent = $('holesList').hidden ? (closed.length ? 'Show (' + closed.length + ' closed)' : 'Show') : 'Hide';
     $('holesList').innerHTML = eventHoles().map(function(h){
@@ -489,12 +490,15 @@
     $('holesList').querySelectorAll('[data-hole]').forEach(function(b){
       b.onclick = function(){
         var n = +b.dataset.hole, h = holeInfo(n);
-        var now = eventClosed();
-        var isClosed = now.indexOf(n) !== -1;
-        var next = isClosed ? now.filter(function(x){ return x !== n; }) : now.concat([n]).sort(function(a, c){ return a - c; });
+        var isClosed = eventClosed().indexOf(n) !== -1;
+        var ev = currentEvent;
         confirmTap(b, isClosed ? 'Reopen?' : 'Close it?', function(){
-          saveEvent(currentEvent.id, Object.assign({}, currentEvent, {closedHoles: next}),
-            (isClosed ? 'Reopened' : 'Closed') + ' hole ' + n + ' (' + h.name + ').');
+          delete b.dataset.armed;
+          var FV = firebase.firestore.FieldValue;
+          adminBatch(function(batch, stamp){
+            batch.update(db.collection('events').doc(ev.id),
+              {closedHoles: isClosed ? FV.arrayRemove(n) : FV.arrayUnion(n), unlockId: stamp.unlockId});
+          }).then(done((isClosed ? 'Reopened' : 'Closed') + ' hole ' + n + ' (' + h.name + ').')).catch(failed);
         });
       };
     });

@@ -113,15 +113,21 @@ function playerKey(name){ return name.trim().toLowerCase(); }
 function scoreRound(attempts, holeCount, closed){
   closed = closed || CLOSED_HOLES;
   if (holeCount == null) holeCount = HOLES.length;
-  holeCount -= closed.length;
-  attempts = attempts.filter(function(a){ return !a.void && closed.indexOf(a.hole) === -1; });
+  // Only real, distinct hole numbers on this course count as closed.
+  var closedHere = closed.filter(function(n, i){ return closed.indexOf(n) === i && n >= 1 && n <= holeCount; });
+  holeCount -= closedHere.length;
+  attempts = attempts.filter(function(a){ return !a.void; });
+  // A mulligan keeps its slot even if its hole is closed later, so closing and
+  // reopening a hole never changes which mulligans a player has used.
+  var allMulls = attempts.filter(function(a){ return a.mulligan; })
+    .sort(function(a,b){ return a.ts - b.ts; }).slice(0, MAX_MULLIGANS);
+  attempts = attempts.filter(function(a){ return closedHere.indexOf(a.hole) === -1; });
   var originals = {};
   attempts.forEach(function(a){
     if (a.mulligan) return;
     if (!originals[a.hole] || a.ts > originals[a.hole].ts) originals[a.hole] = a;
   });
-  var mulls = attempts.filter(function(a){ return a.mulligan; })
-    .sort(function(a,b){ return a.ts - b.ts; }).slice(0, MAX_MULLIGANS);
+  var mulls = allMulls.filter(function(a){ return closedHere.indexOf(a.hole) === -1; });
   var byHole = {};
   Object.keys(originals).forEach(function(k){ byHole[k] = originals[k]; });
   mulls.forEach(function(m){
@@ -139,7 +145,7 @@ function scoreRound(attempts, holeCount, closed){
     originals: originals,
     mulls: mulls,
     countedIds: counted.map(function(a){ return a.id; }),
-    mulligansUsed: mulls.length,
+    mulligansUsed: allMulls.length,
     holeCount: holeCount,
     // Tiebreak counts: how many holes took 1, 2 and 3 strokes.
     aces: counted.filter(function(a){ return a.strokes === 1; }).length,
