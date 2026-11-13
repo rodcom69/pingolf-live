@@ -8,6 +8,8 @@ rules_version = '2';
 //    add or change scores under their own name.
 //  - events live in events/{id}; players add scores only to an event whose status is 'open'
 //  - a player can fix or undo an entry for 2 minutes after saving it; then it's locked
+//  - a new score may arrive up to 30 minutes after it was entered (phone was offline,
+//    the save was queued) or up to 5 minutes "early" (phone clock running fast)
 //  - the organizer page (admin.html) can change anything, but every change must come
 //    with a one-time unlock doc carrying the admin PIN. The PIN lives in secrets/admin,
 //    which no client can read; the rules compare it here.
@@ -97,8 +99,8 @@ service cloud.firestore {
     match /attempts/{attemptId} {
       allow read: if true;
       allow create: if (isPlayerWrite(request.resource.data)
-                        && request.resource.data.ts > nowMs() - 120000
-                        && request.resource.data.ts < nowMs() + 120000)
+                        && request.resource.data.ts > nowMs() - 1800000
+                        && request.resource.data.ts < nowMs() + 300000)
                     || isAdminWrite(request.resource.data);
       allow update: if (isPlayerWrite(request.resource.data)
                         && resource.data.eventId == request.resource.data.eventId
