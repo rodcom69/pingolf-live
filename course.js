@@ -25,7 +25,7 @@ var COURSES = {
       {n:5, name:"Walking Dead", target:40000000, label:"40M", img:"walking-dead"},
       {n:6, name:"SeaWitch", target:400000, label:"400K", img:"seawitch"},
       {n:7, name:"Beatles", target:2000000, label:"2M", img:"beatles"},
-      {n:8, name:"Joker Poker", target:100000, label:"100K", img:"joker-poker"},
+      {n:8, name:"Joker Poker", target:200000, label:"200K", img:"joker-poker"},
       {n:9, name:"Medieval Madness", target:12000000, label:"12M", img:"medieval-madness"},
       {n:10, name:"Uncanny X-Men", target:75000000, label:"75M", img:"uncanny-x-men"},
       {n:11, name:"Transformers", target:100000000, label:"100M", img:"transformers"},
