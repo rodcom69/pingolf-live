@@ -119,6 +119,13 @@
       <div class="dim small" id="eventLink" style="margin-top:6px;"></div>
       <div class="status" id="status"></div>
     </div>
+    <div class="card" id="holesCard">
+      <div class="row">
+        <div style="flex:1;"><b>Machine down? Close the hole</b><div class="dim small">A closed hole is skipped for everyone: its scores stop counting, par drops by 3, and players can't enter it. Reopen it and all its scores count again.</div></div>
+        <button class="btn sm" id="holesToggle">Show</button>
+      </div>
+      <div id="holesList" hidden style="margin-top:10px;"></div>
+    </div>
     <div class="card">
       <div class="row">
         <div style="flex:1;"><b>Add a player's score</b><div class="dim small">For someone who isn't on the board yet</div></div>
@@ -386,7 +393,7 @@
   }
   function saveEvent(id, ev, msg){
     var d = {name: ev.name, location: ev.location || '', date: ev.date || '', time: ev.time || '',
-             course: ev.course, status: ev.status, test: !!ev.test};
+             course: ev.course, status: ev.status, test: !!ev.test, closedHoles: ev.closedHoles || []};
     return adminBatch(function(batch, stamp){
       d.unlockId = stamp.unlockId;
       batch.set(db.collection('events').doc(id), d);
@@ -428,7 +435,8 @@
     if (!editingEvent && EVENTS.some(function(e){ return e.id === id; })) { setStatus('There is already an event with the link name ' + id + '.', 'err'); return; }
     $('evOverlay').classList.remove('show');
     saveEvent(id, {name: name, location: $('evLocation').value.trim(), date: $('evDate').value, time: $('evTime').value.trim(),
-                   course: $('evCourse').value, status: $('evStatus').value, test: $('evTest').checked},
+                   course: $('evCourse').value, status: $('evStatus').value, test: $('evTest').checked,
+                   closedHoles: editingEvent ? (editingEvent.closedHoles || []) : []},
               editingEvent ? 'Event saved.' : 'Event created: playpingolf.com/?e=' + id);
   };
 
@@ -459,11 +467,44 @@
   });
 
   function eventHoles(){ return courseHoles(currentEvent.course); }
+  function eventClosed(){ return currentEvent.closedHoles || []; }
+
+  // ---------- Closed holes ----------
+  $('holesToggle').onclick = function(){
+    var list = $('holesList');
+    list.hidden = !list.hidden;
+    this.textContent = list.hidden ? 'Show' : 'Hide';
+  };
+  function renderHoles(){
+    if (currentEvent.stray) { $('holesCard').hidden = true; return; }
+    $('holesCard').hidden = false;
+    var closed = eventClosed();
+    $('holesToggle').textContent = $('holesList').hidden ? (closed.length ? 'Show (' + closed.length + ' closed)' : 'Show') : 'Hide';
+    $('holesList').innerHTML = eventHoles().map(function(h){
+      var isClosed = closed.indexOf(h.n) !== -1;
+      return '<div class="row" style="padding:5px 0;border-top:1px solid rgba(128,128,128,.2);">' +
+        '<div style="flex:1;min-width:0;">' + h.n + '. ' + esc(h.name) + (isClosed ? ' <span class="tag void">CLOSED</span>' : '') + '</div>' +
+        '<button class="btn sm' + (isClosed ? '' : ' danger') + '" data-hole="' + h.n + '">' + (isClosed ? 'Reopen' : 'Close') + '</button></div>';
+    }).join('');
+    $('holesList').querySelectorAll('[data-hole]').forEach(function(b){
+      b.onclick = function(){
+        var n = +b.dataset.hole, h = holeInfo(n);
+        var now = eventClosed();
+        var isClosed = now.indexOf(n) !== -1;
+        var next = isClosed ? now.filter(function(x){ return x !== n; }) : now.concat([n]).sort(function(a, c){ return a - c; });
+        confirmTap(b, isClosed ? 'Reopen?' : 'Close it?', function(){
+          saveEvent(currentEvent.id, Object.assign({}, currentEvent, {closedHoles: next}),
+            (isClosed ? 'Reopened' : 'Closed') + ' hole ' + n + ' (' + h.name + ').');
+        });
+      };
+    });
+  }
   function holeInfo(n){ return eventHoles().find(function(h){ return h.n === n; }) || {n:n, name:'Hole ' + n}; }
 
   // ---------- Board ----------
   function render(){
     if (!currentEvent) return;
+    renderHoles();
     $('moveCard').hidden = !attempts.length || !$('moveTo').options.length;
     var byPlayer = {};
     attempts.forEach(function(a){
@@ -477,7 +518,7 @@
     var players = Object.keys(byPlayer).map(function(k){
       var p = byPlayer[k];
       p.live = p.all.filter(function(a){ return !a.void; });
-      p.res = scoreRound(p.live, eventHoles().length);
+      p.res = scoreRound(p.live, eventHoles().length, eventClosed());
       p.empty = p.all.length === 0;
       p.removed = !p.empty && p.live.length === 0;
       p.signedUp = !!registered[k];
@@ -487,9 +528,10 @@
     var wrap = $('players');
     if (!players.length) { wrap.innerHTML = '<div class="card empty">No scores in this event yet.</div>'; return; }
     wrap.innerHTML = '';
-    var rank = 0;
+    var ranked = players.filter(function(p){ return !p.removed && !p.empty; });
+    var places = placeLabels(ranked);
     players.forEach(function(p){
-      if (!p.removed && !p.empty) rank++;
+      var rank = places[ranked.indexOf(p)];
       var el = document.createElement('div');
       el.className = 'card player' + (openPlayers[p.key] ? ' open' : '');
       el.innerHTML =

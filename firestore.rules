@@ -6,7 +6,8 @@ rules_version = '2';
 //    playerSecrets/{name}, which no client can read. Every score a player saves
 //    carries a one-time playerUnlock doc with that PIN, so a player can only
 //    add or change scores under their own name.
-//  - events live in events/{id}; players add scores only to an event whose status is 'open'
+//  - events live in events/{id}; players add scores only to an event whose status is 'open',
+//    and never to a hole the organizer closed (events/{id}.closedHoles)
 //  - a player can fix or undo an entry for 2 minutes after saving it; then it's locked
 //  - a new score may arrive up to 30 minutes after it was entered (phone was offline,
 //    the save was queued) or up to 5 minutes "early" (phone clock running fast)
@@ -21,6 +22,12 @@ service cloud.firestore {
 
     function eventOpen(eventId) {
       return get(db('events/' + eventId)).data.status == 'open';
+    }
+    // Open for scores, and this hole hasn't been closed (machine down).
+    function eventAccepts(d) {
+      let ev = get(db('events/' + d.eventId)).data;
+      return ev.status == 'open'
+        && (!('closedHoles' in ev) || !(d.hole in ev.closedHoles));
     }
     function nowMs() {
       return request.time.toMillis();
@@ -65,7 +72,7 @@ service cloud.firestore {
     function isPlayerWrite(d) {
       return hasValidShape(d)
         && !('void' in d) && !('unlockId' in d) && !('editedByAdmin' in d)
-        && eventOpen(d.eventId)
+        && eventAccepts(d)
         && d.proof is string && playerProved(d.proof, d.playerKey);
     }
 
@@ -85,7 +92,8 @@ service cloud.firestore {
 
     match /events/{eventId} {
       allow read: if true;
-      allow create, update: if request.resource.data.keys().hasOnly(['name', 'location', 'date', 'time', 'course', 'status', 'test', 'unlockId'])
+      allow create, update: if request.resource.data.keys().hasOnly(['name', 'location', 'date', 'time', 'course', 'status', 'test', 'closedHoles', 'unlockId'])
+                    && (!('closedHoles' in request.resource.data) || (request.resource.data.closedHoles is list && request.resource.data.closedHoles.size() <= 30))
                     && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
                     && request.resource.data.location is string && request.resource.data.location.size() <= 80
                     && request.resource.data.date is string && request.resource.data.time is string

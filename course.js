@@ -43,7 +43,14 @@ var DEFAULT_COURSE = 'xgolf-2026-12';
 function courseHoles(courseId){ return (COURSES[courseId] || COURSES[DEFAULT_COURSE]).holes; }
 // The course of the event being shown. The scorecard swaps it when you pick an event.
 var HOLES = courseHoles(DEFAULT_COURSE);
-function useCourse(courseId){ HOLES = courseHoles(courseId); }
+// Holes the organizer has closed for this event (machine broke down). A closed hole
+// is skipped for everyone: scores on it don't count, and par drops by 3.
+var CLOSED_HOLES = [];
+function useCourse(courseId, closedHoles){ HOLES = courseHoles(courseId); CLOSED_HOLES = closedHoles || []; }
+function isHoleClosed(n, closed){ return (closed || CLOSED_HOLES).indexOf(n) !== -1; }
+function openHoleCount(holes, closed){
+  return holes.filter(function(h){ return !isHoleClosed(h.n, closed); }).length;
+}
 function holeImg(h){ return h.img ? 'img/' + h.img + '.jpg' : ''; }
 
 // ---------- Events ----------
@@ -69,8 +76,8 @@ function sortEvents(list){
 
 var MAX_MULLIGANS = 2, PAR = 3;
 function rulesText(holes){
-  var n = holes.length;
-  return 'Hit the target on ball 1, 2, or 3 — that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4–8) are looked up automatically. Play all ' + n + ' holes. Once all ' + n + ' are done, you get ' + MAX_MULLIGANS + ' mulligans: pick any game, play it again, and enter the score. It replaces that hole on your card only if it\'s better. Each mulligan must be a different game. Par is 3 per hole (' + (PAR * n) + ' total). Lowest total wins.';
+  var n = openHoleCount(holes);
+  return 'Hit the target on ball 1, 2, or 3 — that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4–8) are looked up automatically. Play all ' + n + ' holes. Once all ' + n + ' are done, you get ' + MAX_MULLIGANS + ' mulligans: pick any game, play it again, and enter the score. It replaces that hole on your card only if it\'s better. Each mulligan must be a different game. Par is 3 per hole (' + (PAR * n) + ' total). Lowest total wins. ' + TIEBREAK_TEXT;
 }
 
 function strokeRanges(target){
@@ -102,9 +109,12 @@ function playerKey(name){ return name.trim().toLowerCase(); }
 // Work out which entry counts on each hole. Each hole has one regular entry
 // (the newest, if a double-tap ever saved two). Mulligans are extra entries,
 // used in the order played; one replaces its hole only if it took fewer strokes.
-function scoreRound(attempts, holeCount){
+// holeCount = holes on the course; closed holes are taken off it here.
+function scoreRound(attempts, holeCount, closed){
+  closed = closed || CLOSED_HOLES;
   if (holeCount == null) holeCount = HOLES.length;
-  attempts = attempts.filter(function(a){ return !a.void; });
+  holeCount -= closed.length;
+  attempts = attempts.filter(function(a){ return !a.void && closed.indexOf(a.hole) === -1; });
   var originals = {};
   attempts.forEach(function(a){
     if (a.mulligan) return;
@@ -129,11 +139,33 @@ function scoreRound(attempts, holeCount){
     originals: originals,
     mulls: mulls,
     countedIds: counted.map(function(a){ return a.id; }),
-    mulligansUsed: mulls.length
+    mulligansUsed: mulls.length,
+    holeCount: holeCount,
+    // Tiebreak counts: how many holes took 1, 2 and 3 strokes.
+    aces: counted.filter(function(a){ return a.strokes === 1; }).length,
+    twos: counted.filter(function(a){ return a.strokes === 2; }).length,
+    threes: counted.filter(function(a){ return a.strokes === 3; }).length
   };
 }
 function fmtPar(n){ return n === 0 ? 'E' : (n > 0 ? '+' + n : String(n)); }
-function rankPlayers(a, b){ return a.res.toPar - b.res.toPar || b.res.thru - a.res.thru || a.name.localeCompare(b.name); }
+// Lowest to par first. Tiebreak: more holes played, then most aces, most 2s, most 3s.
+// Players still level after that share the place (shown as T1, T2...).
+var TIEBREAK_TEXT = 'Ties are broken by most aces (1s), then most 2s, then most 3s. Still tied = shared place.';
+function compareScores(a, b){
+  return a.toPar - b.toPar || b.thru - a.thru || b.aces - a.aces || b.twos - a.twos || b.threes - a.threes;
+}
+function rankPlayers(a, b){ return compareScores(a.res, b.res) || a.name.localeCompare(b.name); }
+// Place labels for a list already sorted with rankPlayers: '1', 'T2', 'T2', '4'...
+function placeLabels(players){
+  var places = [];
+  players.forEach(function(p, i){
+    places.push(i > 0 && compareScores(players[i-1].res, p.res) === 0 ? places[i-1] : i + 1);
+  });
+  return places.map(function(pl, i){
+    var shared = places.filter(function(x){ return x === pl; }).length > 1;
+    return (shared ? 'T' : '') + pl;
+  });
+}
 
 
 // Players can fix or undo an entry for this long after saving it. After that
