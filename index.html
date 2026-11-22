@@ -411,7 +411,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-22d"></script>
+<script src="course.js?v=2026-11-22e"></script>
 
 <script>
 (function(){
@@ -592,7 +592,7 @@
           body = '<b>Choose a game</b><div class="mc-sub">Replay any game; it counts only if it beats your card</div>';
           card.disabled = !nameReady;
         } else {
-          body = '<b>Locked</b><div class="mc-sub">Finish all ' + res.holeCount + ' holes to unlock (' + res.thru + ' / ' + res.holeCount + ' done)</div>';
+          body = '<b>Locked</b><div class="mc-sub">Finish all ' + res.needed + ' open holes to unlock (' + Math.min(res.thru, res.needed) + ' / ' + res.needed + ' done)</div>';
           card.disabled = true;
         }
         card.innerHTML = '<div class="mc-label">Mulligan ' + (slot + 1) + '</div><div class="mc-body">' + body + '</div>' + right;
@@ -878,7 +878,7 @@
     });
     var players = Object.keys(byPlayer).map(function(k){
       var p = byPlayer[k];
-      var res = scoreRound(p.attempts, holes.length, closed);
+      var res = scoreRound(p.attempts, holes.length, closed, down);
       return {name:p.name, attempts:p.attempts, res:res};
     });
     if (!players.length) return '';

@@ -125,8 +125,11 @@ function playerKey(name){ return name.trim().toLowerCase(); }
 // (the newest, if a double-tap ever saved two). Mulligans are extra entries,
 // used in the order played; one replaces its hole only if it took fewer strokes.
 // holeCount = holes on the course; closed holes are taken off it here.
-function scoreRound(attempts, holeCount, closed){
+// down = holes closed temporarily: they still count, but a player who hasn't played
+// one isn't held up by it (mulligans unlock once every open hole is done).
+function scoreRound(attempts, holeCount, closed, down){
   closed = closed || CLOSED_HOLES;
+  down = down || DOWN_HOLES;
   if (holeCount == null) holeCount = HOLES.length;
   // Only real, distinct hole numbers on this course count as closed.
   var closedHere = closed.filter(function(n, i){ return closed.indexOf(n) === i && n >= 1 && n <= holeCount; });
@@ -151,10 +154,15 @@ function scoreRound(attempts, holeCount, closed){
   var counted = Object.keys(byHole).map(function(k){ return byHole[k]; });
   var total = counted.reduce(function(s,a){ return s + a.strokes; }, 0);
   var thru = Object.keys(originals).length;
+  var skippedDown = down.filter(function(n, i){
+    return down.indexOf(n) === i && closedHere.indexOf(n) === -1 && !originals[n] && n >= 1 && n <= holeCount + closedHere.length;
+  }).length;
+  var needed = holeCount - skippedDown;
   return {
     total: total,
     thru: thru,
-    complete: thru >= holeCount,
+    complete: thru >= needed,
+    needed: needed,
     toPar: total - PAR * counted.length,
     byHole: byHole,
     originals: originals,

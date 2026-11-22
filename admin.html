@@ -245,7 +245,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-22d"></script>
+<script src="course.js?v=2026-11-22e"></script>
 <script>
 (function(){
   firebase.initializeApp(firebaseConfig);
@@ -541,7 +541,7 @@
     var players = Object.keys(byPlayer).map(function(k){
       var p = byPlayer[k];
       p.live = p.all.filter(function(a){ return !a.void; });
-      p.res = scoreRound(p.live, eventHoles().length, eventClosed());
+      p.res = scoreRound(p.live, eventHoles().length, eventClosed(), eventDown());
       p.empty = p.all.length === 0;
       p.removed = !p.empty && p.live.length === 0;
       p.signedUp = !!registered[k];
