@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pingolf Scoring Chart</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@600;700&family=Inter:wght@400;500;700&display=swap">
+<style>
+  /* Printable scoring chart. Built from course.js, so it always matches the app. */
+  :root{--bg:#f5f1e6;--surface:#fff;--surface-2:#ece5d2;--text:#1c1a12;--text-dim:#6b6450;--border:#ddd3b8;--accent:#136b3e;--accent-ink:#fff;--gold:#8a6d2f;--tint:#e3efe6;color-scheme:light}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#141309;--surface:#1e1c11;--surface-2:#2a2716;--text:#f2eddd;--text-dim:#a89f84;--border:#3a361f;--accent:#3fae6f;--accent-ink:#0d1a10;--gold:#e0ac3f;--tint:#1d3324;color-scheme:dark}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif;font-size:13px}
+  .wrap{max-width:1100px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .bar a,.bar button{font:inherit;font-weight:700;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;text-decoration:none}
+  .bar button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  .bar button:focus-visible,.bar a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .bar .hint{color:var(--text-dim);flex-basis:100%}
+  .sheet,.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;margin:0}
+  h1{font-family:Teko,Impact,sans-serif;font-size:40px;line-height:1;margin:2px 0 6px;text-wrap:balance}
+  .rules{color:var(--text-dim);margin:0 0 12px;max-width:85ch;line-height:1.45}
+  .scroll{overflow-x:auto}
+  table.big{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .big th,.big td{border-bottom:1px solid var(--border);padding:6px 8px;text-align:right}
+  .big th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);vertical-align:bottom}
+  .big th small{display:block;font-size:10px;text-transform:none;letter-spacing:0;font-weight:500}
+  .big td.n{text-align:center;font-weight:700;color:var(--accent)}
+  .big .mach{text-align:left;font-weight:700}
+  .big td.tgt{font-weight:700;background:var(--tint)}
+  .big tr.closed td{text-decoration:line-through;color:var(--text-dim)}
+  .legend{margin:12px 0 0;color:var(--text-dim);font-size:12px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:24px}
+  .hole{margin:0;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+  .card h2{font-family:Teko,Impact,sans-serif;font-size:36px;line-height:1;margin:2px 0 6px}
+  .target{margin:0 0 12px;font-size:16px}
+  .ct{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:15px}
+  .ct th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);padding:4px 8px}
+  .ct td{border-top:1px solid var(--border);padding:7px 8px}
+  .ct td.s{width:70px;font-weight:700;text-align:center;font-size:18px}
+  .ct tr.hit td{background:var(--tint)}
+  .foot{color:var(--text-dim);font-size:12px;margin:10px 0 0}
+  body.only-sheet .cards,body.only-cards .sheet{display:none}
+  body.only-cards .cards{margin-top:0}
+  @media print{
+    :root{--bg:#fff;--surface:#fff;--text:#000;--text-dim:#444;--border:#bbb;--accent:#136b3e;--gold:#8a6d2f;--tint:#e3efe6;color-scheme:light}
+    body{font-size:10.5px}
+    .bar{display:none}
+    .wrap{padding:0;max-width:none}
+    .sheet,.card{border:0;border-radius:0;padding:0}
+    body:not(.only-sheet) .sheet{break-after:page}
+    .big th,.big td{padding:4px 6px}
+    .cards{display:block;margin:0}
+    .card{break-after:page;padding-top:.5in;text-align:center}
+    .card:last-child{break-after:auto}
+    .card h2{font-size:64px}.hole{font-size:18px}.target{font-size:26px;margin-bottom:24px}
+    .ct{font-size:22px;max-width:6in;margin:0 auto}.ct th{font-size:14px}.ct td{padding:12px}.ct td.s{font-size:28px;width:1.2in}
+    .foot{font-size:15px;margin-top:18px}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+  @page{margin:.45in}
+</style>
+</head>
+<body class="only-sheet">
+<div class="wrap">
+  <div class="bar">
+    <a href="./" id="backLink">&larr; Scorecard</a>
+    <button type="button" id="m-sheet" data-m="only-sheet" class="on">Chart (1 page)</button>
+    <button type="button" id="m-cards" data-m="only-cards">Hole cards (1 per machine)</button>
+    <button type="button" id="m-all" data-m="">Both</button>
+    <button type="button" id="printBtn">Print</button>
+    <span class="hint">Pick what to print, then tap Print. The chart fits on one page.</span>
+  </div>
+  <div class="sheet">
+    <p class="eyebrow" id="eyebrow">Pingolf</p>
+    <h1>Pingolf Scoring Chart</h1>
+    <p class="rules" id="rules"></p>
+    <div class="scroll"><table class="big">
+      <thead><tr><th>Hole</th><th class="mach">Machine</th><th>Target<small>1&ndash;3 strokes</small></th><th>4 strokes<small>at least</small></th><th>5 strokes<small>at least</small></th><th>6 strokes<small>at least</small></th><th>7 strokes<small>at least</small></th><th>8 strokes</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+    <p class="legend" id="legend"></p>
+  </div>
+  <div class="cards" id="cards"></div>
+</div>
+<script src="course.js"></script>
+<script>
+(function(){
+  // ?course=<id> picks a course; default is the current one in course.js.
+  var params = new URLSearchParams(location.search);
+  var holes = courseHoles(params.get('course') || DEFAULT_COURSE);
+  var e = params.get('e');
+  if (e) document.getElementById('backLink').href = './?e=' + encodeURIComponent(e);
+
+  // Event line (date/time) from the starter event list, when the link names one.
+  var ev = STARTER_EVENTS.filter(function(x){ return x.id === e; })[0] ||
+           STARTER_EVENTS.filter(function(x){ return !x.test; })[0];
+  if (ev) document.getElementById('eyebrow').textContent =
+    [ev.location ? ev.location.split(',')[0] : '', eventWhen(ev)].filter(Boolean).join(' · ');
+
+  var n = holes.length;
+  document.getElementById('rules').textContent =
+    'Hit the target on ball 1, 2 or 3 and that\'s your strokes for the hole (1, 2 or 3). ' +
+    'Still short after 3 balls? Find your final score below to get your strokes (4–8). ' +
+    'Par ' + PAR + ' per hole, ' + (PAR * n) + ' total. Lowest total wins. ' +
+    'After all ' + n + ' holes you get ' + MAX_MULLIGANS + ' mulligans on different games; a mulligan replaces that hole only if it\'s better.';
+  document.getElementById('legend').textContent = TIEBREAK_TEXT + ' Enter scores at playpingolf.com.';
+
+  document.getElementById('rows').innerHTML = holes.map(function(h){
+    var r = strokeRanges(h.target); // [4,5,6,7,8]
+    return '<tr><td class="n">' + h.n + '</td><td class="mach">' + esc(h.name) + '</td>' +
+      '<td class="tgt">' + fmtNum(h.target) + '</td>' +
+      r.slice(0, 4).map(function(x){ return '<td>' + fmtNum(x.lo) + '+</td>'; }).join('') +
+      '<td>under ' + fmtNum(r[4].hi + 1) + '</td></tr>';
+  }).join('');
+
+  document.getElementById('cards').innerHTML = holes.map(function(h){
+    var r = strokeRanges(h.target);
+    var lines = [[1, 'Hit ' + fmtNum(h.target) + ' on ball 1'], [2, 'Hit it on ball 2'], [3, 'Hit it on ball 3']]
+      .concat(r.map(function(x){ return [x.s, fmtNum(x.lo) + ' – ' + fmtNum(x.hi)]; }));
+    return '<section class="card"><p class="hole">Hole ' + h.n + '</p><h2>' + esc(h.name) + '</h2>' +
+      '<p class="target">Target <b>' + fmtNum(h.target) + '</b></p>' +
+      '<table class="ct"><thead><tr><th>Strokes</th><th>Your score</th></tr></thead><tbody>' +
+      lines.map(function(l){ return '<tr' + (l[0] <= 3 ? ' class="hit"' : '') + '><td class="s">' + l[0] + '</td><td>' + l[1] + '</td></tr>'; }).join('') +
+      '</tbody></table><p class="foot">Short of the target after 3 balls? Your final score sets your strokes (4–8).</p></section>';
+  }).join('');
+
+  var btns = document.querySelectorAll('[data-m]');
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      document.body.className = b.dataset.m;
+      btns.forEach(function(x){ x.classList.toggle('on', x === b); });
+    });
+  });
+  document.getElementById('printBtn').addEventListener('click', function(){ window.print(); });
+})();
+</script>
+</body>
+</html>
