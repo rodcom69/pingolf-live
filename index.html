@@ -1100,11 +1100,13 @@
   var linkedEventId = new URLSearchParams(location.search).get('e');
   function wantedEventId(){
     if (linkedEventId) return linkedEventId;
-    try { var saved = localStorage.getItem('pingolf_event'); if (saved) return saved; } catch(e){}
+    // A remembered event only counts while it's taking scores (otherwise go to the open one).
+    try { var saved = localStorage.getItem('pingolf_event'); if (saved && eventTakingScores(EVENTS.find(function(e){ return e.id === saved; }))) return saved; } catch(e){}
     return null;
   }
   function pickerEvents(){
-    return EVENTS.filter(function(e){ return e.status !== 'closed' || (CURRENT_EVENT && e.id === CURRENT_EVENT.id); });
+    // Only events taking scores right now (upcoming and finished ones stay hidden), plus one opened by link.
+    return EVENTS.filter(function(e){ return eventTakingScores(e) || (CURRENT_EVENT && e.id === CURRENT_EVENT.id); });
   }
   function renderEventPicker(){
     var sel = document.getElementById('eventSelect');
