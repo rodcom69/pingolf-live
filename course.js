@@ -30,7 +30,7 @@ var COURSES = {
       {n:10, name:"Uncanny X-Men", target:100000000, label:"100M", img:"uncanny-x-men"},
       {n:11, name:"Transformers", target:100000000, label:"100M", img:"transformers"},
       {n:12, name:"John Wick", target:50000000, label:"50M", img:"john-wick"},
-      {n:13, name:"Guardians of the Galaxy", target:25000000, label:"25M", img:"guardians"},
+      {n:13, name:"Guardians of the Galaxy", target:40000000, label:"40M", img:"guardians"},
       {n:14, name:"Metallica", target:24000000, label:"24M", img:"metallica"},
       {n:15, name:"Ali", target:300000, label:"300K", img:"ali"},
       {n:16, name:"NBA Fast Break", target:50, label:"50", img:"nba-fast-break"},
