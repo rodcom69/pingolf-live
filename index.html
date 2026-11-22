@@ -255,8 +255,9 @@
   .conn-note.err{color:var(--bad);}
 
   /* Shareable scores-only view: playpingolf.com/?e=<id>#scores */
-  .share-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;font-size:13px;color:var(--text-dim);}
-  .share-bar .share-link{color:var(--accent);font-weight:700;text-decoration:none;}
+  .share-bar{display:none;}
+  body.scores-mode .share-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;font-size:13px;color:var(--text-dim);}
+  body.scores-mode .share-bar .share-link{color:var(--accent);font-weight:700;text-decoration:none;}
   .share-bar button{background:var(--accent);color:var(--accent-ink);border:none;border-radius:9px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer;}
   .share-bar .only-scores{display:none;}
   body.scores-mode .share-bar .only-scores{display:inline;}
