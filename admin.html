@@ -500,7 +500,7 @@
       close:    {ask: 'Close it?',  field: 'closedHoles',  add: true,  msg: 'Closed temporarily (par unchanged)'},
       reopen:   {ask: 'Reopen?',    field: 'closedHoles',  add: false, msg: 'Reopened'},
       remove:   {ask: 'Par drops 3. Sure?', field: 'removedHoles', add: true,  msg: 'Closed permanently (par drops by 3)'},
-      unremove: {ask: 'Put back?',  field: 'removedHoles', add: false, msg: 'Permanent close undone (still closed temporarily; tap Reopen when it works)'}
+      unremove: {ask: 'Put back?',  field: 'removedHoles', add: false, msg: 'Permanent close undone (scores count again)'}
     };
     $('holesList').querySelectorAll('[data-hole]').forEach(function(b){
       b.onclick = function(){
