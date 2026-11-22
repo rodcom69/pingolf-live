@@ -925,7 +925,7 @@
       }).join('');
       return '<tr>' +
         '<td class="tv-rank">' + places[i] + '</td>' +
-        '<td class="tv-name">' + esc(p.name) + '</td>' +
+        '<td class="tv-name">' + esc(tvName(p.name)) + '</td>' +
         '<td class="tv-thru-cell">' + p.res.thru + '</td>' +
         cells +
         '<td><span class="tv-total-val">' + p.res.total + '</span> <span class="tv-topar">' + fmtPar(p.res.toPar) + '</span></td>' +
@@ -938,6 +938,13 @@
       holes.map(function(){ return '<col class="col-hole">'; }).join('') +
       '<col class="col-total"></colgroup>' +
       '<thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  // TV shows first name + last initial ("Rodney Comegys" -> "Rodney C."); one-word names stay as typed.
+  function tvName(name){
+    var parts = String(name || '').trim().split(/\s+/);
+    if (parts.length < 2) return parts[0] || '';
+    return parts[0] + ' ' + parts[parts.length - 1].charAt(0).toUpperCase() + '.';
   }
 
   function renderTvBoard(){
