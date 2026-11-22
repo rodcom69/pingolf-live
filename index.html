@@ -873,7 +873,7 @@
       row.innerHTML =
         '<div class="lb-top">' +
           '<div class="lb-rank">' + places[i] + '</div>' +
-          '<div style="flex:1;min-width:0;"><div class="lb-name">' + esc(p.name) + '</div><div class="lb-thru">thru ' + p.res.thru +
+          '<div style="flex:1;min-width:0;"><div class="lb-name">' + esc(me && me.key === p.key ? p.name : shortName(p.name)) + '</div><div class="lb-thru">thru ' + p.res.thru +
             (p.res.mulligansUsed ? ' · ' + p.res.mulligansUsed + ' mulligan' + (p.res.mulligansUsed === 1 ? '' : 's') : '') + '</div></div>' +
           '<div><div class="lb-total tnum">' + p.res.total + '</div><div class="lb-topar">' + fmtPar(p.res.toPar) + '</div></div>' +
         '</div>' +
@@ -925,7 +925,7 @@
       }).join('');
       return '<tr>' +
         '<td class="tv-rank">' + places[i] + '</td>' +
-        '<td class="tv-name">' + esc(tvName(p.name)) + '</td>' +
+        '<td class="tv-name">' + esc(shortName(p.name)) + '</td>' +
         '<td class="tv-thru-cell">' + p.res.thru + '</td>' +
         cells +
         '<td><span class="tv-total-val">' + p.res.total + '</span> <span class="tv-topar">' + fmtPar(p.res.toPar) + '</span></td>' +
@@ -940,8 +940,9 @@
       '<thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>';
   }
 
-  // TV shows first name + last initial ("Rodney Comegys" -> "Rodney C."); one-word names stay as typed.
-  function tvName(name){
+  // Public boards show first name + last initial ("Rodney Comegys" -> "Rodney C."); one-word names stay as typed.
+  // Full names: the signed-in player's own row, and admin.html.
+  function shortName(name){
     var parts = String(name || '').trim().split(/\s+/);
     if (parts.length < 2) return parts[0] || '';
     return parts[0] + ' ' + parts[parts.length - 1].charAt(0).toUpperCase() + '.';
