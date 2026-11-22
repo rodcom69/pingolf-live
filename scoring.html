@@ -41,15 +41,43 @@
   .ct td.s{width:70px;font-weight:700;text-align:center;font-size:18px}
   .ct tr.hit td{background:var(--tint)}
   .foot{color:var(--text-dim);font-size:12px;margin:10px 0 0}
-  body.only-sheet .cards,body.only-cards .sheet{display:none}
-  body.only-cards .cards{margin-top:0}
+  /* Paper scorecard for players without a phone */
+  .paper{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+  .paper-head{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;margin:10px 0 14px}
+  .paper-head h1{margin:0}
+  .blank{flex:1 1 260px;display:flex;gap:8px;align-items:flex-end;font-weight:700;font-size:13px}
+  .blank span{flex:1;border-bottom:1.5px solid var(--text);min-height:22px}
+  .blank.short{flex:0 1 200px}
+  table.pc{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  .pc th,.pc td{border:1px solid var(--border);padding:0 8px;height:30px;text-align:left}
+  .pc th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);height:auto;padding:6px 8px;vertical-align:bottom}
+  .pc th small{display:block;text-transform:none;letter-spacing:0;font-weight:500}
+  .pc td.n{text-align:center;font-weight:700;color:var(--accent);width:36px}
+  .pc td.m{font-weight:700;white-space:nowrap}
+  .pc td.t{text-align:right;white-space:nowrap;color:var(--text-dim)}
+  .pc td.balls{white-space:nowrap;text-align:center;letter-spacing:.9em;font-weight:500;color:var(--text-dim);width:110px;padding-left:calc(8px + .9em)}
+  .pc td.w{width:22%}
+  .pc td.s{width:70px;background:var(--tint)}
+  .pc tr.tot td{font-weight:700;border-top:2px solid var(--text)}
+  .pc tr.tot td.lbl{text-align:right}
+  .paper h3{font-family:Teko,Impact,sans-serif;font-size:24px;line-height:1;margin:18px 0 4px}
+  .paper .note{color:var(--text-dim);font-size:12px;margin:0 0 6px;line-height:1.4}
+  .final{display:flex;flex-wrap:wrap;gap:12px 24px;margin-top:16px}
+  body:not(.mode-sheet) .sheet,body:not(.mode-cards) .cards,body:not(.mode-paper) .paper{display:none}
+  .cards{margin-top:0}
   @media print{
     :root{--bg:#fff;--surface:#fff;--text:#000;--text-dim:#444;--border:#bbb;--accent:#136b3e;--gold:#8a6d2f;--tint:#e3efe6;color-scheme:light}
     body{font-size:10.5px}
     .bar{display:none}
     .wrap{padding:0;max-width:none}
     .sheet,.card{border:0;border-radius:0;padding:0}
-    body:not(.only-sheet) .sheet{break-after:page}
+    .paper{border:0;border-radius:0;padding:0}
+    .pc th,.pc td{border-color:#888}
+    .pc td{height:.29in}
+    .pc th{padding:4px 8px}
+    .paper-head{margin:4px 0 8px}
+    .paper h3{margin-top:12px}
+    .final{margin-top:12px}
     .big th,.big td{padding:4px 6px}
     .cards{display:block;margin:0}
     .card{break-after:page;padding-top:.5in;text-align:center}
@@ -62,15 +90,15 @@
   @page{margin:.45in}
 </style>
 </head>
-<body class="only-sheet">
+<body class="mode-sheet">
 <div class="wrap">
   <div class="bar">
     <a href="./" id="backLink">&larr; Scorecard</a>
-    <button type="button" id="m-sheet" data-m="only-sheet" class="on">Chart (1 page)</button>
-    <button type="button" id="m-cards" data-m="only-cards">Hole cards (1 per machine)</button>
-    <button type="button" id="m-all" data-m="">Both</button>
+    <button type="button" id="m-sheet" data-m="mode-sheet" class="on">Scoring chart</button>
+    <button type="button" id="m-paper" data-m="mode-paper">Paper scorecard</button>
+    <button type="button" id="m-cards" data-m="mode-cards">Hole cards (1 per machine)</button>
     <button type="button" id="printBtn">Print</button>
-    <span class="hint">Pick what to print, then tap Print. The chart fits on one page.</span>
+    <span class="hint">Pick what to print, then tap Print. The chart and the scorecard each fit on one page.</span>
   </div>
   <div class="sheet">
     <p class="eyebrow" id="eyebrow">Pingolf</p>
@@ -83,6 +111,30 @@
     <p class="legend" id="legend"></p>
   </div>
   <div class="cards" id="cards"></div>
+  <div class="paper">
+    <p class="eyebrow" id="paperEyebrow">Pingolf</p>
+    <div class="paper-head">
+      <h1>Pingolf Scorecard</h1>
+      <div class="blank">Name <span></span></div>
+      <div class="blank short">Phone/IFPA # <span></span></div>
+    </div>
+    <p class="note" id="paperRules"></p>
+    <div class="scroll"><table class="pc">
+      <thead><tr><th>Hole</th><th>Machine</th><th>Target</th><th>Hit target on ball<small>circle one</small></th><th>Final score<small>if you missed</small></th><th>Strokes</th></tr></thead>
+      <tbody id="paperRows"></tbody>
+    </table></div>
+    <h3>Mulligans</h3>
+    <p class="note" id="mullNote"></p>
+    <div class="scroll"><table class="pc">
+      <thead><tr><th>#</th><th>Machine</th><th>Hole</th><th>Hit target on ball<small>circle one</small></th><th>Final score<small>if you missed</small></th><th>Strokes</th></tr></thead>
+      <tbody id="mullRows"></tbody>
+    </table></div>
+    <div class="final">
+      <div class="blank short">Total strokes <span></span></div>
+      <div class="blank short">Vs. par <span></span></div>
+      <div class="blank">Entered in app by <span></span></div>
+    </div>
+  </div>
 </div>
 <script src="course.js"></script>
 <script>
@@ -125,6 +177,21 @@
       lines.map(function(l){ return '<tr' + (l[0] <= 3 ? ' class="hit"' : '') + '><td class="s">' + l[0] + '</td><td>' + l[1] + '</td></tr>'; }).join('') +
       '</tbody></table><p class="foot">Short of the target after 3 balls? Your final score sets your strokes (4–8).</p></section>';
   }).join('');
+
+  // Paper scorecard
+  document.getElementById('paperEyebrow').textContent = document.getElementById('eyebrow').textContent;
+  document.getElementById('paperRules').textContent =
+    'Hit the target on ball 1, 2 or 3: circle that ball, and that\'s your strokes. Missed after 3 balls? Write your final score; ' +
+    'strokes (4–8) come from the scoring chart. Par ' + PAR + ' per hole. Give this card to the organizer to enter in the app.';
+  document.getElementById('paperRows').innerHTML = holes.map(function(h){
+    return '<tr><td class="n">' + h.n + '</td><td class="m">' + esc(h.name) + '</td><td class="t">' + fmtNum(h.target) + '</td>' +
+      '<td class="balls">1 2 3</td><td class="w"></td><td class="s"></td></tr>';
+  }).join('') + '<tr class="tot"><td colspan="5" class="lbl">Total before mulligans (par ' + (PAR * n) + ')</td><td class="s"></td></tr>';
+  document.getElementById('mullNote').textContent = 'After all ' + n + ' holes: replay up to ' + MAX_MULLIGANS +
+    ' different machines. A mulligan replaces that hole only if it took fewer strokes.';
+  var mr = '';
+  for (var i = 1; i <= MAX_MULLIGANS; i++) mr += '<tr><td class="n">' + i + '</td><td class="w"></td><td style="width:50px"></td><td class="balls">1 2 3</td><td class="w"></td><td class="s"></td></tr>';
+  document.getElementById('mullRows').innerHTML = mr;
 
   var btns = document.querySelectorAll('[data-m]');
   btns.forEach(function(b){
