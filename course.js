@@ -113,7 +113,6 @@ function chartStrokes(target, score, balls){
   for (var i = 0; i < r.length; i++) if (score >= r[i].lo) return r[i].s;
   return MAX_STROKES;
 }
-function ballsText(n){ return n === 3 ? '1, 2, or 3' : '1–' + n; }
 function fmtNum(n){ return n.toLocaleString("en-US"); }
 function esc(v){
   return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){

@@ -245,7 +245,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-22c"></script>
+<script src="course.js?v=2026-11-22d"></script>
 <script>
 (function(){
   firebase.initializeApp(firebaseConfig);
@@ -437,10 +437,12 @@
     if (!id) { setStatus('Give the event a link name.', 'err'); return; }
     if (!editingEvent && EVENTS.some(function(e){ return e.id === id; })) { setStatus('There is already an event with the link name ' + id + '.', 'err'); return; }
     $('evOverlay').classList.remove('show');
+    // Hole lists come from the live copy, so closes made while this sheet was open aren't undone.
+    var live = editingEvent ? (EVENTS.find(function(e){ return e.id === id; }) || editingEvent) : null;
     saveEvent(id, {name: name, location: $('evLocation').value.trim(), date: $('evDate').value, time: $('evTime').value.trim(),
                    course: $('evCourse').value, status: $('evStatus').value, test: $('evTest').checked,
-                   closedHoles: editingEvent ? (editingEvent.closedHoles || []) : [],
-                   removedHoles: editingEvent ? (editingEvent.removedHoles || []) : []},
+                   closedHoles: live ? (live.closedHoles || []) : [],
+                   removedHoles: live ? (live.removedHoles || []) : []},
               editingEvent ? 'Event saved.' : 'Event created: playpingolf.com/?e=' + id);
   };
 
@@ -512,6 +514,8 @@
           adminBatch(function(batch, stamp){
             upd.unlockId = stamp.unlockId;
             upd[act.field] = act.add ? FV.arrayUnion(n) : FV.arrayRemove(n);
+            // A permanent close replaces a temporary one, so Undo puts the hole fully back in play.
+            if (b.dataset.act === 'remove') upd.closedHoles = FV.arrayRemove(n);
             batch.update(db.collection('events').doc(ev.id), upd);
           }).then(done(act.msg + ': hole ' + n + ' (' + h.name + ').')).catch(failed);
         });

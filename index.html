@@ -411,7 +411,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-22c"></script>
+<script src="course.js?v=2026-11-22d"></script>
 
 <script>
 (function(){
@@ -798,8 +798,9 @@
   });
 
   function lastUndoable(){
-    var mine = myAttempts().filter(function(a){ return !a.void && !isHoleShut(a.hole); }).sort(function(a,b){ return b.ts - a.ts; });
-    return mine.length && canStillChange(mine[0]) ? mine[0] : null;
+    // Newest entry only: if its hole has been closed since, Undo is off (never fall back to an older entry).
+    var mine = myAttempts().filter(function(a){ return !a.void; }).sort(function(a,b){ return b.ts - a.ts; });
+    return mine.length && !isHoleShut(mine[0].hole) && canStillChange(mine[0]) ? mine[0] : null;
   }
   function updateUndo(){ document.getElementById('undoBtn').disabled = !lastUndoable(); }
   setInterval(updateUndo, 5000);
@@ -1105,17 +1106,21 @@
     renderTvQr();
   }
   // TV board: QR code in the header pointing at this event's link.
+  // Loads the QR library once; draws whatever event is shown when it's ready.
+  var tvQrLoading = false;
   function renderTvQr(){
     if (!/tv/i.test(location.hash) || !CURRENT_EVENT_ID) return;
-    var link = 'https://playpingolf.com/?e=' + encodeURIComponent(CURRENT_EVENT_ID);
-    function draw(){
-      var qr = qrcode(0, 'M'); qr.addData(link); qr.make();
+    if (window.qrcode) {
+      var qr = qrcode(0, 'M'); qr.addData('https://playpingolf.com/?e=' + encodeURIComponent(CURRENT_EVENT_ID)); qr.make();
       document.querySelector('#tvQr img').src = qr.createDataURL(8, 0);
+      return;
     }
-    if (window.qrcode) return draw();
+    if (tvQrLoading) return;
+    tvQrLoading = true;
     var sc = document.createElement('script');
     sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
-    sc.onload = draw;
+    sc.onload = function(){ renderTvQr(); };
+    sc.onerror = function(){ sc.remove(); setTimeout(function(){ tvQrLoading = false; renderTvQr(); }, 60000); };
     document.head.appendChild(sc);
   }
   document.getElementById('eventSelect').addEventListener('change', function(){
