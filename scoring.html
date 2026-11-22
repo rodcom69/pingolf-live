@@ -155,37 +155,42 @@
   document.getElementById('rules').textContent =
     'Hit the target on ball 1, 2 or 3 and that\'s your strokes for the hole (1, 2 or 3). ' +
     'Still short after 3 balls? Find your final score below to get your strokes (4–8). ' +
+    holes.filter(function(h){ return holeBalls(h) > 3; }).map(function(h){ return h.name + ' is a 5-ball game: ball 4 = 4, ball 5 = 5, short after 5 balls = 6–8. '; }).join('') +
     'Par ' + PAR + ' per hole, ' + (PAR * n) + ' total. Lowest total wins. ' +
     'After all ' + n + ' holes you get ' + MAX_MULLIGANS + ' mulligans on different games; a mulligan replaces that hole only if it\'s better.';
   document.getElementById('legend').textContent = TIEBREAK_TEXT + ' Enter scores at playpingolf.com.';
 
   document.getElementById('rows').innerHTML = holes.map(function(h){
-    var r = strokeRanges(h.target); // [4,5,6,7,8]
-    return '<tr><td class="n">' + h.n + '</td><td class="mach">' + esc(h.name) + '</td>' +
-      '<td class="tgt">' + fmtNum(h.target) + '</td>' +
-      r.slice(0, 4).map(function(x){ return '<td>' + fmtNum(x.lo) + '+</td>'; }).join('') +
-      '<td>under ' + fmtNum(r[4].hi + 1) + '</td></tr>';
+    var b = holeBalls(h), r = strokeRanges(h.target, b); // strokes b+1..8
+    var cells = [];
+    for (var s = 4; s <= b; s++) cells.push('<td>ball ' + s + '</td>');
+    r.forEach(function(x, i){ cells.push('<td>' + (i < r.length - 1 ? fmtNum(x.lo) + '+' : 'under ' + fmtNum(x.hi + 1)) + '</td>'); });
+    return '<tr><td class="n">' + h.n + '</td><td class="mach">' + esc(h.name) + (b > 3 ? ' <small>(' + b + ' balls)</small>' : '') + '</td>' +
+      '<td class="tgt">' + fmtNum(h.target) + '</td>' + cells.join('') + '</tr>';
   }).join('');
 
   document.getElementById('cards').innerHTML = holes.map(function(h){
-    var r = strokeRanges(h.target);
-    var lines = [[1, 'Hit ' + fmtNum(h.target) + ' on ball 1'], [2, 'Hit it on ball 2'], [3, 'Hit it on ball 3']]
-      .concat(r.map(function(x){ return [x.s, fmtNum(x.lo) + ' – ' + fmtNum(x.hi)]; }));
+    var b = holeBalls(h), r = strokeRanges(h.target, b);
+    var lines = [[1, 'Hit ' + fmtNum(h.target) + ' on ball 1']];
+    for (var s = 2; s <= b; s++) lines.push([s, 'Hit it on ball ' + s]);
+    lines = lines.concat(r.map(function(x){ return [x.s, fmtNum(x.lo) + ' – ' + fmtNum(x.hi)]; }));
     return '<section class="card"><p class="hole">Hole ' + h.n + '</p><h2>' + esc(h.name) + '</h2>' +
       '<p class="target">Target <b>' + fmtNum(h.target) + '</b></p>' +
       '<table class="ct"><thead><tr><th>Strokes</th><th>Your score</th></tr></thead><tbody>' +
-      lines.map(function(l){ return '<tr' + (l[0] <= 3 ? ' class="hit"' : '') + '><td class="s">' + l[0] + '</td><td>' + l[1] + '</td></tr>'; }).join('') +
-      '</tbody></table><p class="foot">Short of the target after 3 balls? Your final score sets your strokes (4–8).</p></section>';
+      lines.map(function(l){ return '<tr' + (l[0] <= b ? ' class="hit"' : '') + '><td class="s">' + l[0] + '</td><td>' + l[1] + '</td></tr>'; }).join('') +
+      '</tbody></table><p class="foot">' + (b > 3 ? b + '-ball game. ' : '') + 'Short of the target after ' + b + ' balls? Your final score sets your strokes (' + (b + 1) + '–' + MAX_STROKES + ').</p></section>';
   }).join('');
 
   // Paper scorecard
   document.getElementById('paperEyebrow').textContent = document.getElementById('eyebrow').textContent;
   document.getElementById('paperRules').textContent =
     'Hit the target on ball 1, 2 or 3: circle that ball, and that\'s your strokes. Missed after 3 balls? Write your final score; ' +
-    'strokes (4–8) come from the scoring chart. Par ' + PAR + ' per hole. Give this card to the organizer to enter in the app.';
+    'strokes (4–8) come from the scoring chart. ' +
+    holes.filter(function(h){ return holeBalls(h) > 3; }).map(function(h){ return h.name + ' is 5 balls (circle 1–5; short = 6–8). '; }).join('') +
+    'Par ' + PAR + ' per hole. Give this card to the organizer to enter in the app.';
   document.getElementById('paperRows').innerHTML = holes.map(function(h){
     return '<tr><td class="n">' + h.n + '</td><td class="m">' + esc(h.name) + '</td><td class="t">' + fmtNum(h.target) + '</td>' +
-      '<td class="balls">1 2 3</td><td class="w"></td><td class="s"></td></tr>';
+      (holeBalls(h) > 3 ? '<td class="balls" style="letter-spacing:.35em">1 2 3 4 5' : '<td class="balls">1 2 3') + '</td><td class="w"></td><td class="s"></td></tr>';
   }).join('') + '<tr class="tot"><td colspan="5" class="lbl">Total before mulligans (par ' + (PAR * n) + ')</td><td class="s"></td></tr>';
   document.getElementById('mullNote').textContent = 'After all ' + n + ' holes: replay up to ' + MAX_MULLIGANS +
     ' different machines. A mulligan replaces that hole only if it took fewer strokes.';

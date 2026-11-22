@@ -25,7 +25,7 @@ var COURSES = {
       {n:5, name:"Walking Dead", target:100000000, label:"100M", img:"walking-dead"},
       {n:6, name:"SeaWitch", target:400000, label:"400K", img:"seawitch"},
       {n:7, name:"Beatles", target:2000000, label:"2M", img:"beatles"},
-      {n:8, name:"Joker Poker", target:200000, label:"200K", img:"joker-poker"},
+      {n:8, name:"Joker Poker", target:200000, label:"200K", img:"joker-poker", balls:5},
       {n:9, name:"Medieval Madness", target:12000000, label:"12M", img:"medieval-madness"},
       {n:10, name:"Uncanny X-Men", target:100000000, label:"100M", img:"uncanny-x-men"},
       {n:11, name:"Transformers", target:100000000, label:"100M", img:"transformers"},
@@ -77,27 +77,37 @@ function sortEvents(list){
 var MAX_MULLIGANS = 2, PAR = 3;
 function rulesText(holes){
   var n = openHoleCount(holes);
-  return 'Hit the target on ball 1, 2, or 3 — that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4–8) are looked up automatically. Play all ' + n + ' holes. Once all ' + n + ' are done, you get ' + MAX_MULLIGANS + ' mulligans: pick any game, play it again, and enter the score. It replaces that hole on your card only if it\'s better. Each mulligan must be a different game. Par is 3 per hole (' + (PAR * n) + ' total). Lowest total wins. ' + TIEBREAK_TEXT;
+  var five = holes.filter(function(h){ return holeBalls(h) === 5; }).map(function(h){ return h.name; });
+  return 'Hit the target on ball 1, 2, or 3 — that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4–8) are looked up automatically. ' +
+    (five.length ? five.join(' and ') + (five.length > 1 ? ' are' : ' is') + ' a 5-ball game: hit the target on ball 4 = 4 strokes, ball 5 = 5; still short after 5 balls = 6–8 strokes. ' : '') +
+    'Play all ' + n + ' holes. Once all ' + n + ' are done, you get ' + MAX_MULLIGANS + ' mulligans: pick any game, play it again, and enter the score. It replaces that hole on your card only if it\'s better. Each mulligan must be a different game. Par is 3 per hole (' + (PAR * n) + ' total). Lowest total wins. ' + TIEBREAK_TEXT;
 }
 
-function strokeRanges(target){
-  var b4 = Math.round(target*4/5), b3 = Math.round(target*3/5), b2 = Math.round(target*2/5), b1 = Math.round(target*1/5);
-  return [
-    {s:4, lo:b4, hi:target-1},
-    {s:5, lo:b3, hi:b4-1},
-    {s:6, lo:b2, hi:b3-1},
-    {s:7, lo:b1, hi:b2-1},
-    {s:8, lo:0, hi:b1-1}
-  ];
+// Most games are 3 balls; a hole with balls:5 (Joker Poker) lets ball 4 = 4 and
+// ball 5 = 5 strokes. Short of target after the last ball, the final score is
+// split into equal bands up to 8 strokes: fifths (4-8) for 3-ball games,
+// thirds (6-8) for 5-ball games.
+var MAX_STROKES = 8;
+function holeBalls(h){ return (h && h.balls) || 3; }
+function strokeRanges(target, balls){
+  balls = balls || 3;
+  var k = MAX_STROKES - balls, out = [], hi = target - 1;
+  for (var i = 1; i <= k; i++) {
+    var lo = i === k ? 0 : Math.round(target * (k - i) / k);
+    out.push({s: balls + i, lo: lo, hi: hi});
+    hi = lo - 1;
+  }
+  return out;
 }
-function chartStrokes(target, score){
-  if (score >= target) return 3;
-  if (score >= target*4/5) return 4;
-  if (score >= target*3/5) return 5;
-  if (score >= target*2/5) return 6;
-  if (score >= target*1/5) return 7;
-  return 8;
+function chartStrokes(target, score, balls){
+  balls = balls || 3;
+  if (score >= target) return balls;
+  // Use the same rounded bands the printed chart shows, so they always agree.
+  var r = strokeRanges(target, balls);
+  for (var i = 0; i < r.length; i++) if (score >= r[i].lo) return r[i].s;
+  return MAX_STROKES;
 }
+function ballsText(n){ return n === 3 ? '1, 2, or 3' : '1–' + n; }
 function fmtNum(n){ return n.toLocaleString("en-US"); }
 function esc(v){
   return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){

@@ -379,11 +379,13 @@
         <button class="ball-btn" data-ball="1"><span>Made target on Ball 1</span><span class="strokes-pill">1</span></button>
         <button class="ball-btn" data-ball="2"><span>Made target on Ball 2</span><span class="strokes-pill">2</span></button>
         <button class="ball-btn" data-ball="3"><span>Made target on Ball 3</span><span class="strokes-pill">3</span></button>
+        <button class="ball-btn" data-ball="4" hidden><span>Made target on Ball 4</span><span class="strokes-pill">4</span></button>
+        <button class="ball-btn" data-ball="5" hidden><span>Made target on Ball 5</span><span class="strokes-pill">5</span></button>
       </div>
       <div class="divider">or</div>
       <div class="miss-box">
         <div class="miss-head" id="missHead">Didn't make the target by Ball 3?</div>
-        <div class="miss-sub">Enter your <b>actual final score</b> after all 3 balls. Your strokes (4&ndash;8) are worked out for you.</div>
+        <div class="miss-sub" id="missSub">Enter your <b>actual final score</b> after all 3 balls. Your strokes (4&ndash;8) are worked out for you.</div>
         <div class="miss-row">
           <input type="number" id="missScore" placeholder="Your final score" inputmode="numeric">
           <button class="save-btn" id="missSave">Save</button>
@@ -591,9 +593,13 @@
 
   // "Made 9M on Ball 1": the buttons name the hole's actual target.
   function setBallLabels(hole){
-    document.getElementById('missHead').textContent = hole ? "Didn't make " + hole.label + ' by Ball 3?' : "Didn't make the target by Ball 3?";
+    var balls = holeBalls(hole);
+    document.getElementById('missHead').textContent = (hole ? "Didn't make " + hole.label : "Didn't make the target") + ' by Ball ' + balls + '?';
+    document.getElementById('missSub').innerHTML = (balls > 3 ? '<b>' + balls + '-ball game.</b> ' : '') +
+      'Enter your <b>actual final score</b> after all ' + balls + ' balls. Your strokes (' + (balls + 1) + '&ndash;' + MAX_STROKES + ') are worked out for you.';
     document.querySelectorAll('.ball-btn').forEach(function(b){
       var n = b.dataset.ball;
+      b.hidden = +n > balls;
       b.innerHTML = '<span>Made ' + (hole ? '<b>' + esc(hole.label) + '</b>' : 'target') + ' on Ball ' + n + '</span><span class="strokes-pill">' + n + '</span>';
     });
   }
@@ -610,8 +616,8 @@
     var el = document.getElementById('scorePreview');
     var val = parseInt(document.getElementById('missScore').value, 10);
     if (!currentHole || isNaN(val) || val < 0) { el.textContent = ''; return; }
-    var st = chartStrokes(currentHole.target, val);
-    el.innerHTML = '<b>' + fmtNum(val) + '</b> = ' + st + ' strokes' + (st === 3 ? ' (hit the target \u2014 use the ball buttons if you can)' : '');
+    var st = chartStrokes(currentHole.target, val, holeBalls(currentHole));
+    el.innerHTML = '<b>' + fmtNum(val) + '</b> = ' + st + ' strokes' + (val >= currentHole.target ? ' (hit the target \u2014 use the ball buttons if you can)' : '');
   }
   document.getElementById('missScore').addEventListener('input', updatePreview);
 
@@ -776,7 +782,7 @@
   document.getElementById('missSave').addEventListener('click', function(){
     var val = parseInt(document.getElementById('missScore').value, 10);
     if (isNaN(val) || val < 0) return;
-    var strokes = chartStrokes(currentHole.target, val);
+    var strokes = chartStrokes(currentHole.target, val, holeBalls(currentHole));
     submitAttempt(strokes, 'chart', {rawScore: val});
   });
 
@@ -972,8 +978,8 @@
 
   function renderObjectives(){
   document.getElementById('objList').innerHTML = HOLES.map(function(h){
-    var ranges = strokeRanges(h.target);
-    var rangeHtml = ranges.map(function(r){
+    var ranges = strokeRanges(h.target, holeBalls(h));
+    var rangeHtml = (holeBalls(h) > 3 ? '<div class="obj-range"><b>4</b>ball 4</div><div class="obj-range"><b>5</b>ball 5</div>' : '') + ranges.map(function(r){
       return '<div class="obj-range"><b>' + r.s + '</b>' + fmtNum(r.lo) + '&ndash;' + fmtNum(r.hi) + '</div>';
     }).join('');
     return '<div class="obj-card' + (isHoleClosed(h.n) ? ' closed' : '') + '">' +

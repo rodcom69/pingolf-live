@@ -163,6 +163,8 @@
       <button class="btn primary" data-ball="1">Ball 1 · 1</button>
       <button class="btn primary" data-ball="2">Ball 2 · 2</button>
       <button class="btn primary" data-ball="3">Ball 3 · 3</button>
+      <button class="btn primary" data-ball="4" hidden>Ball 4 · 4</button>
+      <button class="btn primary" data-ball="5" hidden>Ball 5 · 5</button>
     </div>
     <div class="dim small" style="margin:14px 0 6px;">or, short of target, the final score:</div>
     <div class="row">
@@ -694,11 +696,12 @@
     $('sheetSub').textContent = (sheet.player ? sheet.player.name + ' · ' : '') + (t ? 'Target ' + fmtNum(t) : 'Choose a hole');
     var ok = !!t;
     document.querySelectorAll('.balls .btn, #sheetSave').forEach(function(b){ b.disabled = !ok; });
+    document.querySelectorAll('.balls .btn').forEach(function(b){ b.hidden = +b.dataset.ball > holeBalls(h); });
     updatePreview();
   }
   function updatePreview(){
     var t = sheetTarget(), v = parseInt($('sheetScore').value, 10);
-    $('sheetPreview').innerHTML = (t && !isNaN(v) && v >= 0) ? ('<b>' + fmtNum(v) + '</b> = ' + chartStrokes(t, v) + ' strokes') : '';
+    $('sheetPreview').innerHTML = (t && !isNaN(v) && v >= 0) ? ('<b>' + fmtNum(v) + '</b> = ' + chartStrokes(t, v, holeBalls(sheetHole())) + ' strokes') : '';
   }
   function openSheet(s){
     sheet = s;
@@ -766,7 +769,7 @@
   $('sheetSave').addEventListener('click', function(){
     var v = parseInt($('sheetScore').value, 10), t = sheetTarget();
     if (isNaN(v) || v < 0 || !t) return;
-    saveSheet({strokes: chartStrokes(t, v), method: 'chart', rawScore: v});
+    saveSheet({strokes: chartStrokes(t, v, holeBalls(sheetHole())), method: 'chart', rawScore: v});
   });
 })();
 </script>
