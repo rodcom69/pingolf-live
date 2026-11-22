@@ -34,7 +34,7 @@ var COURSES = {
       {n:14, name:"Metallica", target:24000000, label:"24M", img:"metallica"},
       {n:15, name:"Ali", target:300000, label:"300K", img:"ali"},
       {n:16, name:"NBA Fast Break", target:75, label:"75", img:"nba-fast-break"},
-      {n:17, name:"Game of Thrones", target:50000000, label:"50M", img:"game-of-thrones"},
+      {n:17, name:"Game of Thrones", target:75000000, label:"75M", img:"game-of-thrones"},
       {n:18, name:"Black Knight: Sword of Rage", target:40000000, label:"40M", img:"black-knight-sor"}
     ]
   }
