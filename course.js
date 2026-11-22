@@ -81,8 +81,8 @@ function fmtEventDate(ev){
   var p = ev.date.split('-'), d = new Date(+p[0], +p[1] - 1, +p[2]);
   return d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'});
 }
-function eventWhen(ev){ return [fmtEventDate(ev), ev.time].filter(Boolean).join(' · '); }
-function eventTitle(ev){ return (ev.test ? '\ud83e\uddea ' : '') + ev.name + (ev.date && !ev.test ? ' — ' + fmtEventDate(ev) : ''); }
+function eventWhen(ev){ return ev.closesAt ? 'open until ' + fmtClosesAt(ev) : [fmtEventDate(ev), ev.time].filter(Boolean).join(' · '); }
+function eventTitle(ev){ return (ev.test ? '\ud83e\uddea ' : '') + ev.name + (ev.date && !ev.test && !ev.closesAt ? ' — ' + fmtEventDate(ev) : ''); }
 // Newest first, test events last.
 function sortEvents(list){
   return list.slice().sort(function(a,b){ return (!!a.test - !!b.test) || (b.date || '').localeCompare(a.date || ''); });
