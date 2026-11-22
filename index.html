@@ -451,6 +451,7 @@
   // their PIN; the database rules reject saves for anyone else.
   var FV = firebase.firestore.FieldValue;
   var me = null;
+  var PLAYER_NAMES = {};
   try { me = JSON.parse(localStorage.getItem('pingolf_me') || 'null'); } catch(e){ me = null; }
   if (me && !(me.key && me.name && me.code)) me = null;
   var nameInput = document.getElementById('nameInput');
@@ -838,7 +839,7 @@
     var byPlayer = {};
     allAttempts.forEach(function(a){
       if (!byPlayer[a.playerKey]) byPlayer[a.playerKey] = {name: a.playerName, attempts: []};
-      byPlayer[a.playerKey].name = a.playerName;
+      byPlayer[a.playerKey].name = PLAYER_NAMES[a.playerKey] || a.playerName;
       byPlayer[a.playerKey].attempts.push(a);
     });
     var players = Object.keys(byPlayer).map(function(k){
@@ -892,7 +893,7 @@
     var byPlayer = {};
     attemptsList.forEach(function(a){
       if (!byPlayer[a.playerKey]) byPlayer[a.playerKey] = {name: a.playerName, attempts: []};
-      byPlayer[a.playerKey].name = a.playerName;
+      byPlayer[a.playerKey].name = PLAYER_NAMES[a.playerKey] || a.playerName;
       byPlayer[a.playerKey].attempts.push(a);
     });
     var players = Object.keys(byPlayer).map(function(k){
@@ -1188,6 +1189,21 @@
     linkedEventId = null;
     selectEvent(this.value, true);
   });
+
+  // Display names come from players/{key}.name (the organizer can lengthen a name there, e.g. "Rodney" -> "Rodney Comegys",
+  // without changing the sign-in key). A signed-in phone picks the new name up for its future scores too.
+  db.collection('players').onSnapshot(function(snap){
+    var names = {};
+    snap.forEach(function(d){ var n = d.data().name; if (typeof n === 'string' && n.trim()) names[d.id] = n.trim(); });
+    PLAYER_NAMES = names;
+    if (me && names[me.key] && names[me.key] !== me.name) {
+      me.name = names[me.key];
+      try { localStorage.setItem('pingolf_me', JSON.stringify(me)); localStorage.setItem('pingolf_name', me.name); } catch(e){}
+      showMe();
+    }
+    renderLeaderboard();
+    if (typeof renderTvBoard === 'function') renderTvBoard();
+  }, function(){});
 
   db.collection('events').onSnapshot(function(snap){
     EVENTS = sortEvents(snap.docs.map(function(d){ var e = d.data(); e.id = d.id; return e; }));
