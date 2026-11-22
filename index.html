@@ -75,6 +75,11 @@
   .event-note{margin-top:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--gold);background:var(--surface-2);font-size:14px;line-height:1.4;}
   .event-note b{display:block;font-size:15px;margin-bottom:2px;}
   body.tv-mode .event-select{display:none;}
+  .tv-qr{display:none;}
+  body.tv-mode header.top .inner{position:relative;padding-right:15vw;}
+  body.tv-mode .tv-qr{display:flex;flex-direction:column;align-items:center;gap:.3vw;position:absolute;right:0;top:50%;transform:translateY(-50%);}
+  .tv-qr img{width:10vw;height:10vw;min-width:110px;min-height:110px;image-rendering:pixelated;background:#fff;border-radius:.6vw;padding:.4vw;}
+  .tv-qr span{font-family:"Teko",sans-serif;font-size:clamp(14px,1.6vw,24px);color:var(--gold);letter-spacing:.04em;line-height:1;}
 
   .tabs{display:flex;gap:6px;margin-top:14px;background:var(--surface-2);padding:4px;border-radius:10px;}
   .tab-btn{
@@ -295,6 +300,7 @@
     </div>
     <select id="eventSelect" class="event-select" aria-label="Event"><option value="">Loading events&hellip;</option></select>
     <div class="sub" id="eventSub"></div>
+    <div class="tv-qr" id="tvQr" aria-hidden="true"><img alt=""><span>SCAN TO PLAY</span></div>
     <div class="tabs">
       <button class="tab-btn active" data-tab="score"><span class="long">Enter </span>Score</button>
       <button class="tab-btn" data-tab="board"><span class="long">Leader</span><span class="short">Board</span><span class="long">board</span></button>
@@ -1057,6 +1063,21 @@
     renderEventPicker();
     showEventInfo();
     renderAll();
+    renderTvQr();
+  }
+  // TV board: QR code in the header pointing at this event's link.
+  function renderTvQr(){
+    if (!/tv/i.test(location.hash) || !CURRENT_EVENT_ID) return;
+    var link = 'https://playpingolf.com/?e=' + encodeURIComponent(CURRENT_EVENT_ID);
+    function draw(){
+      var qr = qrcode(0, 'M'); qr.addData(link); qr.make();
+      document.querySelector('#tvQr img').src = qr.createDataURL(8, 0);
+    }
+    if (window.qrcode) return draw();
+    var sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+    sc.onload = draw;
+    document.head.appendChild(sc);
   }
   document.getElementById('eventSelect').addEventListener('change', function(){
     linkedEventId = null;
