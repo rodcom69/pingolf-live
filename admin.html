@@ -121,7 +121,7 @@
     </div>
     <div class="card" id="holesCard">
       <div class="row">
-        <div style="flex:1;"><b>Machine down? Close the hole</b><div class="dim small"><b>Close</b> = machine down for now: nobody can enter a score there, par stays the same, and scores already in still count. Tap <b>Reopen</b> when it works. If it won't come back, tap <b>Remove for good</b>: the hole is dropped for everyone, its scores stop counting, and par drops by 3.</div></div>
+        <div style="flex:1;"><b>Machine down? Close the hole</b><div class="dim small"><b>Close temporarily</b> = machine down for now: nobody can enter a score there, par stays the same, and scores already in still count. Tap <b>Reopen</b> when it works. If it won't come back, tap <b>Close permanently</b>: the hole is dropped for everyone, its scores stop counting, and par drops by 3.</div></div>
         <button class="btn sm" id="holesToggle">Show</button>
       </div>
       <div id="holesList" hidden style="margin-top:10px;"></div>
@@ -489,18 +489,18 @@
     $('holesToggle').textContent = $('holesList').hidden ? (count ? 'Show (' + count + ' closed)' : 'Show') : 'Hide';
     $('holesList').innerHTML = eventHoles().map(function(h){
       var isGone = gone.indexOf(h.n) !== -1, isDown = !isGone && down.indexOf(h.n) !== -1;
-      var btns = isGone ? '<button class="btn sm" data-hole="' + h.n + '" data-act="unremove">Put back</button>'
-        : isDown ? '<button class="btn sm" data-hole="' + h.n + '" data-act="reopen">Reopen</button> <button class="btn sm danger" data-hole="' + h.n + '" data-act="remove">Remove for good</button>'
-        : '<button class="btn sm danger" data-hole="' + h.n + '" data-act="close">Close</button>';
+      var btns = isGone ? '<button class="btn sm" data-hole="' + h.n + '" data-act="unremove">Undo permanent close</button>'
+        : isDown ? '<button class="btn sm" data-hole="' + h.n + '" data-act="reopen">Reopen</button> <button class="btn sm danger" data-hole="' + h.n + '" data-act="remove">Close permanently</button>'
+        : '<button class="btn sm danger" data-hole="' + h.n + '" data-act="close">Close temporarily</button>';
       return '<div class="row" style="padding:5px 0;border-top:1px solid rgba(128,128,128,.2);gap:6px;">' +
         '<div style="flex:1;min-width:0;">' + h.n + '. ' + esc(h.name) +
-          (isGone ? ' <span class="tag void">REMOVED</span>' : isDown ? ' <span class="tag void">CLOSED</span>' : '') + '</div>' + btns + '</div>';
+          (isGone ? ' <span class="tag void">CLOSED PERMANENTLY</span>' : isDown ? ' <span class="tag void">CLOSED TEMPORARILY</span>' : '') + '</div>' + btns + '</div>';
     }).join('');
     var ACTS = {
-      close:    {ask: 'Close it?',  field: 'closedHoles',  add: true,  msg: 'Closed (par unchanged)'},
+      close:    {ask: 'Close it?',  field: 'closedHoles',  add: true,  msg: 'Closed temporarily (par unchanged)'},
       reopen:   {ask: 'Reopen?',    field: 'closedHoles',  add: false, msg: 'Reopened'},
-      remove:   {ask: 'Par drops 3. Sure?', field: 'removedHoles', add: true,  msg: 'Removed for good (par drops by 3)'},
-      unremove: {ask: 'Put back?',  field: 'removedHoles', add: false, msg: 'Put back (still closed; tap Reopen when it works)'}
+      remove:   {ask: 'Par drops 3. Sure?', field: 'removedHoles', add: true,  msg: 'Closed permanently (par drops by 3)'},
+      unremove: {ask: 'Put back?',  field: 'removedHoles', add: false, msg: 'Permanent close undone (still closed temporarily; tap Reopen when it works)'}
     };
     $('holesList').querySelectorAll('[data-hole]').forEach(function(b){
       b.onclick = function(){

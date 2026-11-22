@@ -554,7 +554,7 @@
       btn.disabled = !nameReady || closed;
       if (closed) {
         btn.innerHTML =
-          '<div class="art"><img src="' + holeImg(h) + '" alt="" loading="lazy"><div class="hn tnum">' + h.n + '</div><div class="closed-tag">' + (removed ? 'HOLE REMOVED' : 'HOLE CLOSED') + '</div></div>' +
+          '<div class="art"><img src="' + holeImg(h) + '" alt="" loading="lazy"><div class="hn tnum">' + h.n + '</div><div class="closed-tag">' + (removed ? 'CLOSED FOR GOOD' : 'HOLE CLOSED') + '</div></div>' +
           '<div class="mname">' + h.name + '</div>' +
           '<div class="mtarget">' + (removed ? 'Not part of this round' : a ? 'Your ' + a.strokes + ' counts \u00b7 machine down' : 'Machine down \u00b7 come back later') + '</div>';
         grid.appendChild(btn);
@@ -845,7 +845,7 @@
         return '<div class="attempt-line' + (dropped ? ' dropped' : '') + (ace ? ' ace' : '') + '">' +
           '<span class="an">' + esc(a.hole) + '. ' + esc(a.holeName) + '</span>' +
           (a.mulligan ? '<span class="mtag">MULL</span>' : '') +
-          (isHoleClosed(a.hole) ? '<span class="ctag">REMOVED</span>' : '') +
+          (isHoleClosed(a.hole) ? '<span class="ctag">CLOSED PERMANENTLY</span>' : '') +
           '<span class="araw tnum">' + esc(attemptScoreLabel(a)) + '</span>' +
           '<span class="as tnum">' + (ace ? '★ ' : '') + esc(a.strokes) + '</span>' +
           '</div>';
@@ -979,9 +979,9 @@
     el.hidden = !down.length && !gone.length;
     function names(list){ return (list.length === 1 ? 'HOLE ' : 'HOLES ') + list.map(function(h){ return h.n + ' (' + esc(h.name) + ')'; }).join(', '); }
     var open = openHoleCount(HOLES), html = '';
-    if (down.length) html += '<div>⛔ ' + names(down) + ' CLOSED' +
+    if (down.length) html += '<div>⛔ ' + names(down) + ' CLOSED TEMPORARILY' +
       '<small>Machine down — skip it for now and come back when it reopens. Scores already in still count.</small></div>';
-    if (gone.length) html += '<div' + (down.length ? ' style="margin-top:.5em"' : '') + '>✖ ' + names(gone) + ' REMOVED' +
+    if (gone.length) html += '<div' + (down.length ? ' style="margin-top:.5em"' : '') + '>✖ ' + names(gone) + ' CLOSED PERMANENTLY' +
       '<small>Taken out of the round for everyone. Par is now ' + (PAR * open) + ' over ' + open + ' holes.</small></div>';
     el.innerHTML = html;
   }
@@ -1019,7 +1019,7 @@
       '<div class="obj-head">' +
         '<img class="obj-thumb" src="' + holeImg(h) + '" alt="" loading="lazy">' +
         '<div class="obj-num tnum">' + h.n + '</div>' +
-        '<div class="obj-name">' + h.name + (isHoleClosed(h.n) ? ' <b style="color:#b3261e;">(removed)</b>' : isHoleDown(h.n) ? ' <b style="color:#b3261e;">(closed for now)</b>' : '') + '</div>' +
+        '<div class="obj-name">' + h.name + (isHoleClosed(h.n) ? ' <b style="color:#b3261e;">(closed permanently)</b>' : isHoleDown(h.n) ? ' <b style="color:#b3261e;">(closed temporarily)</b>' : '') + '</div>' +
         '<div class="obj-target">target<br><b class="tnum">' + h.label + '</b></div>' +
       '</div>' +
       '<div class="obj-ranges">' + rangeHtml + '</div>' +
