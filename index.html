@@ -430,7 +430,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-22e"></script>
+<script src="course.js?v=2026-11-22f"></script>
 
 <script>
 (function(){
@@ -440,7 +440,7 @@
   var CURRENT_EVENT = null;      // the event this phone is looking at
   var CURRENT_EVENT_ID = null;
   var CURRENT_EVENT_LABEL = '';
-  function eventIsOpen(){ return !!CURRENT_EVENT && CURRENT_EVENT.status === 'open'; }
+  function eventIsOpen(){ return eventTakingScores(CURRENT_EVENT); }
 
   var allAttempts = [];
   var currentHole = null;
@@ -1118,9 +1118,15 @@
   }
   function showEventInfo(){
     var ev = CURRENT_EVENT;
-    document.getElementById('eventSub').textContent = ev ? [ev.location, eventWhen(ev), 'lowest total wins'].filter(Boolean).join(' \u00b7 ') : '';
+    var when = ev && ev.closesAt ? 'open until ' + fmtClosesAt(ev) : ev && eventWhen(ev);
+    document.getElementById('eventSub').textContent = ev ? [ev.location, when, 'lowest total wins'].filter(Boolean).join(' \u00b7 ') : '';
     var note = document.getElementById('eventNote');
-    if (!ev || ev.status === 'open') { note.hidden = true; return; }
+    if (ev && eventTakingScores(ev) && ev.note) {
+      note.hidden = false;
+      note.innerHTML = '<b>' + esc(ev.closesAt ? 'Open until ' + fmtClosesAt(ev) : 'Now open') + '</b>' + esc(ev.note);
+      return;
+    }
+    if (!ev || eventTakingScores(ev)) { note.hidden = true; return; }
     note.hidden = false;
     note.innerHTML = ev.status === 'upcoming'
       ? '<b>Not open yet</b>Scoring opens ' + (ev.date ? 'on ' + esc(fmtEventDate(ev)) : 'when the event starts') + '. You can sign in and look at the targets now.'
@@ -1133,6 +1139,11 @@
     CURRENT_EVENT = ev;
     CURRENT_EVENT_ID = ev.id;
     CURRENT_EVENT_LABEL = eventTitle(ev);
+    RANK_FINISHED_FIRST = !!ev.rankFinishedFirst;
+    // Re-draw the moment the event closes itself, so the page flips to "finished".
+    clearTimeout(window.closeTimer);
+    var left = ev.closesAt ? ev.closesAt - Date.now() : 0;
+    if (left > 0 && left < 2147483647) window.closeTimer = setTimeout(function(){ showEventInfo(); renderAll(); }, left + 1000);
     if (remember) { try { localStorage.setItem('pingolf_event', ev.id); } catch(e){} }
     // Keep the address bar pointing at this event, so a shared link opens it.
     var url = new URL(location.href);
@@ -1172,8 +1183,8 @@
     EVENTS = sortEvents(snap.docs.map(function(d){ var e = d.data(); e.id = d.id; return e; }));
     var want = CURRENT_EVENT ? CURRENT_EVENT.id : wantedEventId();
     var ev = EVENTS.find(function(e){ return e.id === want; }) ||
-             EVENTS.find(function(e){ return e.status === 'open' && !e.test; }) ||
-             EVENTS.find(function(e){ return e.status === 'open'; }) ||
+             EVENTS.find(function(e){ return eventTakingScores(e) && !e.test; }) ||
+             EVENTS.find(function(e){ return eventTakingScores(e); }) ||
              EVENTS.find(function(e){ return e.status === 'upcoming'; }) || EVENTS[0];
     if (!ev) {
       renderEventPicker();

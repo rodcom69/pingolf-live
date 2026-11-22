@@ -68,6 +68,14 @@ var STARTER_EVENTS = [
   {id:'xgolf-2026-12-12', name:'Pingolf', location:'X-Golf, Chester Springs, PA', date:'2026-12-12', time:'Noon', course:'xgolf-2026-12', status:'upcoming', test:false}
 ];
 var EVENT_STATUSES = ['upcoming', 'open', 'closed'];
+// closesAt (ms since 1970) = the event stops taking scores at that moment by itself.
+function eventExpired(ev){ return !!(ev && ev.closesAt && Date.now() >= ev.closesAt); }
+function eventTakingScores(ev){ return !!ev && ev.status === 'open' && !eventExpired(ev); }
+function fmtClosesAt(ev){
+  var d = new Date(ev.closesAt);
+  return d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'}) + ' at ' +
+    (d.getHours() === 12 && d.getMinutes() === 0 ? 'noon' : d.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'}));
+}
 function fmtEventDate(ev){
   if (!ev.date) return '';
   var p = ev.date.split('-'), d = new Date(+p[0], +p[1] - 1, +p[2]);
@@ -180,8 +188,11 @@ function fmtPar(n){ return n === 0 ? 'E' : (n > 0 ? '+' + n : String(n)); }
 // Lowest to par first. Tiebreak: more holes played, then most aces, most 2s, most 3s.
 // Players still level after that share the place (shown as T1, T2...).
 var TIEBREAK_TEXT = 'Ties are broken by most aces (1s), then most 2s, then most 3s. Still tied = shared place.';
+// Events with rankFinishedFirst (the Practice Open): finished rounds rank above unfinished ones.
+var RANK_FINISHED_FIRST = false;
 function compareScores(a, b){
-  return a.toPar - b.toPar || b.thru - a.thru || b.aces - a.aces || b.twos - a.twos || b.threes - a.threes;
+  return (RANK_FINISHED_FIRST ? (b.complete ? 1 : 0) - (a.complete ? 1 : 0) : 0) ||
+    a.toPar - b.toPar || b.thru - a.thru || b.aces - a.aces || b.twos - a.twos || b.threes - a.threes;
 }
 function rankPlayers(a, b){ return compareScores(a.res, b.res) || a.name.localeCompare(b.name); }
 // Place labels for a list already sorted with rankPlayers: '1', 'T2', 'T2', '4'...
