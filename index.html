@@ -141,6 +141,9 @@
   body.tv-mode .closed-banner{font-size:clamp(16px,2.3vw,34px);padding:.9vw 1.6vw;border-radius:.8vw;margin:0 0 1vw;}
   .tv-board thead th.th-closed{background:#e0261b !important;color:#fff;line-height:1;}
   .tv-board thead th.th-closed small{display:block;font-family:"Inter",sans-serif;font-size:.42em;font-weight:800;letter-spacing:.06em;margin-top:.15em;}
+  .tv-board thead th.th-removed{color:#8a8470;text-decoration:line-through;}
+  .tv-board thead th.th-removed small{display:block;font-family:"Inter",sans-serif;font-size:.42em;font-weight:800;letter-spacing:.06em;}
+  .tv-board tbody tr td.tv-cell.removed{background:repeating-linear-gradient(45deg,#2a2818 0 6px,#1c1a10 6px 12px);color:#8a8470;}
   .tv-board tbody tr td.tv-cell.closed{background:#e0261b;color:#fff;font-weight:800;font-size:clamp(16px,2.2vw,32px);border-radius:0;}
   .attempt-line .ctag{background:#b3261e;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;margin-left:6px;letter-spacing:.04em;}
   .hole-tile .hn{font-family:"Teko",sans-serif;font-size:26px;line-height:1;color:var(--text-dim);}
@@ -408,7 +411,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-22b"></script>
+<script src="course.js?v=2026-11-22c"></script>
 
 <script>
 (function(){
@@ -544,16 +547,16 @@
     var nameReady = !!me && eventIsOpen();
 
     HOLES.forEach(function(h){
-      var closed = isHoleClosed(h.n);
-      var a = closed ? null : res.byHole[h.n];
+      var removed = isHoleClosed(h.n), closed = removed || isHoleDown(h.n);
+      var a = removed ? null : res.byHole[h.n];
       var btn = document.createElement('button');
       btn.className = 'hole-tile' + (a ? ' done' : '') + (closed ? ' closed' : '');
       btn.disabled = !nameReady || closed;
       if (closed) {
         btn.innerHTML =
-          '<div class="art"><img src="' + holeImg(h) + '" alt="" loading="lazy"><div class="hn tnum">' + h.n + '</div><div class="closed-tag">HOLE CLOSED</div></div>' +
+          '<div class="art"><img src="' + holeImg(h) + '" alt="" loading="lazy"><div class="hn tnum">' + h.n + '</div><div class="closed-tag">' + (removed ? 'HOLE REMOVED' : 'HOLE CLOSED') + '</div></div>' +
           '<div class="mname">' + h.name + '</div>' +
-          '<div class="mtarget">Machine down \u00b7 skip it</div>';
+          '<div class="mtarget">' + (removed ? 'Not part of this round' : a ? 'Your ' + a.strokes + ' counts \u00b7 machine down' : 'Machine down \u00b7 come back later') + '</div>';
         grid.appendChild(btn);
         return;
       }
@@ -669,7 +672,7 @@
     currentEditId = existing ? existing.id : null;
     var taken = res.mulls.filter(function(m){ return m !== existing; }).map(function(m){ return m.hole; });
     var sel = document.getElementById('sheetGame');
-    sel.innerHTML = '<option value="">Select a game\u2026</option>' + HOLES.filter(function(h){ return taken.indexOf(h.n) === -1 && !isHoleClosed(h.n); }).map(function(h){
+    sel.innerHTML = '<option value="">Select a game\u2026</option>' + HOLES.filter(function(h){ return taken.indexOf(h.n) === -1 && !isHoleShut(h.n); }).map(function(h){
       var o = res.originals[h.n];
       return '<option value="' + h.n + '">' + h.n + '. ' + esc(h.name) + (o ? ' (now ' + o.strokes + ')' : '') + '</option>';
     }).join('');
@@ -734,7 +737,7 @@
       setConnNote(CURRENT_EVENT ? 'This event isn\'t open for scores right now. Your score was not saved.' : 'Still connecting to the scoreboard. Your score was not saved; try again in a moment.', true);
       return;
     }
-    if (isHoleClosed(currentHole.n)) {
+    if (isHoleShut(currentHole.n)) {
       closeSheet();
       setConnNote('Hole ' + currentHole.n + ' (' + currentHole.name + ') was closed by the organizer. Skip it; your score was not saved.', true);
       return;
@@ -795,7 +798,7 @@
   });
 
   function lastUndoable(){
-    var mine = myAttempts().filter(function(a){ return !a.void && !isHoleClosed(a.hole); }).sort(function(a,b){ return b.ts - a.ts; });
+    var mine = myAttempts().filter(function(a){ return !a.void && !isHoleShut(a.hole); }).sort(function(a,b){ return b.ts - a.ts; });
     return mine.length && canStillChange(mine[0]) ? mine[0] : null;
   }
   function updateUndo(){ document.getElementById('undoBtn').disabled = !lastUndoable(); }
@@ -842,7 +845,7 @@
         return '<div class="attempt-line' + (dropped ? ' dropped' : '') + (ace ? ' ace' : '') + '">' +
           '<span class="an">' + esc(a.hole) + '. ' + esc(a.holeName) + '</span>' +
           (a.mulligan ? '<span class="mtag">MULL</span>' : '') +
-          (isHoleClosed(a.hole) ? '<span class="ctag">CLOSED</span>' : '') +
+          (isHoleClosed(a.hole) ? '<span class="ctag">REMOVED</span>' : '') +
           '<span class="araw tnum">' + esc(attemptScoreLabel(a)) + '</span>' +
           '<span class="as tnum">' + (ace ? '★ ' : '') + esc(a.strokes) + '</span>' +
           '</div>';
@@ -862,9 +865,10 @@
     });
   }
 
-  function buildBoardHtml(attemptsList, holes, closed){
+  function buildBoardHtml(attemptsList, holes, closed, down){
     holes = holes || HOLES;
     closed = closed || CLOSED_HOLES;
+    down = down || DOWN_HOLES;
     var byPlayer = {};
     attemptsList.forEach(function(a){
       if (!byPlayer[a.playerKey]) byPlayer[a.playerKey] = {name: a.playerName, attempts: []};
@@ -881,17 +885,22 @@
     var places = placeLabels(players);
 
     var head = '<th class="th-rank"></th><th class="th-player">Player</th><th class="th-thru">Thru</th>' +
-      holes.map(function(h){ return isHoleClosed(h.n, closed) ? '<th class="th-closed" title="Closed">' + h.n + '<small>CLOSED</small></th>' : '<th>' + h.n + '</th>'; }).join('') +
+      holes.map(function(h){
+        if (isHoleClosed(h.n, closed)) return '<th class="th-removed" title="Removed">' + h.n + '<small>OUT</small></th>';
+        if (isHoleDown(h.n, down)) return '<th class="th-closed" title="Closed">' + h.n + '<small>CLOSED</small></th>';
+        return '<th>' + h.n + '</th>';
+      }).join('') +
       '<th class="th-total">Total</th>';
 
     var rows = players.map(function(p, i){
       var byHole = p.res.byHole;
       var cells = holes.map(function(h){
-        if (isHoleClosed(h.n, closed)) return '<td class="tv-cell closed">\u2716</td>';
+        if (isHoleClosed(h.n, closed)) return '<td class="tv-cell removed">\u2716</td>';
+        var dn = isHoleDown(h.n, down) ? ' closed' : '';
         var a = byHole[h.n];
-        if (!a) return '<td class="tv-cell">&mdash;</td>';
+        if (!a) return '<td class="tv-cell' + dn + '">' + (dn ? '\u2716' : '&mdash;') + '</td>';
         var tier = a.strokes === 1 ? 'ace' : a.strokes <= 3 ? 'hit' : a.strokes <= 6 ? 'fair' : 'poor';
-        return '<td class="tv-cell played ' + tier + (a.mulligan ? ' mull' : '') + '">' +
+        return '<td class="tv-cell played ' + tier + (a.mulligan ? ' mull' : '') + dn + '">' +
           '<span class="pip">' + a.strokes + '</span></td>';
       }).join('');
       return '<tr>' +
@@ -943,7 +952,7 @@
       if (document.getElementById('historyEventSelect').value !== eventId) return;
       var where = [ev.location, eventWhen(ev)].filter(Boolean).join(' \u00b7 ');
       wrap.innerHTML = (where ? '<div class="sub" style="margin:8px 0;">' + esc(where) + '</div>' : '') +
-        (buildBoardHtml(list, courseHoles(ev.course), ev.closedHoles || []) || '<div class="empty-note">No scores in this event.</div>');
+        (buildBoardHtml(list, courseHoles(ev.course), ev.removedHoles || [], []) || '<div class="empty-note">No scores in this event.</div>');
     };
     if (historyLoaded[eventId]) { show(historyLoaded[eventId]); return; }
     wrap.innerHTML = '<div class="empty-note">Loading&hellip;</div>';
@@ -965,13 +974,16 @@
   // Leaderboard + TV: a red banner naming any closed holes and the new par.
   function renderClosedBanner(){
     var el = document.getElementById('closedBanner');
-    var shut = HOLES.filter(function(h){ return isHoleClosed(h.n); });
-    el.hidden = !shut.length;
-    if (!shut.length) { el.innerHTML = ''; return; }
-    var open = openHoleCount(HOLES);
-    el.innerHTML = '⛔ ' + (shut.length === 1 ? 'HOLE ' : 'HOLES ') +
-      shut.map(function(h){ return h.n + ' (' + esc(h.name) + ')'; }).join(', ') + ' CLOSED' +
-      '<small>Skipped for everyone — scores there don’t count. Par is now ' + (PAR * open) + ' over ' + open + ' holes.</small>';
+    var down = HOLES.filter(function(h){ return isHoleDown(h.n) && !isHoleClosed(h.n); });
+    var gone = HOLES.filter(function(h){ return isHoleClosed(h.n); });
+    el.hidden = !down.length && !gone.length;
+    function names(list){ return (list.length === 1 ? 'HOLE ' : 'HOLES ') + list.map(function(h){ return h.n + ' (' + esc(h.name) + ')'; }).join(', '); }
+    var open = openHoleCount(HOLES), html = '';
+    if (down.length) html += '<div>⛔ ' + names(down) + ' CLOSED' +
+      '<small>Machine down — skip it for now and come back when it reopens. Scores already in still count.</small></div>';
+    if (gone.length) html += '<div' + (down.length ? ' style="margin-top:.5em"' : '') + '>✖ ' + names(gone) + ' REMOVED' +
+      '<small>Taken out of the round for everyone. Par is now ' + (PAR * open) + ' over ' + open + ' holes.</small></div>';
+    el.innerHTML = html;
   }
 
   var tvMode = /tv/i.test(window.location.hash);
@@ -1003,11 +1015,11 @@
     var rangeHtml = (holeBalls(h) > 3 ? '<div class="obj-range"><b>4</b>ball 4</div><div class="obj-range"><b>5</b>ball 5</div>' : '') + ranges.map(function(r){
       return '<div class="obj-range"><b>' + r.s + '</b>' + fmtNum(r.lo) + '&ndash;' + fmtNum(r.hi) + '</div>';
     }).join('');
-    return '<div class="obj-card' + (isHoleClosed(h.n) ? ' closed' : '') + '">' +
+    return '<div class="obj-card' + (isHoleShut(h.n) ? ' closed' : '') + '">' +
       '<div class="obj-head">' +
         '<img class="obj-thumb" src="' + holeImg(h) + '" alt="" loading="lazy">' +
         '<div class="obj-num tnum">' + h.n + '</div>' +
-        '<div class="obj-name">' + h.name + (isHoleClosed(h.n) ? ' <b style="color:#b3261e;">(closed)</b>' : '') + '</div>' +
+        '<div class="obj-name">' + h.name + (isHoleClosed(h.n) ? ' <b style="color:#b3261e;">(removed)</b>' : isHoleDown(h.n) ? ' <b style="color:#b3261e;">(closed for now)</b>' : '') + '</div>' +
         '<div class="obj-target">target<br><b class="tnum">' + h.label + '</b></div>' +
       '</div>' +
       '<div class="obj-ranges">' + rangeHtml + '</div>' +
@@ -1084,7 +1096,7 @@
     // Keep the address bar pointing at this event, so a shared link opens it.
     var url = new URL(location.href);
     if (url.searchParams.get('e') !== ev.id) { url.searchParams.set('e', ev.id); history.replaceState(null, '', url); }
-    useCourse(ev.course, ev.closedHoles || []);
+    useCourse(ev.course, ev.removedHoles || [], ev.closedHoles || []);
     renderObjectives();
     if (changed) startAttemptsListener();
     renderEventPicker();

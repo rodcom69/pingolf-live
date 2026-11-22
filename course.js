@@ -43,11 +43,17 @@ var DEFAULT_COURSE = 'xgolf-2026-12';
 function courseHoles(courseId){ return (COURSES[courseId] || COURSES[DEFAULT_COURSE]).holes; }
 // The course of the event being shown. The scorecard swaps it when you pick an event.
 var HOLES = courseHoles(DEFAULT_COURSE);
-// Holes the organizer has closed for this event (machine broke down). A closed hole
-// is skipped for everyone: scores on it don't count, and par drops by 3.
-var CLOSED_HOLES = [];
-function useCourse(courseId, closedHoles){ HOLES = courseHoles(courseId); CLOSED_HOLES = closedHoles || []; }
+// Two ways the organizer can take a hole out:
+//  - closed for now (events/{id}.closedHoles): machine is down. Nobody can enter a
+//    score on it, but par stays the same and scores already in still count.
+//  - removed for good (events/{id}.removedHoles): skipped for everyone, its scores
+//    stop counting, and par drops by 3.
+// CLOSED_HOLES = removed (the scoring list); DOWN_HOLES = closed for now.
+var CLOSED_HOLES = [], DOWN_HOLES = [];
+function useCourse(courseId, removedHoles, downHoles){ HOLES = courseHoles(courseId); CLOSED_HOLES = removedHoles || []; DOWN_HOLES = downHoles || []; }
 function isHoleClosed(n, closed){ return (closed || CLOSED_HOLES).indexOf(n) !== -1; }
+function isHoleDown(n, down){ return (down || DOWN_HOLES).indexOf(n) !== -1; }
+function isHoleShut(n){ return isHoleClosed(n) || isHoleDown(n); }
 function openHoleCount(holes, closed){
   return holes.filter(function(h){ return !isHoleClosed(h.n, closed); }).length;
 }

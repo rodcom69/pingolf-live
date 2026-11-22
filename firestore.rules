@@ -7,7 +7,8 @@ rules_version = '2';
 //    carries a one-time playerUnlock doc with that PIN, so a player can only
 //    add or change scores under their own name.
 //  - events live in events/{id}; players add scores only to an event whose status is 'open',
-//    and never to a hole the organizer closed (events/{id}.closedHoles)
+//    and never to a hole the organizer closed (events/{id}.closedHoles = closed for now,
+//    events/{id}.removedHoles = removed for good)
 //  - a player can fix or undo an entry for 2 minutes after saving it; then it's locked
 //  - a new score may arrive up to 30 minutes after it was entered (phone was offline,
 //    the save was queued) or up to 5 minutes "early" (phone clock running fast)
@@ -27,7 +28,8 @@ service cloud.firestore {
     function eventAccepts(d) {
       let ev = get(db('events/' + d.eventId)).data;
       return ev.status == 'open'
-        && (!('closedHoles' in ev) || !(d.hole in ev.closedHoles));
+        && (!('closedHoles' in ev) || !(d.hole in ev.closedHoles))
+        && (!('removedHoles' in ev) || !(d.hole in ev.removedHoles));
     }
     function nowMs() {
       return request.time.toMillis();
@@ -92,8 +94,9 @@ service cloud.firestore {
 
     match /events/{eventId} {
       allow read: if true;
-      allow create, update: if request.resource.data.keys().hasOnly(['name', 'location', 'date', 'time', 'course', 'status', 'test', 'closedHoles', 'unlockId'])
+      allow create, update: if request.resource.data.keys().hasOnly(['name', 'location', 'date', 'time', 'course', 'status', 'test', 'closedHoles', 'removedHoles', 'unlockId'])
                     && (!('closedHoles' in request.resource.data) || (request.resource.data.closedHoles is list && request.resource.data.closedHoles.size() <= 30))
+                    && (!('removedHoles' in request.resource.data) || (request.resource.data.removedHoles is list && request.resource.data.removedHoles.size() <= 30))
                     && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
                     && request.resource.data.location is string && request.resource.data.location.size() <= 80
                     && request.resource.data.date is string && request.resource.data.time is string

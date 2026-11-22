@@ -121,7 +121,7 @@
     </div>
     <div class="card" id="holesCard">
       <div class="row">
-        <div style="flex:1;"><b>Machine down? Close the hole</b><div class="dim small">A closed hole is skipped for everyone: its scores stop counting, par drops by 3, and players can't enter it. Reopen it and all its scores count again.</div></div>
+        <div style="flex:1;"><b>Machine down? Close the hole</b><div class="dim small"><b>Close</b> = machine down for now: nobody can enter a score there, par stays the same, and scores already in still count. Tap <b>Reopen</b> when it works. If it won't come back, tap <b>Remove for good</b>: the hole is dropped for everyone, its scores stop counting, and par drops by 3.</div></div>
         <button class="btn sm" id="holesToggle">Show</button>
       </div>
       <div id="holesList" hidden style="margin-top:10px;"></div>
@@ -245,7 +245,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-22b"></script>
+<script src="course.js?v=2026-11-22c"></script>
 <script>
 (function(){
   firebase.initializeApp(firebaseConfig);
@@ -396,6 +396,7 @@
   function saveEvent(id, ev, msg){
     var d = {name: ev.name, location: ev.location || '', date: ev.date || '', time: ev.time || '',
              course: ev.course, status: ev.status, test: !!ev.test, closedHoles: ev.closedHoles || []};
+    if (ev.removedHoles && ev.removedHoles.length) d.removedHoles = ev.removedHoles;
     return adminBatch(function(batch, stamp){
       d.unlockId = stamp.unlockId;
       batch.set(db.collection('events').doc(id), d);
@@ -438,7 +439,8 @@
     $('evOverlay').classList.remove('show');
     saveEvent(id, {name: name, location: $('evLocation').value.trim(), date: $('evDate').value, time: $('evTime').value.trim(),
                    course: $('evCourse').value, status: $('evStatus').value, test: $('evTest').checked,
-                   closedHoles: editingEvent ? (editingEvent.closedHoles || []) : []},
+                   closedHoles: editingEvent ? (editingEvent.closedHoles || []) : [],
+                   removedHoles: editingEvent ? (editingEvent.removedHoles || []) : []},
               editingEvent ? 'Event saved.' : 'Event created: playpingolf.com/?e=' + id);
   };
 
@@ -469,7 +471,9 @@
   });
 
   function eventHoles(){ return courseHoles(currentEvent.course); }
-  function eventClosed(){ return currentEvent.closedHoles || []; }
+  // removedHoles = out for good (par drops); closedHoles = closed for now (par unchanged).
+  function eventClosed(){ return currentEvent.removedHoles || []; }
+  function eventDown(){ return currentEvent.closedHoles || []; }
 
   // ---------- Closed holes ----------
   $('holesToggle').onclick = function(){
@@ -481,26 +485,35 @@
     if (currentEvent.stray) { $('holesCard').hidden = true; return; }
     $('holesCard').hidden = false;
     if ($('holesList').querySelector('[data-armed]')) return;
-    var closed = eventClosed();
-    $('holesToggle').textContent = $('holesList').hidden ? (closed.length ? 'Show (' + closed.length + ' closed)' : 'Show') : 'Hide';
+    var down = eventDown(), gone = eventClosed(), count = down.length + gone.length;
+    $('holesToggle').textContent = $('holesList').hidden ? (count ? 'Show (' + count + ' closed)' : 'Show') : 'Hide';
     $('holesList').innerHTML = eventHoles().map(function(h){
-      var isClosed = closed.indexOf(h.n) !== -1;
-      return '<div class="row" style="padding:5px 0;border-top:1px solid rgba(128,128,128,.2);">' +
-        '<div style="flex:1;min-width:0;">' + h.n + '. ' + esc(h.name) + (isClosed ? ' <span class="tag void">CLOSED</span>' : '') + '</div>' +
-        '<button class="btn sm' + (isClosed ? '' : ' danger') + '" data-hole="' + h.n + '">' + (isClosed ? 'Reopen' : 'Close') + '</button></div>';
+      var isGone = gone.indexOf(h.n) !== -1, isDown = !isGone && down.indexOf(h.n) !== -1;
+      var btns = isGone ? '<button class="btn sm" data-hole="' + h.n + '" data-act="unremove">Put back</button>'
+        : isDown ? '<button class="btn sm" data-hole="' + h.n + '" data-act="reopen">Reopen</button> <button class="btn sm danger" data-hole="' + h.n + '" data-act="remove">Remove for good</button>'
+        : '<button class="btn sm danger" data-hole="' + h.n + '" data-act="close">Close</button>';
+      return '<div class="row" style="padding:5px 0;border-top:1px solid rgba(128,128,128,.2);gap:6px;">' +
+        '<div style="flex:1;min-width:0;">' + h.n + '. ' + esc(h.name) +
+          (isGone ? ' <span class="tag void">REMOVED</span>' : isDown ? ' <span class="tag void">CLOSED</span>' : '') + '</div>' + btns + '</div>';
     }).join('');
+    var ACTS = {
+      close:    {ask: 'Close it?',  field: 'closedHoles',  add: true,  msg: 'Closed (par unchanged)'},
+      reopen:   {ask: 'Reopen?',    field: 'closedHoles',  add: false, msg: 'Reopened'},
+      remove:   {ask: 'Par drops 3. Sure?', field: 'removedHoles', add: true,  msg: 'Removed for good (par drops by 3)'},
+      unremove: {ask: 'Put back?',  field: 'removedHoles', add: false, msg: 'Put back (still closed; tap Reopen when it works)'}
+    };
     $('holesList').querySelectorAll('[data-hole]').forEach(function(b){
       b.onclick = function(){
-        var n = +b.dataset.hole, h = holeInfo(n);
-        var isClosed = eventClosed().indexOf(n) !== -1;
+        var n = +b.dataset.hole, h = holeInfo(n), act = ACTS[b.dataset.act];
         var ev = currentEvent;
-        confirmTap(b, isClosed ? 'Reopen?' : 'Close it?', function(){
+        confirmTap(b, act.ask, function(){
           delete b.dataset.armed;
-          var FV = firebase.firestore.FieldValue;
+          var FV = firebase.firestore.FieldValue, upd = {unlockId: null};
           adminBatch(function(batch, stamp){
-            batch.update(db.collection('events').doc(ev.id),
-              {closedHoles: isClosed ? FV.arrayRemove(n) : FV.arrayUnion(n), unlockId: stamp.unlockId});
-          }).then(done((isClosed ? 'Reopened' : 'Closed') + ' hole ' + n + ' (' + h.name + ').')).catch(failed);
+            upd.unlockId = stamp.unlockId;
+            upd[act.field] = act.add ? FV.arrayUnion(n) : FV.arrayRemove(n);
+            batch.update(db.collection('events').doc(ev.id), upd);
+          }).then(done(act.msg + ': hole ' + n + ' (' + h.name + ').')).catch(failed);
         });
       };
     });
