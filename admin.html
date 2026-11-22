@@ -121,7 +121,7 @@
     </div>
     <div class="card" id="holesCard">
       <div class="row">
-        <div style="flex:1;"><b>Machine down? Close the hole</b><div class="dim small"><b>Close temporarily</b> = machine down for now: nobody can enter a score there, par stays the same, and scores already in still count. Tap <b>Reopen</b> when it works. If it won't come back, tap <b>Close permanently</b>: the hole is dropped for everyone, its scores stop counting, and par drops by 3.</div></div>
+        <div style="flex:1;"><b>Machine down? Close the hole</b><div class="dim small"><b>Close temporarily</b> = machine down for now: nobody can enter a score there, par stays the same, and scores already in still count. Tap <b>Reopen</b> when it works. <b>Close permanently</b> = it won't come back: the hole is dropped for everyone, its scores stop counting, and par drops by 3. Closed permanently by mistake? Tap <b>Undo permanent close</b>; every score comes back.</div></div>
         <button class="btn sm" id="holesToggle">Show</button>
       </div>
       <div id="holesList" hidden style="margin-top:10px;"></div>
@@ -491,7 +491,7 @@
       var isGone = gone.indexOf(h.n) !== -1, isDown = !isGone && down.indexOf(h.n) !== -1;
       var btns = isGone ? '<button class="btn sm" data-hole="' + h.n + '" data-act="unremove">Undo permanent close</button>'
         : isDown ? '<button class="btn sm" data-hole="' + h.n + '" data-act="reopen">Reopen</button> <button class="btn sm danger" data-hole="' + h.n + '" data-act="remove">Close permanently</button>'
-        : '<button class="btn sm danger" data-hole="' + h.n + '" data-act="close">Close temporarily</button>';
+        : '<button class="btn sm danger" data-hole="' + h.n + '" data-act="close">Close temporarily</button> <button class="btn sm danger" data-hole="' + h.n + '" data-act="remove">Close permanently</button>';
       return '<div class="row" style="padding:5px 0;border-top:1px solid rgba(128,128,128,.2);gap:6px;">' +
         '<div style="flex:1;min-width:0;">' + h.n + '. ' + esc(h.name) +
           (isGone ? ' <span class="tag void">CLOSED PERMANENTLY</span>' : isDown ? ' <span class="tag void">CLOSED TEMPORARILY</span>' : '') + '</div>' + btns + '</div>';
