@@ -254,6 +254,19 @@
   .conn-note{font-size:11.5px;color:var(--text-dim);text-align:center;margin-top:10px;}
   .conn-note.err{color:var(--bad);}
 
+  /* Shareable scores-only view: playpingolf.com/?e=<id>#scores */
+  .share-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;font-size:13px;color:var(--text-dim);}
+  .share-bar .share-link{color:var(--accent);font-weight:700;text-decoration:none;}
+  .share-bar button{background:var(--accent);color:var(--accent-ink);border:none;border-radius:9px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer;}
+  .share-bar .only-scores{display:none;}
+  body.scores-mode .share-bar .only-scores{display:inline;}
+  body.scores-mode .share-bar .only-board{display:none;}
+  body.scores-mode .tabs, body.scores-mode #panel-score, body.scores-mode .event-select, body.scores-mode details.rules{display:none !important;}
+  body.scores-mode #panel-board{display:block !important;}
+  body.scores-mode header.top{position:static;}
+  @media (max-width:700px){ body.scores-mode #tvBoardWrap{display:none;} }
+  @media (min-width:701px){ body.scores-mode .wrap{max-width:1100px;} body.scores-mode .lb-list{display:none;} }
+  body.tv-mode .share-bar{display:none;}
   body.tv-mode{background:#0c0b06;color:#f2eddd;cursor:none;scrollbar-width:none;}
   body.tv-mode::-webkit-scrollbar{display:none;}
   body.tv-mode .wrap{max-width:none;width:100%;padding:1.4vw 2vw 2vw;box-sizing:border-box;}
@@ -359,6 +372,11 @@
   </section>
 
   <section class="panel" id="panel-board">
+    <div class="share-bar">
+      <span class="only-board"><a class="share-link" id="scoresLink" href="#">Scores-only page to share &rarr;</a></span>
+      <span class="only-scores">Live scores &middot; updates automatically &middot; <a class="share-link" id="playLink" href="/">Play</a></span>
+      <button type="button" id="shareBtn">Share</button>
+    </div>
     <div class="closed-banner" id="closedBanner" hidden></div>
     <div id="tvBoardWrap" style="overflow-x:auto;"></div>
     <div class="lb-list" id="lbList" style="margin-top:16px;"><div class="empty-note">No scores yet &mdash; be the first on the board.</div></div>
@@ -987,6 +1005,27 @@
     el.innerHTML = html;
   }
 
+  // Scores-only page: just the leaderboard, for sharing.
+  var scoresMode = /^#scores$/i.test(window.location.hash);
+  if (scoresMode) {
+    document.body.classList.add('scores-mode');
+    document.getElementById('panel-board').classList.add('active');
+  }
+  function scoresUrl(){ return 'https://playpingolf.com/?e=' + encodeURIComponent(CURRENT_EVENT_ID || '') + '#scores'; }
+  document.getElementById('scoresLink').addEventListener('click', function(e){
+    e.preventDefault(); window.open(scoresUrl(), '_blank');
+  });
+  document.getElementById('playLink').addEventListener('click', function(e){
+    e.preventDefault(); location.href = '/?e=' + encodeURIComponent(CURRENT_EVENT_ID || '');
+  });
+  document.getElementById('shareBtn').addEventListener('click', function(){
+    var btn = this, url = scoresUrl();
+    var title = (CURRENT_EVENT ? CURRENT_EVENT.name : 'Pingolf') + ' \u2014 live scores';
+    if (navigator.share) { navigator.share({title: title, url: url}).catch(function(){}); return; }
+    (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function(){
+      btn.textContent = 'Link copied'; setTimeout(function(){ btn.textContent = 'Share'; }, 2000);
+    }).catch(function(){ window.prompt('Copy this link:', url); });
+  });
   var tvMode = /tv/i.test(window.location.hash);
   if (tvMode) {
     document.body.classList.add('tv-mode');
