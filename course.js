@@ -19,23 +19,23 @@ var COURSES = {
     name: 'X-Golf · 18 machines (Dec 2026)',
     holes: [
       {n:1, name:"Cyclopes", target:200000, label:"200K", img:"cyclopes"},
-      {n:2, name:"Mustang", target:60000, label:"60K", img:"mustang-em"},
+      {n:2, name:"Mustang", target:50000, label:"50K", img:"mustang-em"},
       {n:3, name:"Wheel of Fortune", target:9000000, label:"9M", img:"wheel-of-fortune"},
-      {n:4, name:"Dune", target:50000000, label:"50M", img:"dune"},
-      {n:5, name:"Walking Dead", target:100000000, label:"100M", img:"walking-dead"},
+      {n:4, name:"Dune", target:100000000, label:"100M", img:"dune"},
+      {n:5, name:"Walking Dead", target:75000000, label:"75M", img:"walking-dead"},
       {n:6, name:"SeaWitch", target:400000, label:"400K", img:"seawitch"},
       {n:7, name:"Beatles", target:2000000, label:"2M", img:"beatles"},
-      {n:8, name:"Joker Poker", target:200000, label:"200K", img:"joker-poker", balls:5},
-      {n:9, name:"Medieval Madness", target:12000000, label:"12M", img:"medieval-madness"},
-      {n:10, name:"Uncanny X-Men", target:100000000, label:"100M", img:"uncanny-x-men"},
-      {n:11, name:"Transformers", target:100000000, label:"100M", img:"transformers"},
-      {n:12, name:"John Wick", target:50000000, label:"50M", img:"john-wick"},
+      {n:8, name:"Joker Poker", target:175000, label:"175K", img:"joker-poker", balls:5},
+      {n:9, name:"Medieval Madness", target:8000000, label:"8M", img:"medieval-madness"},
+      {n:10, name:"Uncanny X-Men", target:75000000, label:"75M", img:"uncanny-x-men"},
+      {n:11, name:"Transformers", target:75000000, label:"75M", img:"transformers"},
+      {n:12, name:"John Wick", target:75000000, label:"75M", img:"john-wick"},
       {n:13, name:"Guardians of the Galaxy", target:40000000, label:"40M", img:"guardians"},
-      {n:14, name:"Metallica", target:24000000, label:"24M", img:"metallica"},
+      {n:14, name:"Metallica", target:30000000, label:"30M", img:"metallica"},
       {n:15, name:"Ali", target:300000, label:"300K", img:"ali"},
-      {n:16, name:"NBA Fast Break", target:50, label:"50", img:"nba-fast-break"},
+      {n:16, name:"NBA Fast Break", target:60, label:"60", img:"nba-fast-break"},
       {n:17, name:"Game of Thrones", target:75000000, label:"75M", img:"game-of-thrones"},
-      {n:18, name:"Black Knight: Sword of Rage", target:40000000, label:"40M", img:"black-knight-sor"}
+      {n:18, name:"Black Knight: Sword of Rage", target:60000000, label:"60M", img:"black-knight-sor"}
     ]
   }
 };
