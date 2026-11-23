@@ -1308,12 +1308,13 @@
   function wantedEventId(){
     if (linkedEventId) return linkedEventId;
     // A remembered event only counts while it's taking scores (otherwise go to the open one).
-    try { var saved = localStorage.getItem('pingolf_event'); if (saved && eventTakingScores(EVENTS.find(function(e){ return e.id === saved; }))) return saved; } catch(e){}
+    try { var saved = localStorage.getItem('pingolf_event'); var se = EVENTS.find(function(e){ return e.id === saved; }); if (saved && eventTakingScores(se) && !se.test) return saved; } catch(e){}
     return null;
   }
   function pickerEvents(){
     // Only events taking scores right now (upcoming and finished ones stay hidden), plus one opened by link.
-    return EVENTS.filter(function(e){ return eventTakingScores(e) || (CURRENT_EVENT && e.id === CURRENT_EVENT.id); });
+    // Test events are link-only: they never show in the list for anyone else.
+    return EVENTS.filter(function(e){ return (eventTakingScores(e) && !e.test) || (CURRENT_EVENT && e.id === CURRENT_EVENT.id); });
   }
   function renderEventPicker(){
     var sel = document.getElementById('eventSelect');
@@ -1413,8 +1414,8 @@
     var want = CURRENT_EVENT ? CURRENT_EVENT.id : wantedEventId();
     var ev = EVENTS.find(function(e){ return e.id === want; }) ||
              EVENTS.find(function(e){ return eventTakingScores(e) && !e.test; }) ||
-             EVENTS.find(function(e){ return eventTakingScores(e); }) ||
-             EVENTS.find(function(e){ return e.status === 'upcoming'; }) || EVENTS[0];
+             EVENTS.find(function(e){ return e.status === 'upcoming' && !e.test; }) ||
+             EVENTS.find(function(e){ return !e.test; }) || EVENTS[0];
     if (!ev) {
       renderEventPicker();
       setConnNote('No events have been set up yet.', false);
