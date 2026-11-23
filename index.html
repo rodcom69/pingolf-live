@@ -237,6 +237,39 @@
   .lb-name{flex:1;font-weight:700;font-size:15px;}
   .lb-thru{font-size:11.5px;color:var(--text-dim);}
   .lb-total{font-family:"Teko",sans-serif;font-size:28px;color:var(--text);}
+  .lb-row{cursor:pointer;}
+  .lb-row.mine{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent), var(--shadow);}
+  .lb-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lb-name .lb-card{font-weight:600;font-size:12px;color:var(--text-dim);margin-left:5px;}
+  .lb-score{text-align:right;flex-shrink:0;}
+  .lb-score .lb-par{font-family:"Teko",sans-serif;font-size:26px;line-height:1;color:var(--text);font-weight:600;}
+  .lb-score .lb-strokes{font-size:11px;color:var(--text-dim);white-space:nowrap;}
+  .lb-chev{color:var(--text-dim);font-size:20px;line-height:1;flex-shrink:0;transition:transform .15s;margin-left:-2px;}
+  .lb-row.open .lb-chev{transform:rotate(90deg);}
+  .lb-hint{font-size:12px;color:var(--text-dim);margin:14px 2px -6px;}
+  .lb-hint:empty, body.tv-mode .lb-hint{display:none;}
+  .lb-strip{display:none;margin-top:8px;gap:4px;flex-direction:column;}
+  .lb-strip-row{display:grid;grid-template-columns:30px repeat(9,1fr);align-items:center;gap:2px;}
+  .lb-strip-label{font-size:10px;font-weight:800;letter-spacing:.05em;color:var(--text-dim);}
+  .lb-pip{justify-self:center;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:"Teko",sans-serif;font-size:17px;line-height:1;font-weight:700;padding-top:2px;font-variant-numeric:tabular-nums;}
+  .lb-pip.empty{border:1px dashed var(--border);color:var(--text-dim);opacity:.6;font-weight:500;font-size:14px;}
+  .lb-pip.hit{background:var(--accent);color:#eafff2;}
+  .lb-pip.ace{background:var(--gold);color:#241c06;box-shadow:0 0 0 2px rgba(224,172,63,.35), 0 0 8px rgba(224,172,63,.7);}
+  .lb-pip.fair{background:#5a5636;color:#fbf6e4;}
+  .lb-pip.poor{background:#7a3a26;color:#ffe9df;}
+  .lb-pip.mull{box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--gold);}
+  .lb-pip.ace.mull{box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--gold), 0 0 10px rgba(224,172,63,.7);}
+  .lb-pip.down:not(.played){background:#e0261b;color:#fff;font-family:inherit;font-size:12px;padding-top:0;}
+  .lb-pip.down.played{box-shadow:0 0 0 2px var(--surface), 0 0 0 4px #e0261b;}
+  .lb-pip.removed{background:repeating-linear-gradient(45deg,var(--surface-2) 0 4px,transparent 4px 8px);border:1px solid var(--border);
+    color:var(--text-dim);font-family:inherit;font-size:11px;padding-top:0;}
+  @media (max-width:700px){
+    body:not(.tv-mode) #tvBoardWrap{display:none;}
+    .lb-strip{display:flex;}
+    .lb-row{padding:8px 12px;}
+    .lb-list{gap:6px;}
+  }
   .lb-detail{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);display:none;}
   .lb-detail.open{display:block;}
   .attempt-line{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:4px 0;color:var(--text-dim);}
@@ -267,8 +300,7 @@
   body.scores-mode .tabs, body.scores-mode #panel-score, body.scores-mode .event-select, body.scores-mode details.rules{display:none !important;}
   body.scores-mode #panel-board{display:block !important;}
   body.scores-mode header.top{position:static;}
-  @media (max-width:700px){ body.scores-mode #tvBoardWrap{display:none;} }
-  @media (min-width:701px){ body.scores-mode .wrap{max-width:1100px;} body.scores-mode .lb-list{display:none;} }
+  @media (min-width:701px){ body.scores-mode .wrap{max-width:1100px;} body.scores-mode .lb-list, body.scores-mode .lb-hint{display:none;} }
   body.tv-mode .share-bar{display:none;}
   body.tv-mode{background:#0c0b06;color:#f2eddd;cursor:none;scrollbar-width:none;}
   body.tv-mode::-webkit-scrollbar{display:none;}
@@ -383,6 +415,7 @@
     </div>
     <div class="closed-banner" id="closedBanner" hidden></div>
     <div id="tvBoardWrap" style="overflow-x:auto;"></div>
+    <div class="lb-hint" id="lbHint"></div>
     <div class="lb-list" id="lbList" style="margin-top:16px;"><div class="empty-note">No scores yet &mdash; be the first on the board.</div></div>
   </section>
 
@@ -903,14 +936,18 @@
     var places = placeLabels(players);
 
     var list = document.getElementById('lbList');
+    var hint = document.getElementById('lbHint');
     if (!players.length){
+      hint.textContent = '';
       list.innerHTML = '<div class="empty-note">No scores yet &mdash; be the first on the board.</div>';
       return;
     }
+    hint.textContent = 'Ranked by score to par \u00b7 tap a player for each machine\u2019s score';
     list.innerHTML = '';
     players.forEach(function(p, i){
       var row = document.createElement('div');
-      row.className = 'lb-row';
+      var mine = !!(me && me.key === p.key);
+      row.className = 'lb-row' + (mine ? ' mine' : '');
       var sortedAttempts = p.attempts.slice().sort(function(a,b){ return a.hole - b.hole || a.ts - b.ts; });
       var lines = sortedAttempts.map(function(a){
         var dropped = p.res.countedIds.indexOf(a.id) === -1;
@@ -923,19 +960,45 @@
           '<span class="as tnum">' + (ace ? '★ ' : '') + esc(a.strokes) + '</span>' +
           '</div>';
       }).join('');
+      var m = p.res.mulligansUsed;
+      var sub = (p.res.complete ? 'Finished' : 'Thru ' + p.res.thru) + (m ? ' · ' + m + ' mull' + (m === 1 ? '' : 's') : '');
       row.innerHTML =
         '<div class="lb-top">' +
           '<div class="lb-rank">' + places[i] + '</div>' +
-          '<div style="flex:1;min-width:0;"><div class="lb-name">' + esc(boardName(p, !!(me && me.key === p.key))) + '</div><div class="lb-thru">thru ' + p.res.thru +
-            (p.res.mulligansUsed ? ' · ' + p.res.mulligansUsed + ' mulligan' + (p.res.mulligansUsed === 1 ? '' : 's') : '') + '</div></div>' +
-          '<div><div class="lb-total tnum">' + p.res.total + '</div><div class="lb-topar">' + fmtPar(p.res.toPar) + '</div></div>' +
+          '<div style="flex:1;min-width:0;"><div class="lb-name">' + esc(mine ? p.name : shortName(p.name)) +
+            (MULTI_CARD ? '<span class="lb-card">Card ' + esc(p.card) + '</span>' : '') + '</div>' +
+            '<div class="lb-thru">' + esc(sub) + '</div></div>' +
+          '<div class="lb-score"><div class="lb-par tnum">' + fmtPar(p.res.toPar) + '</div>' +
+            '<div class="lb-strokes tnum">' + p.res.total + ' stroke' + (p.res.total === 1 ? '' : 's') + '</div></div>' +
+          '<div class="lb-chev" aria-hidden="true">\u203a</div>' +
         '</div>' +
+        scorecardStrip(p.res) +
         '<div class="lb-detail">' + lines + '</div>';
-      row.querySelector('.lb-top').addEventListener('click', function(){
-        row.querySelector('.lb-detail').classList.toggle('open');
+      row.addEventListener('click', function(){
+        row.classList.toggle('open', row.querySelector('.lb-detail').classList.toggle('open'));
       });
       list.appendChild(row);
     });
+  }
+
+  // Phone leaderboard: a golf-scorecard strip under each player, OUT (1-9) and IN (10-18).
+  function scorecardStrip(res){
+    var html = '';
+    for (var s = 0; s < HOLES.length; s += 9){
+      var chunk = HOLES.slice(s, s + 9);
+      var label = HOLES.length === 18 ? (s ? 'IN' : 'OUT') : chunk[0].n + (chunk.length > 1 ? '-' + chunk[chunk.length - 1].n : '');
+      html += '<div class="lb-strip-row"><span class="lb-strip-label">' + label + '</span>' + chunk.map(function(h){
+        var t = 'Hole ' + h.n + ' (' + h.name + ')';
+        if (isHoleClosed(h.n)) return '<span class="lb-pip removed" title="' + esc(t) + ': removed">\u2716</span>';
+        var down = isHoleDown(h.n), a = res.byHole[h.n];
+        if (!a) return down ? '<span class="lb-pip down" title="' + esc(t) + ': closed">\u2716</span>'
+                            : '<span class="lb-pip empty" title="' + esc(t) + '">' + h.n + '</span>';
+        var tier = a.strokes === 1 ? 'ace' : a.strokes <= 3 ? 'hit' : a.strokes <= 6 ? 'fair' : 'poor';
+        return '<span class="lb-pip ' + tier + (a.mulligan ? ' mull' : '') + (down ? ' down played' : '') + '" title="' +
+          esc(t + ': ' + a.strokes + (a.mulligan ? ' (mulligan)' : '')) + '">' + a.strokes + '</span>';
+      }).join('') + '</div>';
+    }
+    return '<div class="lb-strip">' + html + '</div>';
   }
 
   function buildBoardHtml(attemptsList, holes, closed, down){
