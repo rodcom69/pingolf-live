@@ -452,6 +452,19 @@
   var FV = firebase.firestore.FieldValue;
   var me = null;
   var PLAYER_NAMES = {};
+  // Multi-card events (the Practice Open): after finishing a card a player may start another, one at a time.
+  // Each card is its own leaderboard row ("Rodney C. Card 2"); earlier cards stay locked as played.
+  var MULTI_CARD = false;
+  function cardOf(a){ return a.card || 1; }
+  function cardStoreKey(){ return 'pingolf_card_' + CURRENT_EVENT_ID + '_' + (me ? me.key : ''); }
+  function myCardNo(){
+    if (!me || !MULTI_CARD) return 1;
+    var n = 1;
+    allAttempts.forEach(function(a){ if (a.playerKey === me.key && cardOf(a) > n) n = cardOf(a); });
+    var started = 0;
+    try { started = parseInt(localStorage.getItem(cardStoreKey()), 10) || 0; } catch(e){}
+    return Math.max(n, Math.min(started, n + 1));
+  }
   try { me = JSON.parse(localStorage.getItem('pingolf_me') || 'null'); } catch(e){ me = null; }
   if (me && !(me.key && me.name && me.code)) me = null;
   var nameInput = document.getElementById('nameInput');
@@ -461,7 +474,7 @@
   function showMe(){
     document.getElementById('signInWrap').hidden = !!me;
     document.getElementById('meRow').hidden = !me;
-    document.getElementById('meName').textContent = me ? me.name : '';
+    document.getElementById('meName').textContent = me ? me.name + (MULTI_CARD ? ' \u00b7 Card ' + myCardNo() : '') : '';
   }
   function signInNote(msg, isErr){
     var el = document.getElementById('signInNote');
@@ -540,8 +553,8 @@
 
   function myAttempts(){
     if (!me) return [];
-    var key = me.key;
-    return allAttempts.filter(function(a){ return a.playerKey === key; });
+    var key = me.key, card = myCardNo();
+    return allAttempts.filter(function(a){ return a.playerKey === key && (!MULTI_CARD || cardOf(a) === card); });
   }
 
   function renderScoreTab(){
@@ -619,6 +632,28 @@
         card.addEventListener('click', function(){ openMulliganSheet(m || null); });
         sec.appendChild(card);
       })(i);
+    }
+    showMe();
+    // Multi-card event: once this card is finished, offer the next one (two taps, so it can't happen by accident).
+    if (MULTI_CARD && me && res.complete && mine.length) {
+      var cur = myCardNo(), left = Math.max(0, MAX_MULLIGANS - res.mulligansUsed);
+      var next = document.createElement('button');
+      next.className = 'mull-card next-card';
+      next.disabled = !nameReady;
+      var sub = 'Card ' + cur + ' is locked in and stays on the board.' + (left ? ' Your ' + left + ' unused mulligan' + (left === 1 ? '' : 's') + ' on Card ' + cur + ' will be given up.' : '');
+      next.innerHTML = '<div class="mc-label">Play again</div><div class="mc-body"><b>Start Card ' + (cur + 1) + '</b><div class="mc-sub">' + sub + '</div></div>';
+      next.addEventListener('click', function(){
+        if (!next.dataset.armed) {
+          next.dataset.armed = '1';
+          next.querySelector('b').textContent = 'Tap again to start Card ' + (cur + 1);
+          setTimeout(function(){ if (next.isConnected) { delete next.dataset.armed; next.querySelector('b').textContent = 'Start Card ' + (cur + 1); } }, 4000);
+          return;
+        }
+        try { localStorage.setItem(cardStoreKey(), String(cur + 1)); } catch(e){}
+        renderScoreTab(); renderLeaderboard();
+        window.scrollTo(0, 0);
+      });
+      sec.appendChild(next);
     }
   }
 
@@ -792,6 +827,7 @@
     };
     if (extra) Object.assign(data, extra);
     if (isMull) data.mulligan = true;
+    if (MULTI_CARD) data.card = editing ? cardOf(editing) : myCardNo();
     if (editing) data.ts = editing.ts;
     closeSheet();
     var batch = db.batch(), pref = proofRef();
@@ -835,17 +871,28 @@
     });
   });
 
-  function renderLeaderboard(){
-    var byPlayer = {};
-    allAttempts.forEach(function(a){
-      if (!byPlayer[a.playerKey]) byPlayer[a.playerKey] = {name: a.playerName, attempts: []};
-      byPlayer[a.playerKey].name = PLAYER_NAMES[a.playerKey] || a.playerName;
-      byPlayer[a.playerKey].attempts.push(a);
+  // One board row per player, or per player + card on a multi-card event.
+  function groupByCard(list){
+    var by = {};
+    list.forEach(function(a){
+      var card = MULTI_CARD ? cardOf(a) : 1;
+      var k = MULTI_CARD ? a.playerKey + '#' + card : a.playerKey;
+      if (!by[k]) by[k] = {key: a.playerKey, card: card, name: a.playerName, attempts: []};
+      by[k].name = PLAYER_NAMES[a.playerKey] || a.playerName;
+      by[k].attempts.push(a);
     });
+    return by;
+  }
+  function boardName(p, full){
+    return (full ? p.name : shortName(p.name)) + (MULTI_CARD ? ' Card ' + p.card : '');
+  }
+
+  function renderLeaderboard(){
+    var byPlayer = groupByCard(allAttempts);
     var players = Object.keys(byPlayer).map(function(k){
       var p = byPlayer[k];
       var res = scoreRound(p.attempts);
-      return {key:k, name:p.name, attempts:p.attempts, res:res};
+      return {key:p.key, card:p.card, name:p.name, attempts:p.attempts, res:res};
     });
     players.sort(rankPlayers);
     var places = placeLabels(players);
@@ -874,7 +921,7 @@
       row.innerHTML =
         '<div class="lb-top">' +
           '<div class="lb-rank">' + places[i] + '</div>' +
-          '<div style="flex:1;min-width:0;"><div class="lb-name">' + esc(me && me.key === p.key ? p.name : shortName(p.name)) + '</div><div class="lb-thru">thru ' + p.res.thru +
+          '<div style="flex:1;min-width:0;"><div class="lb-name">' + esc(boardName(p, !!(me && me.key === p.key))) + '</div><div class="lb-thru">thru ' + p.res.thru +
             (p.res.mulligansUsed ? ' · ' + p.res.mulligansUsed + ' mulligan' + (p.res.mulligansUsed === 1 ? '' : 's') : '') + '</div></div>' +
           '<div><div class="lb-total tnum">' + p.res.total + '</div><div class="lb-topar">' + fmtPar(p.res.toPar) + '</div></div>' +
         '</div>' +
@@ -890,16 +937,11 @@
     holes = holes || HOLES;
     closed = closed || CLOSED_HOLES;
     down = down || DOWN_HOLES;
-    var byPlayer = {};
-    attemptsList.forEach(function(a){
-      if (!byPlayer[a.playerKey]) byPlayer[a.playerKey] = {name: a.playerName, attempts: []};
-      byPlayer[a.playerKey].name = PLAYER_NAMES[a.playerKey] || a.playerName;
-      byPlayer[a.playerKey].attempts.push(a);
-    });
+    var byPlayer = groupByCard(attemptsList);
     var players = Object.keys(byPlayer).map(function(k){
       var p = byPlayer[k];
       var res = scoreRound(p.attempts, holes.length, closed, down);
-      return {name:p.name, attempts:p.attempts, res:res};
+      return {key:p.key, card:p.card, name:p.name, attempts:p.attempts, res:res};
     });
     if (!players.length) return '';
     players.sort(rankPlayers);
@@ -926,7 +968,7 @@
       }).join('');
       return '<tr>' +
         '<td class="tv-rank">' + places[i] + '</td>' +
-        '<td class="tv-name">' + esc(shortName(p.name)) + '</td>' +
+        '<td class="tv-name">' + esc(boardName(p, false)) + '</td>' +
         '<td class="tv-thru-cell">' + p.res.thru + '</td>' +
         cells +
         '<td><span class="tv-total-val">' + p.res.total + '</span> <span class="tv-topar">' + fmtPar(p.res.toPar) + '</span></td>' +
@@ -1151,6 +1193,7 @@
     CURRENT_EVENT_ID = ev.id;
     CURRENT_EVENT_LABEL = eventTitle(ev);
     RANK_FINISHED_FIRST = !!ev.rankFinishedFirst;
+    MULTI_CARD = !!ev.multiCard;
     // Re-draw the moment the event closes itself, so the page flips to "finished".
     clearTimeout(window.closeTimer);
     var left = ev.closesAt ? ev.closesAt - Date.now() : 0;

@@ -400,7 +400,7 @@
     if (ev.removedHoles && ev.removedHoles.length) d.removedHoles = ev.removedHoles;
     // Practice Open settings (set in the database); keep them on every save.
     var live = EVENTS.find(function(e){ return e.id === id; }) || {};
-    ['closesAt', 'rankFinishedFirst', 'note'].forEach(function(k){ if (live[k] != null) d[k] = live[k]; });
+    ['closesAt', 'rankFinishedFirst', 'note', 'multiCard'].forEach(function(k){ if (live[k] != null) d[k] = live[k]; });
     return adminBatch(function(batch, stamp){
       d.unlockId = stamp.unlockId;
       batch.set(db.collection('events').doc(id), d);
@@ -533,14 +533,19 @@
     if (!currentEvent) return;
     renderHoles();
     $('moveCard').hidden = !attempts.length || !$('moveTo').options.length;
-    var byPlayer = {};
+    var byPlayer = {}, hasScores = {};
+    // Multi-card events (Practice Open): each card is its own row, "Name · Card N".
+    var multi = !!currentEvent.multiCard;
     attempts.forEach(function(a){
-      if (!byPlayer[a.playerKey]) byPlayer[a.playerKey] = {key: a.playerKey, name: a.playerName, all: []};
-      byPlayer[a.playerKey].all.push(a);
+      var card = multi ? (a.card || 1) : 1;
+      var rk = multi ? a.playerKey + '#' + card : a.playerKey;
+      if (!byPlayer[rk]) byPlayer[rk] = {key: a.playerKey, card: card, rowKey: rk, name: registered[a.playerKey] || a.playerName, all: []};
+      byPlayer[rk].all.push(a);
+      hasScores[a.playerKey] = true;
     });
     // Signed-up players with no scores yet show too (live event only).
     if (currentEvent.status === 'open') Object.keys(registered).forEach(function(k){
-      if (!byPlayer[k]) byPlayer[k] = {key: k, name: registered[k], all: []};
+      if (!hasScores[k]) byPlayer[k] = {key: k, card: 1, rowKey: k, name: registered[k], all: []};
     });
     var players = Object.keys(byPlayer).map(function(k){
       var p = byPlayer[k];
@@ -560,22 +565,22 @@
     players.forEach(function(p){
       var rank = places[ranked.indexOf(p)];
       var el = document.createElement('div');
-      el.className = 'card player' + (openPlayers[p.key] ? ' open' : '');
+      el.className = 'card player' + (openPlayers[p.rowKey] ? ' open' : '');
       el.innerHTML =
         '<div class="p-top">' +
           '<div class="p-rank">' + (p.removed || p.empty ? '–' : rank) + '</div>' +
-          '<div style="flex:1;min-width:0;"><div class="p-name">' + esc(p.name) + (p.removed ? ' <span class="tag void">REMOVED</span>' : '') + '</div>' +
+          '<div style="flex:1;min-width:0;"><div class="p-name">' + esc(p.name) + (multi ? ' <span class="dim">· Card ' + p.card + '</span>' : '') + (p.removed ? ' <span class="tag void">REMOVED</span>' : '') + '</div>' +
             '<div class="dim small">' + (p.empty ? 'signed up · no scores yet' : 'thru ' + p.res.thru + ' · ' + p.res.mulligansUsed + ' mulligan' + (p.res.mulligansUsed === 1 ? '' : 's')) +
             (p.signedUp ? '' : ' · <span class="warn-txt">not signed up</span>') + '</div></div>' +
           '<div><div class="p-total">' + (p.removed || p.empty ? '' : p.res.total) + '</div><div class="dim small" style="text-align:right;">' + (p.removed || p.empty ? '' : fmtPar(p.res.toPar)) + '</div></div>' +
         '</div>' +
         '<div class="p-body"></div>';
       el.querySelector('.p-top').addEventListener('click', function(){
-        openPlayers[p.key] = !openPlayers[p.key];
+        openPlayers[p.rowKey] = !openPlayers[p.rowKey];
         el.classList.toggle('open');
-        if (openPlayers[p.key]) fillBody(el.querySelector('.p-body'), p);
+        if (openPlayers[p.rowKey]) fillBody(el.querySelector('.p-body'), p);
       });
-      if (openPlayers[p.key]) fillBody(el.querySelector('.p-body'), p);
+      if (openPlayers[p.rowKey]) fillBody(el.querySelector('.p-body'), p);
       wrap.appendChild(el);
     });
   }
@@ -770,10 +775,11 @@
       if (!name) { $('sheetName').focus(); return; }
       ref = db.collection('attempts').doc();
       data = Object.assign({
-        playerKey: playerKey(name), playerName: name, hole: h.n, holeName: h.name, target: t,
+        playerKey: s.player ? s.player.key : playerKey(name), playerName: name, hole: h.n, holeName: h.name, target: t,
         eventId: currentEvent.id, eventLabel: currentEvent.stray ? currentEvent.id : eventTitle(currentEvent), ts: Date.now()
       }, fields);
       if (s.mode === 'addMull') data.mulligan = true;
+      if (currentEvent.multiCard) data.card = s.player ? (s.player.card || 1) : 1;
     }
     closeSheet();
     adminBatch(function(batch, stamp){

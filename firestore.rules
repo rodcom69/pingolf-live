@@ -39,7 +39,7 @@ service cloud.firestore {
     function hasValidShape(d) {
       return d.keys().hasOnly(['playerKey', 'playerName', 'hole', 'holeName', 'target',
                                'strokes', 'method', 'eventId', 'eventLabel', 'ts',
-                               'ball', 'rawScore', 'mulligan', 'void', 'unlockId', 'editedByAdmin', 'proof'])
+                               'ball', 'rawScore', 'mulligan', 'void', 'unlockId', 'editedByAdmin', 'proof', 'card'])
         && validName(d.playerName)
         && d.playerKey is string && d.playerKey.size() > 0 && d.playerKey.size() <= 40
         && d.hole is int && d.hole >= 1 && d.hole <= 30
@@ -48,6 +48,7 @@ service cloud.firestore {
         && d.ts is int
         && (!('mulligan' in d) || d.mulligan == true)
         && (!('void' in d) || d.void is bool)
+        && (!('card' in d) || (d.card is int && d.card >= 1 && d.card <= 50))
         && d.eventId is string;
     }
 
@@ -95,11 +96,12 @@ service cloud.firestore {
 
     match /events/{eventId} {
       allow read: if true;
-      allow create, update: if request.resource.data.keys().hasOnly(['name', 'location', 'date', 'time', 'course', 'status', 'test', 'closedHoles', 'removedHoles', 'closesAt', 'rankFinishedFirst', 'note', 'unlockId'])
+      allow create, update: if request.resource.data.keys().hasOnly(['name', 'location', 'date', 'time', 'course', 'status', 'test', 'closedHoles', 'removedHoles', 'closesAt', 'rankFinishedFirst', 'note', 'multiCard', 'unlockId'])
                     && (!('closedHoles' in request.resource.data) || (request.resource.data.closedHoles is list && request.resource.data.closedHoles.size() <= 30))
                     && (!('removedHoles' in request.resource.data) || (request.resource.data.removedHoles is list && request.resource.data.removedHoles.size() <= 30))
                     && (!('closesAt' in request.resource.data) || request.resource.data.closesAt is int)
                     && (!('rankFinishedFirst' in request.resource.data) || request.resource.data.rankFinishedFirst is bool)
+                    && (!('multiCard' in request.resource.data) || request.resource.data.multiCard is bool)
                     && (!('note' in request.resource.data) || (request.resource.data.note is string && request.resource.data.note.size() <= 300))
                     && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
                     && request.resource.data.location is string && request.resource.data.location.size() <= 80
@@ -120,6 +122,7 @@ service cloud.firestore {
       allow update: if (isPlayerWrite(request.resource.data)
                         && resource.data.eventId == request.resource.data.eventId
                         && resource.data.playerKey == request.resource.data.playerKey
+                        && resource.data.get('card', 1) == request.resource.data.get('card', 1)
                         && !('editedByAdmin' in resource.data)
                         && request.resource.data.ts == resource.data.ts
                         && inEditWindow(resource.data))
