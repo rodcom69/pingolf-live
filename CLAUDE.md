@@ -14,7 +14,7 @@ This repo is public, so never commit PINs, secrets or personal details.
 ## Data (Firestore)
 - `events/{id}` holds:
   - name, location, date, time (string), course, status (`upcoming|open|closed`), test (bool)
-  - optional: `closedHoles` (closed temporarily: no new entries, par unchanged), `removedHoles` (closed permanently: dropped, par goes down), `closesAt` (ms; stops new scores), `rankFinishedFirst`, `note`, `multiCard`
+  - optional: `hiddenPlayers` (player keys taken off the public boards; scores kept; admin Hide/Show button), `closedHoles` (closed temporarily: no new entries, par unchanged), `removedHoles` (closed permanently: dropped, par goes down), `closesAt` (ms; stops new scores), `rankFinishedFirst`, `note`, `multiCard`
   - Events made by hand in the console must have **every** field the rules check, or admin saves fail.
 - `attempts/{id}`: one score each, with playerKey, playerName, hole, strokes, method (`ball|chart`), eventId, ts, plus optional ball, rawScore, mulligan, void, card, editedByAdmin.
 - `players/{key}`: `{name}`, the display name. `key` = the lowercased name the player first signed up with. To give someone a longer name, edit only `players/{key}.name` and keep the key, so their PIN still works. Admin "Rename" changes the key and separates the player from their PIN.
