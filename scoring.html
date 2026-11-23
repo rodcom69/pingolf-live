@@ -141,15 +141,19 @@
 (function(){
   // ?course=<id> picks a course; default is the current one in course.js.
   var params = new URLSearchParams(location.search);
-  var holes = courseHoles(params.get('course') || DEFAULT_COURSE);
+  var courseId = COURSES[params.get('course')] ? params.get('course') : DEFAULT_COURSE;
+  var holes = courseHoles(courseId);
   var e = params.get('e');
   if (e) document.getElementById('backLink').href = './?e=' + encodeURIComponent(e);
 
   // Event line (date/time) from the starter event list, when the link names one.
+  // A course with no starter event (a new venue) shows its venue and town instead.
   var ev = STARTER_EVENTS.filter(function(x){ return x.id === e; })[0] ||
-           STARTER_EVENTS.filter(function(x){ return !x.test; })[0];
-  if (ev) document.getElementById('eyebrow').textContent =
-    [ev.location ? ev.location.split(',')[0] : '', eventWhen(ev)].filter(Boolean).join(' · ');
+           STARTER_EVENTS.filter(function(x){ return !x.test && x.course === courseId; })[0];
+  var ci = courseInfo(courseId);
+  document.getElementById('eyebrow').textContent = ev
+    ? [ev.location ? ev.location.split(',')[0] : '', eventWhen(ev)].filter(Boolean).join(' · ')
+    : [ci.name.split(' · ')[0], ci.place].filter(Boolean).join(' · ');
 
   var n = holes.length;
   document.getElementById('rules').textContent =

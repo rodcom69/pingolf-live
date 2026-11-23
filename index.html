@@ -1362,6 +1362,7 @@
     var ci = courseInfo(ev.course);
     document.getElementById('brandName').textContent = ci.brand || 'PINGOLF';
     document.getElementById('brandPlace').textContent = ci.place || '';
+    document.querySelectorAll('a.print-link').forEach(function(a){ a.href = 'scoring.html?course=' + encodeURIComponent(ev.course) + '&e=' + encodeURIComponent(ev.id); });
     renderObjectives();
     if (changed) startAttemptsListener();
     renderEventPicker();
