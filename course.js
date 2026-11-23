@@ -45,7 +45,7 @@ var COURSES = {
     name: 'PinCrossing · 11 machines (draft)',
     brand: 'PINCROSSING PINGOLF', place: 'Limerick, PA', mulligans: 1,
     holes: [
-      {n:1, name:"Avengers: Infinity Quest", target:15000000, label:"15M"},
+      {n:1, name:"Avengers: Infinity Quest", target:50000000, label:"50M"},
       {n:2, name:"Batman 66", target:100000000, label:"100M"},
       {n:3, name:"Firepower", target:500000, label:"500K"},
       {n:4, name:"Flash Gordon", target:500000, label:"500K"},
