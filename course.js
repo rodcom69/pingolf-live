@@ -37,6 +37,24 @@ var COURSES = {
       {n:17, name:"Game of Thrones", target:75000000, label:"75M", img:"game-of-thrones"},
       {n:18, name:"Black Knight: Sword of Rage", target:60000000, label:"60M", img:"black-knight-sor"}
     ]
+  },
+  // PinCrossing (Railroad Street Bar and Grill, Linfield/Limerick PA). Lineup from Pinball Map,
+  // Nov 2026. Alphabetical until we have the walking order; targets are first drafts.
+  'pincrossing-2026': {
+    name: 'PinCrossing · 11 machines (draft)',
+    holes: [
+      {n:1, name:"Avengers: Infinity Quest", target:60000000, label:"60M"},
+      {n:2, name:"Batman 66", target:100000000, label:"100M"},
+      {n:3, name:"Firepower", target:500000, label:"500K"},
+      {n:4, name:"Flash Gordon", target:500000, label:"500K"},
+      {n:5, name:"Harry Potter", target:200000000, label:"200M"},
+      {n:6, name:"JAWS", target:150000000, label:"150M"},
+      {n:7, name:"King Kong", target:75000000, label:"75M"},
+      {n:8, name:"Pulp Fiction", target:3000000, label:"3M"},
+      {n:9, name:"Scared Stiff", target:60000000, label:"60M"},
+      {n:10, name:"Theatre of Magic", target:1500000000, label:"1.5B"},
+      {n:11, name:"Wizard!", target:50000, label:"50K"}
+    ]
   }
 };
 var DEFAULT_COURSE = 'xgolf-2026-12';
@@ -57,7 +75,22 @@ function isHoleShut(n){ return isHoleClosed(n) || isHoleDown(n); }
 function openHoleCount(holes, closed){
   return holes.filter(function(h){ return !isHoleClosed(h.n, closed); }).length;
 }
-function holeImg(h){ return h.img ? 'img/' + h.img + '.jpg' : ''; }
+// No picture yet: a plain tile with the machine name, so nothing shows as a broken image.
+function holeImg(h){
+  if (h.img) return 'img/' + h.img + '.jpg';
+  var name = String(h.name).replace(/[&<>"']/g, '');
+  var lines = [];
+  name.split(/\s+/).forEach(function(w){
+    var last = lines[lines.length - 1];
+    if (last && (last + ' ' + w).length <= 12) lines[lines.length - 1] = last + ' ' + w; else lines.push(w);
+  });
+  var y0 = 210 - (lines.length - 1) * 19;
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">' +
+    '<rect width="300" height="400" fill="#2a2620"/><rect x="10" y="10" width="280" height="380" fill="none" stroke="#d9a441" stroke-width="3" rx="12"/>' +
+    '<text fill="#f3e6c8" font-family="Arial, sans-serif" font-size="32" font-weight="bold" text-anchor="middle">' +
+    lines.map(function(l, i){ return '<tspan x="150" y="' + (y0 + i * 38) + '">' + l + '</tspan>'; }).join('') + '</text></svg>';
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
 
 // ---------- Events ----------
 // Stored in the database (events/{id}): name, location, date (YYYY-MM-DD), time,
