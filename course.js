@@ -54,7 +54,7 @@ var COURSES = {
       {n:7, name:"King Kong", target:75000000, label:"75M"},
       {n:8, name:"Pulp Fiction", target:1500000, label:"1.5M"},
       {n:9, name:"Scared Stiff", target:5000000, label:"5M"},
-      {n:10, name:"Theatre of Magic", target:750000000, label:"750M"},
+      {n:10, name:"Theatre of Magic", target:500000000, label:"500M"},
       {n:11, name:"Wizard!", target:50000, label:"50K"}
     ]
   }
