@@ -280,11 +280,24 @@
     color:var(--text-dim);font-family:inherit;font-size:11px;padding-top:0;}
   @media (max-width:700px){
     body:not(.tv-mode) #tvBoardWrap{display:none;}
-    .lb-strip{display:flex;}
-    body:not(.tv-mode) .lb-holes{display:block;}
+    .lb-row.open .lb-strip{display:flex;}
+    body:not(.tv-mode) #panel-board:has(.lb-row.open) .lb-holes{display:block;}
     .lb-holes{padding:4px 12px 2px;}
-    .lb-row{padding:8px 12px;}
-    .lb-list{gap:6px;}
+    .lb-row{padding:7px 12px;}
+    .lb-list{gap:5px;}
+    /* Collapsed standings: rank, name + status on one line, total. */
+    .lb-who{display:flex;align-items:baseline;gap:8px;}
+    .lb-who .lb-name{flex:0 1 auto;min-width:0;}
+    .lb-who .lb-thru{flex-shrink:0;white-space:nowrap;}
+    .lb-rank{font-size:22px;}
+    .lb-score .lb-tot{font-size:24px;}
+    .lb-score .lb-par{font-size:17px;}
+  }
+  .lb-row.live{border-left:3px solid var(--accent);}
+  .lb-thru .st-live{color:var(--accent);font-weight:700;}
+  .lb-thru .st-fin{color:var(--gold);font-weight:700;}
+  .lb-row.live .lb-tot{opacity:.85;}
+  @media (max-width:700px){
   }
   .lb-detail{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);display:none;}
   .lb-detail.open{display:block;}
@@ -979,6 +992,7 @@
   window.addEventListener('resize', syncHeaderHeight);
   if (window.ResizeObserver) new ResizeObserver(syncHeaderHeight).observe(document.querySelector('header.top'));
 
+  var lbOpen = {}, PHONE_MQ = window.matchMedia('(max-width:700px)');
   function renderLeaderboard(){
     var byPlayer = groupByCard(allAttempts);
     var players = Object.keys(byPlayer).map(function(k){
@@ -1007,7 +1021,7 @@
     players.forEach(function(p, i){
       var row = document.createElement('div');
       var mine = !!(me && me.key === p.key);
-      row.className = 'lb-row' + (mine ? ' mine' : '');
+      row.className = 'lb-row' + (mine ? ' mine' : '') + (p.res.complete ? ' done' : ' live');
       var sortedAttempts = p.attempts.slice().sort(function(a,b){ return a.hole - b.hole || a.ts - b.ts; });
       var lines = sortedAttempts.map(function(a){
         var dropped = p.res.countedIds.indexOf(a.id) === -1;
@@ -1021,20 +1035,27 @@
           '</div>';
       }).join('');
       var m = p.res.mulligansUsed;
-      var sub = (p.res.complete ? 'Finished' : 'Thru ' + p.res.thru) + (m ? ' · ' + m + ' mull' + (m === 1 ? '' : 's') : '');
+      var sub = (p.res.complete ? '<span class="st-fin">\u2713 Finished</span>' : '<span class="st-live">\u25cf Thru ' + p.res.thru + '</span>') +
+        (m ? ' \u00b7 ' + m + ' mull' + (m === 1 ? '' : 's') : '');
+      // Phone: rows start collapsed except your own current card; taps are remembered across live updates.
+      var rk = p.key + '#' + p.card;
+      var isOpen = (rk in lbOpen) ? lbOpen[rk] : (mine && (!MULTI_CARD || p.card === myCardNo()) && PHONE_MQ.matches);
       row.innerHTML =
         '<div class="lb-top">' +
           '<div class="lb-rank">' + places[i] + '</div>' +
-          '<div style="flex:1;min-width:0;"><div class="lb-name">' + esc(mine ? p.name : shortName(p.name)) +
+          '<div class="lb-who" style="flex:1;min-width:0;"><div class="lb-name">' + esc(mine ? p.name : shortName(p.name)) +
             (showCardNo(p, counts) ? '<span class="lb-card">(' + esc(p.card) + ')</span>' : '') + '</div>' +
-            '<div class="lb-thru">' + esc(sub) + '</div></div>' +
+            '<div class="lb-thru">' + sub + '</div></div>' +
           '<div class="lb-score tnum"><span class="lb-tot">' + p.res.total + '</span><span class="lb-par">(' + fmtPar(p.res.toPar) + ')</span></div>' +
           '<div class="lb-chev" aria-hidden="true">\u203a</div>' +
         '</div>' +
         scorecardStrip(p.res) +
-        '<div class="lb-detail">' + lines + '</div>';
+        '<div class="lb-detail' + (isOpen ? ' open' : '') + '">' + lines + '</div>';
+      if (isOpen) row.classList.add('open');
       row.addEventListener('click', function(){
-        row.classList.toggle('open', row.querySelector('.lb-detail').classList.toggle('open'));
+        var now = row.querySelector('.lb-detail').classList.toggle('open');
+        row.classList.toggle('open', now);
+        lbOpen[rk] = now;
       });
       list.appendChild(row);
     });
