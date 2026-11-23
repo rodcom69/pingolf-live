@@ -52,9 +52,9 @@ var COURSES = {
       {n:5, name:"Harry Potter", target:200000000, label:"200M"},
       {n:6, name:"JAWS", target:150000000, label:"150M"},
       {n:7, name:"King Kong", target:75000000, label:"75M"},
-      {n:8, name:"Pulp Fiction", target:3000000, label:"3M"},
-      {n:9, name:"Scared Stiff", target:60000000, label:"60M"},
-      {n:10, name:"Theatre of Magic", target:1500000000, label:"1.5B"},
+      {n:8, name:"Pulp Fiction", target:1500000, label:"1.5M"},
+      {n:9, name:"Scared Stiff", target:5000000, label:"5M"},
+      {n:10, name:"Theatre of Magic", target:750000000, label:"750M"},
       {n:11, name:"Wizard!", target:50000, label:"50K"}
     ]
   }
