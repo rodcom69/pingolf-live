@@ -966,7 +966,7 @@
         '<div class="lb-top">' +
           '<div class="lb-rank">' + places[i] + '</div>' +
           '<div style="flex:1;min-width:0;"><div class="lb-name">' + esc(mine ? p.name : shortName(p.name)) +
-            (MULTI_CARD ? '<span class="lb-card">Card ' + esc(p.card) + '</span>' : '') + '</div>' +
+            (MULTI_CARD ? '<span class="lb-card">(' + esc(p.card) + ')</span>' : '') + '</div>' +
             '<div class="lb-thru">' + esc(sub) + '</div></div>' +
           '<div class="lb-score"><div class="lb-par tnum">' + fmtPar(p.res.toPar) + '</div>' +
             '<div class="lb-strokes tnum">' + p.res.total + ' stroke' + (p.res.total === 1 ? '' : 's') + '</div></div>' +
