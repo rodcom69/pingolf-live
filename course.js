@@ -17,6 +17,7 @@ var firebaseConfig = {
 var COURSES = {
   'xgolf-2026-12': {
     name: 'X-Golf · 18 machines (Dec 2026)',
+    brand: 'XGOLF PINGOLF', place: 'Chester Springs, PA',
     holes: [
       {n:1, name:"Cyclopes", target:200000, label:"200K", img:"cyclopes"},
       {n:2, name:"Mustang", target:50000, label:"50K", img:"mustang-em"},
@@ -42,6 +43,7 @@ var COURSES = {
   // Nov 2026. Alphabetical until we have the walking order; targets are first drafts.
   'pincrossing-2026': {
     name: 'PinCrossing · 11 machines (draft)',
+    brand: 'PINCROSSING PINGOLF', place: 'Limerick, PA',
     holes: [
       {n:1, name:"Avengers: Infinity Quest", target:60000000, label:"60M"},
       {n:2, name:"Batman 66", target:100000000, label:"100M"},
@@ -58,6 +60,7 @@ var COURSES = {
   }
 };
 var DEFAULT_COURSE = 'xgolf-2026-12';
+function courseInfo(courseId){ return COURSES[courseId] || COURSES[DEFAULT_COURSE]; }
 function courseHoles(courseId){ return (COURSES[courseId] || COURSES[DEFAULT_COURSE]).holes; }
 // The course of the event being shown. The scorecard swaps it when you pick an event.
 var HOLES = courseHoles(DEFAULT_COURSE);

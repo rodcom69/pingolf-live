@@ -383,8 +383,8 @@
 <div class="wrap">
   <header class="top"><div class="inner">
     <div class="brand-row">
-      <h1>XGOLF PINGOLF</h1>
-      <span class="place">Chester Springs, PA</span>
+      <h1 id="brandName">XGOLF PINGOLF</h1>
+      <span class="place" id="brandPlace">Chester Springs, PA</span>
     </div>
     <select id="eventSelect" class="event-select" aria-label="Event"><option value="">Loading events&hellip;</option></select>
     <div class="sub" id="eventSub"></div>
@@ -498,7 +498,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-23c"></script>
+<script src="course.js?v=2026-11-23d"></script>
 
 <script>
 (function(){
@@ -1359,6 +1359,9 @@
     var url = new URL(location.href);
     if (url.searchParams.get('e') !== ev.id) { url.searchParams.set('e', ev.id); history.replaceState(null, '', url); }
     useCourse(ev.course, ev.removedHoles || [], ev.closedHoles || []);
+    var ci = courseInfo(ev.course);
+    document.getElementById('brandName').textContent = ci.brand || 'PINGOLF';
+    document.getElementById('brandPlace').textContent = ci.place || '';
     renderObjectives();
     if (changed) startAttemptsListener();
     renderEventPicker();
