@@ -242,22 +242,36 @@
   .lb-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .lb-name .lb-card{font-weight:600;font-size:12px;color:var(--text-dim);margin-left:5px;}
   .lb-score{text-align:right;flex-shrink:0;}
-  .lb-score .lb-par{font-family:"Teko",sans-serif;font-size:26px;line-height:1;color:var(--text);font-weight:600;}
+  .lb-score{white-space:nowrap;font-family:"Teko",sans-serif;line-height:1;}
+  .lb-score .lb-tot{font-size:28px;color:var(--text);font-weight:600;}
+  .lb-score .lb-par{font-size:20px;color:var(--text-dim);margin-left:1px;}
   .lb-score .lb-strokes{font-size:11px;color:var(--text-dim);white-space:nowrap;}
   .lb-chev{color:var(--text-dim);font-size:20px;line-height:1;flex-shrink:0;transition:transform .15s;margin-left:-2px;}
   .lb-row.open .lb-chev{transform:rotate(90deg);}
   .lb-hint{font-size:12px;color:var(--text-dim);margin:14px 2px -6px;}
   .lb-hint:empty, body.tv-mode .lb-hint{display:none;}
   .lb-strip{display:none;margin-top:8px;gap:4px;flex-direction:column;}
-  .lb-strip-row{display:grid;grid-template-columns:30px repeat(9,1fr);align-items:center;gap:2px;}
+  .lb-strip-row{display:grid;grid-template-columns:28px repeat(9,1fr) 26px;align-items:center;gap:2px;}
+  .lb-sub{font-family:"Teko",sans-serif;font-size:17px;line-height:1;text-align:right;color:var(--text);padding-top:2px;font-variant-numeric:tabular-nums;}
+  .lb-holes{display:none;position:sticky;top:var(--hdr-h,0px);z-index:4;background:var(--bg);margin:10px 0 -8px;padding:4px 13px 2px;border:1px solid transparent;}
+  body.scores-mode .lb-holes{top:0;}
+  .lb-holes .lb-strip-row{gap:2px;}
+  .lb-holes span{font-size:10px;font-weight:800;color:var(--text-dim);text-align:center;letter-spacing:.02em;}
+  .lb-holes .lb-strip-label, .lb-holes .lb-sub{text-align:left;font-family:inherit;font-size:9px;}
+  .lb-holes .lb-sub{text-align:right;}
+  .lb-legend{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:11.5px;color:var(--text-dim);margin:8px 2px 0;}
+  .lb-legend:empty, body.tv-mode .lb-legend{display:none;}
+  .lb-legend .lg{display:inline-flex;align-items:center;gap:4px;}
+  .lb-legend .lb-pip{width:18px;height:18px;font-size:13px;}
   .lb-strip-label{font-size:10px;font-weight:800;letter-spacing:.05em;color:var(--text-dim);}
-  .lb-pip{justify-self:center;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  .lb-pip{justify-self:center;width:100%;max-width:26px;height:auto;aspect-ratio:1;box-sizing:border-box;border-radius:50%;display:flex;align-items:center;justify-content:center;
     font-family:"Teko",sans-serif;font-size:17px;line-height:1;font-weight:700;padding-top:2px;font-variant-numeric:tabular-nums;}
   .lb-pip.empty{border:1px dashed var(--border);color:var(--text-dim);opacity:.6;font-weight:500;font-size:14px;}
-  .lb-pip.hit{background:var(--accent);color:#eafff2;}
+  .lb-pip.under{background:var(--accent);color:#eafff2;}
+  .lb-pip.par{background:var(--surface-2);color:var(--text);border:1.5px solid var(--text-dim);}
   .lb-pip.ace{background:var(--gold);color:#241c06;box-shadow:0 0 0 2px rgba(224,172,63,.35), 0 0 8px rgba(224,172,63,.7);}
-  .lb-pip.fair{background:#5a5636;color:#fbf6e4;}
-  .lb-pip.poor{background:#7a3a26;color:#ffe9df;}
+  .lb-pip.bogey{background:#c0603f;color:#fff3ee;}
+  .lb-pip.poor{background:#6a1f12;color:#ffd9cc;}
   .lb-pip.mull{box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--gold);}
   .lb-pip.ace.mull{box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--gold), 0 0 10px rgba(224,172,63,.7);}
   .lb-pip.down:not(.played){background:#e0261b;color:#fff;font-family:inherit;font-size:12px;padding-top:0;}
@@ -267,6 +281,8 @@
   @media (max-width:700px){
     body:not(.tv-mode) #tvBoardWrap{display:none;}
     .lb-strip{display:flex;}
+    body:not(.tv-mode) .lb-holes{display:block;}
+    .lb-holes{padding:4px 12px 2px;}
     .lb-row{padding:8px 12px;}
     .lb-list{gap:6px;}
   }
@@ -337,11 +353,12 @@
   .tv-board .tv-cell{font-family:"Teko",sans-serif;font-size:clamp(14px,1.8vw,24px);color:#5c5844;}
   .tv-board .tv-cell.played{color:#f2eddd;}
   .tv-board .tv-cell .pip{display:inline-flex;align-items:center;justify-content:center;width:1.9vw;height:1.9vw;min-width:22px;min-height:22px;border-radius:50%;}
-  .tv-board .tv-cell.hit .pip{background:var(--accent);color:#eafff2;font-weight:700;}
+  .tv-board .tv-cell.under .pip{background:var(--accent);color:#eafff2;font-weight:700;}
+  .tv-board .tv-cell.par .pip{background:#3a3828;color:#f2eddd;font-weight:700;border:max(1.5px,.12vw) solid #9a947c;box-sizing:border-box;}
   .tv-board .tv-cell.ace .pip{background:var(--gold);color:#241c06;font-weight:700;box-shadow:0 0 0 .2vw rgba(224,172,63,.4), 0 0 1vw rgba(224,172,63,.65);}
   .tv-board .tv-cell.ace{color:var(--gold);}
-  .tv-board .tv-cell.fair .pip{background:#5a5636;color:#fbf6e4;font-weight:700;}
-  .tv-board .tv-cell.poor .pip{background:#7a3a26;color:#ffe9df;font-weight:700;}
+  .tv-board .tv-cell.bogey .pip{background:#c0603f;color:#fff3ee;font-weight:700;}
+  .tv-board .tv-cell.poor .pip{background:#6a1f12;color:#ffd9cc;font-weight:700;}
   .tv-board .tv-cell.dropped .pip{opacity:.4;text-decoration:line-through;}
   .tv-board .tv-total-val{font-family:"Teko",sans-serif;font-size:clamp(20px,2.6vw,36px);color:var(--gold);font-weight:700;}
 
@@ -416,6 +433,8 @@
     <div class="closed-banner" id="closedBanner" hidden></div>
     <div id="tvBoardWrap" style="overflow-x:auto;"></div>
     <div class="lb-hint" id="lbHint"></div>
+    <div class="lb-legend" id="lbLegend"></div>
+    <div class="lb-holes" id="lbHoles" aria-hidden="true"></div>
     <div class="lb-list" id="lbList" style="margin-top:16px;"><div class="empty-note">No scores yet &mdash; be the first on the board.</div></div>
   </section>
 
@@ -921,9 +940,44 @@
     });
     return by;
   }
-  function boardName(p, full){
-    return (full ? p.name : shortName(p.name)) + (MULTI_CARD ? ' (' + p.card + ')' : '');
+  // Card number "(2)" only for players with more than one card on this board.
+  function cardCounts(players){
+    var c = {};
+    players.forEach(function(p){ c[p.key] = (c[p.key] || 0) + 1; });
+    return c;
   }
+  function showCardNo(p, counts){ return MULTI_CARD && counts[p.key] > 1; }
+  function boardName(p, full, counts){
+    return (full ? p.name : shortName(p.name)) + (showCardNo(p, counts) ? ' (' + p.card + ')' : '');
+  }
+  // Colors follow par 3, like a golf scorecard: ace, under par, par, 4-5, 6-8.
+  function strokeTier(n){ return n === 1 ? 'ace' : n === 2 ? 'under' : n === 3 ? 'par' : n <= 5 ? 'bogey' : 'poor'; }
+  var LEGEND_HTML = '<span class="lg"><span class="lb-pip ace">1</span>ace</span>' +
+    '<span class="lg"><span class="lb-pip under">2</span>under par</span>' +
+    '<span class="lg"><span class="lb-pip par">3</span>par</span>' +
+    '<span class="lg"><span class="lb-pip bogey">4</span>4\u20135</span>' +
+    '<span class="lg"><span class="lb-pip poor">6</span>6\u20138</span>' +
+    '<span class="lg"><span class="lb-pip under mull">2</span>mulligan</span>';
+  // Phone: hole numbers once above the list (pinned under the header while scrolling).
+  function holesHeader(){
+    var html = '';
+    for (var s = 0; s < HOLES.length; s += 9){
+      var chunk = HOLES.slice(s, s + 9);
+      html += '<div class="lb-strip-row"><span class="lb-strip-label">' + (s ? 'IN' : 'OUT') + '</span>' +
+        chunk.map(function(h){ return '<span>' + h.n + '</span>'; }).join('') +
+        (chunk.length < 9 ? new Array(10 - chunk.length).join('<span></span>') : '') +
+        '<span class="lb-sub">TOT</span></div>';
+    }
+    return html;
+  }
+  function syncHeaderHeight(){
+    var h = document.querySelector('header.top');
+    if (!h) return;
+    var stuck = getComputedStyle(h).position === 'sticky';
+    document.documentElement.style.setProperty('--hdr-h', (stuck ? h.offsetHeight : 0) + 'px');
+  }
+  window.addEventListener('resize', syncHeaderHeight);
+  if (window.ResizeObserver) new ResizeObserver(syncHeaderHeight).observe(document.querySelector('header.top'));
 
   function renderLeaderboard(){
     var byPlayer = groupByCard(allAttempts);
@@ -937,12 +991,18 @@
 
     var list = document.getElementById('lbList');
     var hint = document.getElementById('lbHint');
+    var legend = document.getElementById('lbLegend'), holesHead = document.getElementById('lbHoles');
     if (!players.length){
       hint.textContent = '';
+      legend.innerHTML = ''; holesHead.innerHTML = '';
       list.innerHTML = '<div class="empty-note">No scores yet &mdash; be the first on the board.</div>';
       return;
     }
     hint.textContent = 'Ranked by score to par \u00b7 tap a player for each machine\u2019s score';
+    legend.innerHTML = LEGEND_HTML;
+    holesHead.innerHTML = holesHeader();
+    syncHeaderHeight();
+    var counts = cardCounts(players);
     list.innerHTML = '';
     players.forEach(function(p, i){
       var row = document.createElement('div');
@@ -966,10 +1026,9 @@
         '<div class="lb-top">' +
           '<div class="lb-rank">' + places[i] + '</div>' +
           '<div style="flex:1;min-width:0;"><div class="lb-name">' + esc(mine ? p.name : shortName(p.name)) +
-            (MULTI_CARD ? '<span class="lb-card">(' + esc(p.card) + ')</span>' : '') + '</div>' +
+            (showCardNo(p, counts) ? '<span class="lb-card">(' + esc(p.card) + ')</span>' : '') + '</div>' +
             '<div class="lb-thru">' + esc(sub) + '</div></div>' +
-          '<div class="lb-score"><div class="lb-par tnum">' + fmtPar(p.res.toPar) + '</div>' +
-            '<div class="lb-strokes tnum">' + p.res.total + ' stroke' + (p.res.total === 1 ? '' : 's') + '</div></div>' +
+          '<div class="lb-score tnum"><span class="lb-tot">' + p.res.total + '</span><span class="lb-par">(' + fmtPar(p.res.toPar) + ')</span></div>' +
           '<div class="lb-chev" aria-hidden="true">\u203a</div>' +
         '</div>' +
         scorecardStrip(p.res) +
@@ -981,6 +1040,12 @@
     });
   }
 
+  // Strokes counted on these holes ('' if none played yet), like OUT/IN on a golf card.
+  function nineTotal(res, chunk){
+    var n = 0, any = false;
+    chunk.forEach(function(h){ var a = res.byHole[h.n]; if (a && !isHoleClosed(h.n)) { n += a.strokes; any = true; } });
+    return any ? n : '';
+  }
   // Phone leaderboard: a golf-scorecard strip under each player, OUT (1-9) and IN (10-18).
   function scorecardStrip(res){
     var html = '';
@@ -993,10 +1058,11 @@
         var down = isHoleDown(h.n), a = res.byHole[h.n];
         if (!a) return down ? '<span class="lb-pip down" title="' + esc(t) + ': closed">\u2716</span>'
                             : '<span class="lb-pip empty" title="' + esc(t) + '">' + h.n + '</span>';
-        var tier = a.strokes === 1 ? 'ace' : a.strokes <= 3 ? 'hit' : a.strokes <= 6 ? 'fair' : 'poor';
+        var tier = strokeTier(a.strokes);
         return '<span class="lb-pip ' + tier + (a.mulligan ? ' mull' : '') + (down ? ' down played' : '') + '" title="' +
           esc(t + ': ' + a.strokes + (a.mulligan ? ' (mulligan)' : '')) + '">' + a.strokes + '</span>';
-      }).join('') + '</div>';
+      }).join('') + (chunk.length < 9 ? new Array(10 - chunk.length).join('<span></span>') : '') +
+        '<span class="lb-sub">' + nineTotal(res, chunk) + '</span></div>';
     }
     return '<div class="lb-strip">' + html + '</div>';
   }
@@ -1013,6 +1079,7 @@
     });
     if (!players.length) return '';
     players.sort(rankPlayers);
+    var counts = cardCounts(players);
     var places = placeLabels(players);
 
     var head = '<th class="th-rank"></th><th class="th-player">Player</th><th class="th-thru">Thru</th>' +
@@ -1030,16 +1097,16 @@
         var dn = isHoleDown(h.n, down) ? ' closed' : '';
         var a = byHole[h.n];
         if (!a) return '<td class="tv-cell' + dn + '">' + (dn ? '\u2716' : '&mdash;') + '</td>';
-        var tier = a.strokes === 1 ? 'ace' : a.strokes <= 3 ? 'hit' : a.strokes <= 6 ? 'fair' : 'poor';
+        var tier = strokeTier(a.strokes);
         return '<td class="tv-cell played ' + tier + (a.mulligan ? ' mull' : '') + dn + '">' +
           '<span class="pip">' + a.strokes + '</span></td>';
       }).join('');
       return '<tr>' +
         '<td class="tv-rank">' + places[i] + '</td>' +
-        '<td class="tv-name">' + esc(boardName(p, false)) + '</td>' +
+        '<td class="tv-name">' + esc(boardName(p, false, counts)) + '</td>' +
         '<td class="tv-thru-cell">' + p.res.thru + '</td>' +
         cells +
-        '<td><span class="tv-total-val">' + p.res.total + '</span> <span class="tv-topar">' + fmtPar(p.res.toPar) + '</span></td>' +
+        '<td><span class="tv-total-val">' + p.res.total + '</span><span class="tv-topar">(' + fmtPar(p.res.toPar) + ')</span></td>' +
       '</tr>';
     }).join('');
 
