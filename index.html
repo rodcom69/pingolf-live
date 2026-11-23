@@ -159,6 +159,8 @@
   .hole-tile .mull-tag{position:absolute;top:-7px;left:-7px;background:var(--gold);color:#1c1a12;font-size:10px;font-weight:800;
     padding:3px 6px;border-radius:999px;border:2px solid var(--bg);letter-spacing:.03em;}
   .mull-section{display:flex;flex-direction:column;gap:10px;margin-top:18px;}
+  .next-card-wrap:empty{display:none;}
+  .next-card-wrap{margin-top:14px;}
   .mull-card{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font-family:inherit;color:var(--text);
     background:var(--surface);border:1px dashed var(--gold);border-radius:11px;padding:12px 14px;cursor:pointer;box-shadow:var(--shadow);}
   .mull-card.used{border-style:solid;}
@@ -360,6 +362,7 @@
       </div>
     </div>
 
+    <div class="next-card-wrap" id="nextCardWrap"></div>
     <div class="event-note" id="eventNote" hidden></div>
     <div class="hole-grid" id="holeGrid"></div>
     <div class="mull-section" id="mullSection"></div>
@@ -430,7 +433,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-22j"></script>
+<script src="course.js?v=2026-11-23a"></script>
 
 <script>
 (function(){
@@ -634,6 +637,8 @@
       })(i);
     }
     showMe();
+    var nextWrap = document.getElementById('nextCardWrap');
+    nextWrap.innerHTML = '';
     // Multi-card event: once this card is finished, offer the next one (two taps, so it can't happen by accident).
     if (MULTI_CARD && me && res.complete && mine.length) {
       var cur = myCardNo(), left = Math.max(0, MAX_MULLIGANS - res.mulligansUsed);
@@ -653,7 +658,7 @@
         renderScoreTab(); renderLeaderboard();
         window.scrollTo(0, 0);
       });
-      sec.appendChild(next);
+      nextWrap.appendChild(next);
     }
   }
 
@@ -884,7 +889,7 @@
     return by;
   }
   function boardName(p, full){
-    return (full ? p.name : shortName(p.name)) + (MULTI_CARD ? ' Card ' + p.card : '');
+    return (full ? p.name : shortName(p.name)) + (MULTI_CARD ? ' (' + p.card + ')' : '');
   }
 
   function renderLeaderboard(){

@@ -184,6 +184,20 @@ function scoreRound(attempts, holeCount, closed, down){
     threes: counted.filter(function(a){ return a.strokes === 3; }).length
   };
 }
+// Pace check (organizer flag only; nothing is blocked). A real game of pinball takes
+// a few minutes, so a card whose player-entered holes average under 2 minutes apart
+// is flagged in admin. Entries the organizer added (editedByAdmin) are skipped,
+// so paper cards typed in at once aren't flagged. Returns null or {holes, minutes, text}.
+var PACE_MIN_SEC_PER_HOLE = 120, PACE_MIN_HOLES = 6;
+function paceCheck(attempts){
+  var ts = attempts.filter(function(a){ return !a.void && !a.mulligan && !a.editedByAdmin && typeof a.ts === 'number'; })
+    .map(function(a){ return a.ts; }).sort(function(x, y){ return x - y; });
+  if (ts.length < PACE_MIN_HOLES) return null;
+  var spanSec = (ts[ts.length - 1] - ts[0]) / 1000;
+  if (spanSec / (ts.length - 1) >= PACE_MIN_SEC_PER_HOLE) return null;
+  var mins = Math.max(1, Math.round(spanSec / 60));
+  return {holes: ts.length, minutes: mins, text: ts.length + ' holes in ' + mins + ' min'};
+}
 function fmtPar(n){ return n === 0 ? 'E' : (n > 0 ? '+' + n : String(n)); }
 // Lowest to par first. Tiebreak: more holes played, then most aces, most 2s, most 3s.
 // Players still level after that share the place (shown as T1, T2...).

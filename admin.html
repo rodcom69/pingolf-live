@@ -68,6 +68,7 @@
   .tag.adm{background:var(--surface-2);color:var(--text-dim);}
   .warn-txt{color:var(--bad);font-weight:600;}
   .tag.void{background:var(--bad);color:#fff;}
+  .tag.pace{background:#e0a100;color:#1c1a12;}
   .sect{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:14px 0 4px;}
   .ev-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);}
   .ev-row:last-child{border-bottom:none;}
@@ -245,7 +246,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-22j"></script>
+<script src="course.js?v=2026-11-23a"></script>
 <script>
 (function(){
   firebase.initializeApp(firebaseConfig);
@@ -554,6 +555,7 @@
       p.empty = p.all.length === 0;
       p.removed = !p.empty && p.live.length === 0;
       p.signedUp = !!registered[k];
+      p.pace = p.empty ? null : paceCheck(p.live);
       return p;
     });
     players.sort(function(a,b){ return (a.removed - b.removed) || (a.empty - b.empty) || rankPlayers(a,b); });
@@ -569,7 +571,7 @@
       el.innerHTML =
         '<div class="p-top">' +
           '<div class="p-rank">' + (p.removed || p.empty ? '–' : rank) + '</div>' +
-          '<div style="flex:1;min-width:0;"><div class="p-name">' + esc(p.name) + (multi ? ' <span class="dim">· Card ' + p.card + '</span>' : '') + (p.removed ? ' <span class="tag void">REMOVED</span>' : '') + '</div>' +
+          '<div style="flex:1;min-width:0;"><div class="p-name">' + esc(p.name) + (multi ? ' <span class="dim">· Card ' + p.card + '</span>' : '') + (p.removed ? ' <span class="tag void">REMOVED</span>' : '') + (p.pace ? ' <span class="tag pace" title="Entered faster than real games take. Check before awarding a prize.">\u26a0\ufe0f FAST: ' + esc(p.pace.text) + '</span>' : '') + '</div>' +
             '<div class="dim small">' + (p.empty ? 'signed up · no scores yet' : 'thru ' + p.res.thru + ' · ' + p.res.mulligansUsed + ' mulligan' + (p.res.mulligansUsed === 1 ? '' : 's')) +
             (p.signedUp ? '' : ' · <span class="warn-txt">not signed up</span>') + '</div></div>' +
           '<div><div class="p-total">' + (p.removed || p.empty ? '' : p.res.total) + '</div><div class="dim small" style="text-align:right;">' + (p.removed || p.empty ? '' : fmtPar(p.res.toPar)) + '</div></div>' +
