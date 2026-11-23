@@ -31,7 +31,7 @@ This repo is public, so never commit PINs, secrets or personal details.
 - `xgolf-2026-11-22`: "Practice Open till Dec 12th", open until Dec 12 noon, multi-card. Best finished card wins.
 - `xgolf-2026-12-12`: the Dec 12 tournament at X-Golf Chester Springs, noon. Set it to **Open** in admin on event day; it's hidden from the event list until then. Link: https://playpingolf.com/?e=xgolf-2026-12-12
 
-- `pincrossing-test`: hidden preview for a second venue, PinCrossing (Railroad Street Bar and Grill, Linfield/Limerick PA), course `pincrossing-2026`. It's 11 machines from Pinball Map, alphabetical for now, all 3-ball, with draft targets and name tiles instead of photos. Status upcoming + test, so it's out of the dropdown and takes no scores. Preview: https://playpingolf.com/?e=pincrossing-test · chart: https://playpingolf.com/scoring.html?course=pincrossing-2026&e=pincrossing-test
+- `pincrossing-test`: hidden preview for a second venue, PinCrossing (Railroad Street Bar and Grill, Linfield/Limerick PA), course `pincrossing-2026`. It's 11 machines from Pinball Map, alphabetical for now, all 3-ball, with draft targets and name tiles instead of photos. Status open + test: it takes (fake) scores but is link-only. Test events never show in the dropdown or on the bare site. 1 mulligan (course `mulligans: 1`; the default is 2). Share link: https://playpingolf.com/pincrossing (redirects to ?e=pincrossing-test) · chart: https://playpingolf.com/scoring.html?course=pincrossing-2026&e=pincrossing-test
 - Each course in `course.js` has `brand` and `place` for the page header.
 
 ## Working notes
