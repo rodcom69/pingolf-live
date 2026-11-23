@@ -402,7 +402,7 @@
     if (ev.removedHoles && ev.removedHoles.length) d.removedHoles = ev.removedHoles;
     // Practice Open settings (set in the database); keep them on every save.
     var live = EVENTS.find(function(e){ return e.id === id; }) || {};
-    ['closesAt', 'rankFinishedFirst', 'note', 'multiCard'].forEach(function(k){ if (live[k] != null) d[k] = live[k]; });
+    ['closesAt', 'rankFinishedFirst', 'note', 'multiCard', 'hiddenPlayers'].forEach(function(k){ if (live[k] != null) d[k] = live[k]; });
     return adminBatch(function(batch, stamp){
       d.unlockId = stamp.unlockId;
       batch.set(db.collection('events').doc(id), d);
@@ -572,7 +572,7 @@
       el.innerHTML =
         '<div class="p-top">' +
           '<div class="p-rank">' + (p.removed || p.empty ? '–' : rank) + '</div>' +
-          '<div style="flex:1;min-width:0;"><div class="p-name">' + esc(p.name) + (multi ? ' <span class="dim">· Card ' + p.card + '</span>' : '') + (p.removed ? ' <span class="tag void">REMOVED</span>' : '') + (p.pace ? ' <span class="tag pace" title="Entered faster than real games take. Check before awarding a prize.">\u26a0\ufe0f FAST: ' + esc(p.pace.text) + '</span>' : '') + '</div>' +
+          '<div style="flex:1;min-width:0;"><div class="p-name">' + esc(p.name) + (multi ? ' <span class="dim">· Card ' + p.card + '</span>' : '') + (p.removed ? ' <span class="tag void">REMOVED</span>' : '') + (isHidden(p.key) ? ' <span class="tag void">HIDDEN</span>' : '') + (p.pace ? ' <span class="tag pace" title="Entered faster than real games take. Check before awarding a prize.">\u26a0\ufe0f FAST: ' + esc(p.pace.text) + '</span>' : '') + '</div>' +
             '<div class="dim small">' + (p.empty ? 'signed up · no scores yet' : 'thru ' + p.res.thru + ' · ' + p.res.mulligansUsed + ' mulligan' + (p.res.mulligansUsed === 1 ? '' : 's')) +
             (p.signedUp ? '' : ' · <span class="warn-txt">not signed up</span>') + '</div></div>' +
           '<div><div class="p-total">' + (p.removed || p.empty ? '' : p.res.total) + '</div><div class="dim small" style="text-align:right;">' + (p.removed || p.empty ? '' : fmtPar(p.res.toPar)) + '</div></div>' +
@@ -606,12 +606,24 @@
     '</div>';
   }
 
+  // Hide a player from the public boards (TV, leaderboard, #scores) without touching scores.
+  function isHidden(key){ return (currentEvent && currentEvent.hiddenPlayers || []).indexOf(key) !== -1; }
+  function setHidden(p, hide){
+    var ev = currentEvent, FV = firebase.firestore.FieldValue;
+    adminBatch(function(batch, stamp){
+      var upd = {unlockId: stamp.unlockId};
+      upd.hiddenPlayers = hide ? FV.arrayUnion(p.key) : FV.arrayRemove(p.key);
+      batch.update(db.collection('events').doc(ev.id), upd);
+    }).then(done((hide ? 'Hidden from boards: ' : 'Back on the boards: ') + p.name + '.')).catch(failed);
+  }
   function fillBody(body, p){
     var counted = {};
     p.res.countedIds.forEach(function(id){ counted[id] = true; });
     var html = '<div class="p-actions">' +
       '<button class="btn sm" data-act="rename">Rename</button>' +
       '<button class="btn sm" data-act="setCode">' + (p.signedUp ? 'Reset PIN' : 'Set PIN') + '</button>' +
+      (isHidden(p.key) ? '<button class="btn sm" data-act="unhide">Show on boards</button>'
+                       : '<button class="btn sm" data-act="hide">Hide from boards</button>') +
       (p.removed ? '<button class="btn sm" data-act="restoreAll">Restore player</button>'
                  : '<button class="btn sm danger" data-act="removeAll">Remove player</button>') +
       '</div><div class="sect">Holes</div>';
@@ -645,6 +657,8 @@
         else if (act === 'restoreAll') setVoid(p.all.filter(function(x){ return x.void; }), false);
         else if (act === 'rename') openRename(p);
         else if (act === 'setCode') openCode(p);
+        else if (act === 'hide') confirmTap(b, 'Hide?', function(){ setHidden(p, true); });
+        else if (act === 'unhide') setHidden(p, false);
       });
     });
   }

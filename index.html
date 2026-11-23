@@ -942,9 +942,13 @@
   });
 
   // One board row per player, or per player + card on a multi-card event.
-  function groupByCard(list){
+  // hidden = player keys the organizer took off the public boards (events/{id}.hiddenPlayers).
+  // Their scores stay; a hidden player still sees their own row.
+  function groupByCard(list, hidden){
     var by = {};
+    hidden = hidden || (CURRENT_EVENT && CURRENT_EVENT.hiddenPlayers) || [];
     list.forEach(function(a){
+      if (hidden.indexOf(a.playerKey) !== -1 && !(me && me.key === a.playerKey)) return;
       var card = MULTI_CARD ? cardOf(a) : 1;
       var k = MULTI_CARD ? a.playerKey + '#' + card : a.playerKey;
       if (!by[k]) by[k] = {key: a.playerKey, card: card, name: a.playerName, attempts: []};
@@ -1088,11 +1092,11 @@
     return '<div class="lb-strip">' + html + '</div>';
   }
 
-  function buildBoardHtml(attemptsList, holes, closed, down){
+  function buildBoardHtml(attemptsList, holes, closed, down, hidden){
     holes = holes || HOLES;
     closed = closed || CLOSED_HOLES;
     down = down || DOWN_HOLES;
-    var byPlayer = groupByCard(attemptsList);
+    var byPlayer = groupByCard(attemptsList, hidden);
     var players = Object.keys(byPlayer).map(function(k){
       var p = byPlayer[k];
       var res = scoreRound(p.attempts, holes.length, closed, down);
@@ -1179,7 +1183,7 @@
       if (document.getElementById('historyEventSelect').value !== eventId) return;
       var where = [ev.location, eventWhen(ev)].filter(Boolean).join(' \u00b7 ');
       wrap.innerHTML = (where ? '<div class="sub" style="margin:8px 0;">' + esc(where) + '</div>' : '') +
-        (buildBoardHtml(list, courseHoles(ev.course), ev.removedHoles || [], []) || '<div class="empty-note">No scores in this event.</div>');
+        (buildBoardHtml(list, courseHoles(ev.course), ev.removedHoles || [], [], ev.hiddenPlayers || []) || '<div class="empty-note">No scores in this event.</div>');
     };
     if (historyLoaded[eventId]) { show(historyLoaded[eventId]); return; }
     wrap.innerHTML = '<div class="empty-note">Loading&hellip;</div>';
