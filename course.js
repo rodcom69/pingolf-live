@@ -43,7 +43,7 @@ var COURSES = {
   // Nov 2026. Alphabetical until we have the walking order; targets are first drafts.
   'pincrossing-2026': {
     name: 'PinCrossing · 11 machines (draft)',
-    brand: 'PINCROSSING PINGOLF', place: 'Limerick, PA',
+    brand: 'PINCROSSING PINGOLF', place: 'Limerick, PA', mulligans: 1,
     holes: [
       {n:1, name:"Avengers: Infinity Quest", target:60000000, label:"60M"},
       {n:2, name:"Batman 66", target:100000000, label:"100M"},
@@ -61,6 +61,9 @@ var COURSES = {
 };
 var DEFAULT_COURSE = 'xgolf-2026-12';
 function courseInfo(courseId){ return COURSES[courseId] || COURSES[DEFAULT_COURSE]; }
+// Mulligans per card: 2 unless the course says otherwise (PinCrossing plays with 1).
+function courseMulligans(courseId){ var m = courseInfo(courseId).mulligans; return typeof m === 'number' ? m : 2; }
+function mulliganWord(n){ return n + ' mulligan' + (n === 1 ? '' : 's'); }
 function courseHoles(courseId){ return (COURSES[courseId] || COURSES[DEFAULT_COURSE]).holes; }
 // The course of the event being shown. The scorecard swaps it when you pick an event.
 var HOLES = courseHoles(DEFAULT_COURSE);
@@ -71,7 +74,7 @@ var HOLES = courseHoles(DEFAULT_COURSE);
 //    stop counting, and par drops by 3.
 // CLOSED_HOLES = removed (the scoring list); DOWN_HOLES = closed for now.
 var CLOSED_HOLES = [], DOWN_HOLES = [];
-function useCourse(courseId, removedHoles, downHoles){ HOLES = courseHoles(courseId); CLOSED_HOLES = removedHoles || []; DOWN_HOLES = downHoles || []; }
+function useCourse(courseId, removedHoles, downHoles){ HOLES = courseHoles(courseId); MAX_MULLIGANS = courseMulligans(courseId); CLOSED_HOLES = removedHoles || []; DOWN_HOLES = downHoles || []; }
 function isHoleClosed(n, closed){ return (closed || CLOSED_HOLES).indexOf(n) !== -1; }
 function isHoleDown(n, down){ return (down || DOWN_HOLES).indexOf(n) !== -1; }
 function isHoleShut(n){ return isHoleClosed(n) || isHoleDown(n); }
@@ -130,7 +133,7 @@ function rulesText(holes){
   var five = holes.filter(function(h){ return holeBalls(h) === 5; }).map(function(h){ return h.name; });
   return 'Hit the target on ball 1, 2, or 3 — that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4–8) are looked up automatically. ' +
     (five.length ? five.join(' and ') + (five.length > 1 ? ' are' : ' is') + ' a 5-ball game: hit the target on ball 4 = 4 strokes, ball 5 = 5; still short after 5 balls = 6–8 strokes. ' : '') +
-    'Play all ' + n + ' holes. Once all ' + n + ' are done, you get ' + MAX_MULLIGANS + ' mulligans: pick any game, play it again, and enter the score. It replaces that hole on your card only if it\'s better. Each mulligan must be a different game. Par is 3 per hole (' + (PAR * n) + ' total). Lowest total wins. ' + TIEBREAK_TEXT;
+    'Play all ' + n + ' holes. Once all ' + n + ' are done, you get ' + mulliganWord(MAX_MULLIGANS) + ': pick any game, play it again, and enter the score. It replaces that hole on your card only if it\'s better.' + (MAX_MULLIGANS > 1 ? ' Each mulligan must be a different game.' : '') + ' Par is 3 per hole (' + (PAR * n) + ' total). Lowest total wins. ' + TIEBREAK_TEXT;
 }
 
 // Most games are 3 balls; a hole with balls:5 (Joker Poker) lets ball 4 = 4 and

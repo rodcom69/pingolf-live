@@ -246,7 +246,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-23d"></script>
+<script src="course.js?v=2026-11-23e"></script>
 <script>
 (function(){
   firebase.initializeApp(firebaseConfig);
@@ -351,6 +351,7 @@
     var same = currentEvent && currentEvent.id === ev.id;
     currentEvent = ev;
     RANK_FINISHED_FIRST = !!(ev && ev.rankFinishedFirst);
+    MAX_MULLIGANS = courseMulligans(ev.course);
     $('eventLink').textContent = ev.stray ? '' : 'Player link: playpingolf.com/?e=' + ev.id;
     $('moveTo').innerHTML = EVENTS.filter(function(e){ return e.id !== ev.id; }).map(function(e){
       return '<option value="' + esc(e.id) + '">to ' + esc(eventTitle(e)) + '</option>';
