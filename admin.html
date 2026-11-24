@@ -246,7 +246,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-23i"></script>
+<script src="course.js?v=2026-11-23j"></script>
 <script>
 (function(){
   firebase.initializeApp(firebaseConfig);
@@ -461,9 +461,14 @@
       var list = attempts.slice(), chunks = [];
       for (var i = 0; i < list.length; i += 400) chunks.push(list.slice(i, i + 400));
       var from = currentEvent;
-      chunks.reduce(function(p, chunk){
+      var carryHidden = (from && from.hiddenPlayers) || [];
+      chunks.reduce(function(p, chunk, ci){
         return p.then(function(){
           return adminBatch(function(batch, stamp){
+            // Players hidden on this event stay hidden on the one their scores move to.
+            if (ci === 0 && carryHidden.length) {
+              batch.update(db.collection('events').doc(to.id), {hiddenPlayers: firebase.firestore.FieldValue.arrayUnion.apply(null, carryHidden), unlockId: stamp.unlockId});
+            }
             chunk.forEach(function(a){
               batch.update(db.collection('attempts').doc(a.id), Object.assign({eventId: to.id, eventLabel: eventTitle(to)}, stamp));
             });
@@ -690,12 +695,18 @@
   $('renameSave').addEventListener('click', function(){
     var name = $('renameInput').value.trim().slice(0, 40);
     if (!name || !renaming) return;
-    var p = renaming;
+    var p = renaming, ev = currentEvent, newKey = playerKey(name);
     $('renameOverlay').classList.remove('show');
     adminBatch(function(batch, stamp){
       p.all.forEach(function(a){
-        batch.update(db.collection('attempts').doc(a.id), Object.assign({playerName: name, playerKey: playerKey(name)}, stamp));
+        batch.update(db.collection('attempts').doc(a.id), Object.assign({playerName: name, playerKey: newKey}, stamp));
       });
+      // A hidden player stays hidden under the new name.
+      var hidden = (ev && !ev.stray && ev.hiddenPlayers) || [];
+      if (newKey !== p.key && hidden.indexOf(p.key) !== -1) {
+        var list = hidden.filter(function(k){ return k !== p.key && k !== newKey; }).concat([newKey]);
+        batch.update(db.collection('events').doc(ev.id), {hiddenPlayers: list, unlockId: stamp.unlockId});
+      }
     }).then(done('Renamed to ' + name + '.')).catch(failed);
   });
 

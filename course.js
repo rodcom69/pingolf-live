@@ -64,7 +64,7 @@ function courseInfo(courseId){ return COURSES[courseId] || COURSES[DEFAULT_COURS
 // Mulligans per card: 2 unless the course says otherwise (PinCrossing plays with 1).
 function courseMulligans(courseId){ var m = courseInfo(courseId).mulligans; return typeof m === 'number' ? m : 2; }
 function mulliganWord(n){ return n + ' mulligan' + (n === 1 ? '' : 's'); }
-function courseHoles(courseId){ return (COURSES[courseId] || COURSES[DEFAULT_COURSE]).holes; }
+function courseHoles(courseId){ return courseInfo(courseId).holes; }
 // The course of the event being shown. The scorecard swaps it when you pick an event.
 var HOLES = courseHoles(DEFAULT_COURSE);
 // Two ways the organizer can take a hole out:
@@ -174,8 +174,10 @@ function playerKey(name){ return name.trim().toLowerCase(); }
 // holeCount = holes on the course; closed holes are taken off it here.
 // down = holes closed temporarily: they still count, but a player who hasn't played
 // one isn't held up by it (mulligans unlock once every open hole is done).
-function scoreRound(attempts, holeCount, closed, down){
+// mulls = mulligans allowed on that course (defaults to the shown event's course).
+function scoreRound(attempts, holeCount, closed, down, mulls){
   closed = closed || CLOSED_HOLES;
+  if (mulls == null) mulls = MAX_MULLIGANS;
   down = down || DOWN_HOLES;
   if (holeCount == null) holeCount = HOLES.length;
   // Only real, distinct hole numbers on this course count as closed.
@@ -185,7 +187,7 @@ function scoreRound(attempts, holeCount, closed, down){
   // A mulligan keeps its slot even if its hole is closed later, so closing and
   // reopening a hole never changes which mulligans a player has used.
   var allMulls = attempts.filter(function(a){ return a.mulligan; })
-    .sort(function(a,b){ return a.ts - b.ts; }).slice(0, MAX_MULLIGANS);
+    .sort(function(a,b){ return a.ts - b.ts; }).slice(0, mulls);
   attempts = attempts.filter(function(a){ return closedHere.indexOf(a.hole) === -1; });
   var originals = {};
   attempts.forEach(function(a){
