@@ -45,17 +45,17 @@ var COURSES = {
     name: 'PinCrossing · 11 machines (draft)',
     brand: 'PINCROSSING PINGOLF', place: 'Limerick, PA', mulligans: 1,
     holes: [
-      {n:1, name:"Avengers: Infinity Quest", target:50000000, label:"50M"},
-      {n:2, name:"Batman 66", target:100000000, label:"100M"},
-      {n:3, name:"Firepower", target:500000, label:"500K"},
-      {n:4, name:"Flash Gordon", target:500000, label:"500K"},
-      {n:5, name:"Harry Potter", target:200000000, label:"200M"},
-      {n:6, name:"JAWS", target:150000000, label:"150M"},
-      {n:7, name:"King Kong", target:75000000, label:"75M"},
-      {n:8, name:"Pulp Fiction", target:1500000, label:"1.5M"},
-      {n:9, name:"Scared Stiff", target:5000000, label:"5M"},
-      {n:10, name:"Theatre of Magic", target:500000000, label:"500M"},
-      {n:11, name:"Wizard!", target:50000, label:"50K"}
+      {n:1, name:"Avengers: Infinity Quest", img:"pc-avengers", target:50000000, label:"50M"},
+      {n:2, name:"Batman 66", img:"pc-batman-66", target:100000000, label:"100M"},
+      {n:3, name:"Firepower", img:"pc-firepower", target:500000, label:"500K"},
+      {n:4, name:"Flash Gordon", img:"pc-flash-gordon", target:500000, label:"500K"},
+      {n:5, name:"Harry Potter", img:"pc-harry-potter", target:200000000, label:"200M"},
+      {n:6, name:"JAWS", img:"pc-jaws", target:150000000, label:"150M"},
+      {n:7, name:"King Kong", img:"pc-king-kong", target:75000000, label:"75M"},
+      {n:8, name:"Pulp Fiction", img:"pc-pulp-fiction", target:1500000, label:"1.5M"},
+      {n:9, name:"Scared Stiff", img:"pc-scared-stiff", target:5000000, label:"5M"},
+      {n:10, name:"Theatre of Magic", img:"pc-theatre-of-magic", target:500000000, label:"500M"},
+      {n:11, name:"Wizard!", img:"pc-wizard", target:50000, label:"50K"}
     ]
   }
 };
