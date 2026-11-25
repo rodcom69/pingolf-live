@@ -151,6 +151,10 @@
   .forgot-list button{text-align:left;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;}
   .forgot-list .none{font-size:13px;color:var(--text-dim);}
   .forgot-pin{font-size:13.5px;color:var(--text);}
+  .forgot-pin:empty{display:none;}
+  .mail-pin-btn{display:block;width:100%;margin:8px 0 6px;border:0;border-radius:9px;padding:11px;background:var(--accent);color:var(--accent-ink);font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;}
+  .mail-pin-btn:disabled{opacity:.5;}
+  .forgot-or{text-align:center;color:var(--text-dim);font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:10px 0;}
   .news-check{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;color:var(--text);cursor:pointer;}
   .news-check input{width:20px;height:20px;margin:0;flex-shrink:0;accent-color:var(--accent);}
   .email-why{font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.35;}
@@ -499,6 +503,13 @@
         <div class="signin-note" id="signInNote">First time? Pick any 4 digits. Only someone with your PIN can enter your scores. Use it to get back in on any phone.</div>
         <button class="forgot-link" id="forgotLink" type="button">Forgot your name or PIN?</button>
         <div class="forgot-box" id="forgotBox" hidden>
+          <div id="mailPinWrap" hidden>
+            <b>Email me my name and PIN</b>
+            <input type="email" id="mailPinEmail" placeholder="The email you gave when you signed up" autocomplete="email" inputmode="email" maxlength="100">
+            <button class="mail-pin-btn" id="mailPinBtn" type="button">Send</button>
+            <div class="forgot-pin" id="mailPinNote"></div>
+            <div class="forgot-or">or</div>
+          </div>
           <b>Find your name</b>
           <input type="text" id="forgotSearch" placeholder="Start typing your name" autocomplete="off" maxlength="40">
           <div class="forgot-list" id="forgotList"></div>
@@ -687,7 +698,7 @@
     if (!cfg || !validEmail(email)) { cb(false); return; }
     var batch = db.batch(), pref = proofRef();
     batch.set(pref, {playerKey: who.key, pin: who.code, at: FV.serverTimestamp()});
-    batch.set(db.collection('playerContacts').doc(who.key), {email: email, news: !!news, venue: cfg.venue, at: FV.serverTimestamp(), proof: pref.id});
+    batch.set(db.collection('playerContacts').doc(who.key), {email: email.toLowerCase(), news: !!news, venue: cfg.venue, at: FV.serverTimestamp(), proof: pref.id});
     batch.commit().then(function(){
       try { localStorage.setItem(emailDoneKey(who.key), '1'); } catch(e){}
       cb(true);
@@ -716,6 +727,20 @@
     return id ? db.collection('playerUnlock').doc(id) : db.collection('playerUnlock').doc();
   }
   function proofData(){ return {playerKey: me.key, pin: me.code, at: FV.serverTimestamp()}; }
+
+  // "Email me my name and PIN": the Google Apps Script web app (apps-script/Code.gs) looks the email up
+  // and mails the sign-in name + PIN to that address only. Same answer whether or not it's on file.
+  var PIN_HELPER_URL = '';
+  document.getElementById('mailPinWrap').hidden = !PIN_HELPER_URL;
+  document.getElementById('mailPinEmail').addEventListener('input', function(){ document.getElementById('mailPinBtn').disabled = false; document.getElementById('mailPinNote').textContent = ''; });
+  document.getElementById('mailPinBtn').addEventListener('click', function(){
+    var email = document.getElementById('mailPinEmail').value.trim(), note = document.getElementById('mailPinNote'), btn = this;
+    if (!validEmail(email)) { note.textContent = 'That doesn\u2019t look like an email address.'; return; }
+    btn.disabled = true; note.textContent = 'Sending\u2026';
+    fetch(PIN_HELPER_URL, {method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({email: email})})
+      .then(function(){ note.textContent = 'If ' + email + ' is on file, your name and PIN are on the way. Check your inbox (and spam) in a minute.'; },
+            function(){ note.textContent = 'Couldn\u2019t send right now. Check your signal and try again, or find the organizer.'; btn.disabled = false; });
+  });
 
   // "Forgot your name or PIN?": search the players who have signed up (names are already public on the boards);
   // tapping one fills in the name. A forgotten PIN is reset by the organizer in admin.
