@@ -24,6 +24,8 @@ This repo is public, so never commit PINs, secrets or personal details.
 ## Rules of the game
 - Par 3 per hole; strokes come from which ball hit the target, or from a chart when the target is missed (up to 8). Joker Poker is a 5-ball game.
 - 2 mulligans, unlocked once every open hole is done. A mulligan replaces a hole only if it's better.
+- Entering a hole is two steps: pick Ball 1/2/3 (or "Didn't make it" + final score, shown with commas as typed), then a confirm screen (what, strokes circle, low-score warning, mulligan/fix context) with Save / Change it. Nothing is written until Save.
+- A failed save shows a red bar pinned to the bottom naming the hole; scores still unsent after 4s (weak signal) show a "keep Pingolf open" bar. New player names take a second tap with "did you mean" suggestions. An open event dated today beats a remembered event.
 - Players can fix or undo a score only within 2 minutes; after that the organizer fixes it in admin.
 - Public boards show first name + last initial. Your own phone and admin show full names.
 - `multiCard` events (the Practice Open): after finishing a card, a player can start another, one at a time. Each card is its own board row ("Rodney C. Card 2").
