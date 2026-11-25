@@ -226,6 +226,7 @@
       </select>
     </div>
     <label class="row small" style="margin-top:12px;gap:8px;"><input type="checkbox" id="evTest" style="width:auto;"> Test / practice event</label>
+    <label class="row small" style="margin-top:8px;gap:8px;"><input type="checkbox" id="evMulti" style="width:auto;"> Multiple cards (players can start another card after finishing one, like the Practice Open)</label>
     <div id="evIdWrap" style="margin-top:10px;">
       <label class="fl" for="evId">Link name (can't be changed later)</label>
       <input type="text" id="evId" maxlength="40" autocapitalize="off" placeholder="xgolf-2027-03-14">
@@ -411,6 +412,7 @@
     // Practice Open settings (set in the database); keep them on every save.
     var live = EVENTS.find(function(e){ return e.id === id; }) || {};
     ['closesAt', 'rankFinishedFirst', 'note', 'multiCard', 'hiddenPlayers'].forEach(function(k){ if (live[k] != null) d[k] = live[k]; });
+    if (typeof ev.multiCard === 'boolean') d.multiCard = ev.multiCard; // the event sheet's Multiple cards box
     return adminBatch(function(batch, stamp){
       d.unlockId = stamp.unlockId;
       batch.set(db.collection('events').doc(id), d);
@@ -429,6 +431,8 @@
       (COURSES[e.course] ? '' : '<option value="' + esc(e.course) + '">' + esc(e.course) + '</option>');
     $('evCourse').value = e.course;
     $('evStatus').value = e.status; $('evTest').checked = !!e.test;
+    $('evMulti').checked = ev ? !!ev.multiCard : false; $('evMulti').dataset.touched = ev ? '1' : '';
+    syncMultiDefault();
     $('evIdWrap').hidden = !!ev;
     $('evId').value = ''; $('evId').dataset.auto = '1'; updateEvId();
     $('evOverlay').classList.add('show');
@@ -442,6 +446,10 @@
   }
   ['evLocation', 'evDate', 'evTest'].forEach(function(id){ $(id).addEventListener('input', updateEvId); $(id).addEventListener('change', updateEvId); });
   $('evId').addEventListener('input', function(){ delete this.dataset.auto; this.value = slugify(this.value); $('evIdPreview').textContent = this.value; });
+  // New events on a home course default to multiple cards (Rodney 2026-11-25), until the box is touched.
+  function syncMultiDefault(){ if (!$('evMulti').dataset.touched) { var c = COURSES[$('evCourse').value]; $('evMulti').checked = !!(c && c.group === 'home'); } }
+  $('evCourse').addEventListener('change', syncMultiDefault);
+  $('evMulti').addEventListener('change', function(){ this.dataset.touched = '1'; });
   $('evCancel').onclick = function(){ $('evOverlay').classList.remove('show'); };
   $('newEventBtn').onclick = function(){ openEventSheet(null); };
   $('evSave').onclick = function(){
@@ -454,7 +462,7 @@
     // Hole lists come from the live copy, so closes made while this sheet was open aren't undone.
     var live = editingEvent ? (EVENTS.find(function(e){ return e.id === id; }) || editingEvent) : null;
     saveEvent(id, {name: name, location: $('evLocation').value.trim(), date: $('evDate').value, time: $('evTime').value.trim(),
-                   course: $('evCourse').value, status: $('evStatus').value, test: $('evTest').checked,
+                   course: $('evCourse').value, status: $('evStatus').value, test: $('evTest').checked, multiCard: $('evMulti').checked,
                    closedHoles: live ? (live.closedHoles || []) : [],
                    removedHoles: live ? (live.removedHoles || []) : []},
               editingEvent ? 'Event saved.' : 'Event created: playpingolf.com/?e=' + id);
