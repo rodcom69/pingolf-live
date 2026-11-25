@@ -57,6 +57,19 @@ var COURSES = {
       {n:10, name:"Theatre of Magic", img:"pc-theatre-of-magic", target:500000000, label:"500M"},
       {n:11, name:"Wizard!", img:"pc-wizard", target:50000, label:"50K"}
     ]
+  },
+  // Rodney's basement: 5 machines, private practice course (link-only test event).
+  // Targets are set hard, around tournament-winning scores on 3 balls.
+  'basement-2026': {
+    name: 'Basement · 5 machines',
+    brand: 'BASEMENT PINGOLF', place: 'Home course', mulligans: 1,
+    holes: [
+      {n:1, name:"Batman 66 (Catwoman)", img:"pc-batman-66", target:200000000, label:"200M"},
+      {n:2, name:"Harry Potter CE", img:"pc-harry-potter", target:400000000, label:"400M"},
+      {n:3, name:"JAWS Premium", img:"pc-jaws", target:250000000, label:"250M"},
+      {n:4, name:"Star Wars: Fall of the Empire CE", img:"sw-fall-of-the-empire", target:300000000, label:"300M"},
+      {n:5, name:"King Kong Premium", img:"pc-king-kong", target:300000000, label:"300M"}
+    ]
   }
 };
 var DEFAULT_COURSE = 'xgolf-2026-12';
