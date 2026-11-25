@@ -79,20 +79,20 @@ var COURSES = {
   },
   // Michael Reimer's house: 8 machines, home course ("Michael R." under Home courses). Order as Rodney listed them.
   // Targets are first drafts (hard, like Rodney C.'s). Editions per Michael: Foo Fighters Pro, JAWS Premium, Monster Bash remake SE (CGC).
-  // No photos yet: holes without img get a name tile.
+  // Art from IPDB (Foo Fighters Pro + Fish Tales translites; others backglass photos, cropped), JAWS reuses pc-jaws.
   'michael-2026': {
     name: 'Michael R. · 8 machines (draft)',
     brand: 'MICHAEL R. PINGOLF', place: 'Home course', mulligans: 1,
     group: 'home', menuName: 'Michael R.',
     holes: [
-      {n:1, name:"Foo Fighters Pro", target:200000000, label:"200M"},
-      {n:2, name:"The Getaway: High Speed II", target:60000000, label:"60M"},
-      {n:3, name:"Monster Bash SE (remake)", target:400000000, label:"400M"},
+      {n:1, name:"Foo Fighters Pro", img:"foo-fighters-pro", target:200000000, label:"200M"},
+      {n:2, name:"The Getaway: High Speed II", img:"getaway-hs2", target:60000000, label:"60M"},
+      {n:3, name:"Monster Bash SE (remake)", img:"monster-bash-se", target:400000000, label:"400M"},
       {n:4, name:"JAWS Premium", img:"pc-jaws", target:250000000, label:"250M"},
-      {n:5, name:"Bobby Orr Power Play", target:250000, label:"250K"},
-      {n:6, name:"Stars", target:250000, label:"250K"},
-      {n:7, name:"Whirlwind", target:25000000, label:"25M"},
-      {n:8, name:"Fish Tales", target:200000000, label:"200M"}
+      {n:5, name:"Bobby Orr Power Play", img:"bobby-orr-power-play", target:250000, label:"250K"},
+      {n:6, name:"Stars", img:"stars", target:250000, label:"250K"},
+      {n:7, name:"Whirlwind", img:"whirlwind", target:25000000, label:"25M"},
+      {n:8, name:"Fish Tales", img:"fish-tales", target:200000000, label:"200M"}
     ]
   }
 };
