@@ -118,10 +118,52 @@ COURSES['manor-2026'] = {
     {n:9, name:"Flight 2000", img:"flight-2000", target:250000, label:"250K"}
   ]
 };
+// Chad's: Chad's home course, all 14 machines from Match Play tournament 284697 arenas (Wednesday Night Pinball
+// @ Chad's, Nov 2026), alphabetical. Home course (link-only), 1 mulligan, draft targets. Grand Prix is 5-ball.
+// Art: IPDB (AFM 1995 translite, Dirty Harry, Eight Ball, Grand Lizard, Grand Prix, Harlem Globetrotters, Nitro Ground
+// Shaker, Sinbad, White Water translite); Pinside polaroid crops (Godzilla Premium, D&D Tyrant's Eye Premium);
+// reused: iron-maiden-lotb (Manor), pc-jaws, metallica (X-Golf Pro translite).
+COURSES['chad-2026'] = {
+  name: "Chad's · 14 machines (draft)",
+  brand: "CHAD'S PINGOLF", place: "Chad's", mulligans: 1,
+  group: 'home', menuName: 'Chad',
+  holes: [
+    {n:1, name:"Attack from Mars", img:"attack-from-mars-1995", target:3000000000, label:"3B"},
+    {n:2, name:"Dirty Harry", img:"dirty-harry", target:300000000, label:"300M"},
+    {n:3, name:"Dungeons & Dragons: The Tyrant's Eye (Premium)", img:"dnd-tyrants-eye", target:75000000, label:"75M"},
+    {n:4, name:"Eight Ball", img:"eight-ball", target:150000, label:"150K"},
+    {n:5, name:"Godzilla (Premium)", img:"godzilla-premium", target:400000000, label:"400M"},
+    {n:6, name:"Grand Lizard", img:"grand-lizard", target:2000000, label:"2M"},
+    {n:7, name:"Grand Prix", img:"grand-prix", target:120000, label:"120K", balls:5},
+    {n:8, name:"Harlem Globetrotters", img:"harlem-globetrotters", target:300000, label:"300K"},
+    {n:9, name:"Iron Maiden (Pro)", img:"iron-maiden-lotb", target:100000000, label:"100M"},
+    {n:10, name:"JAWS (Pro)", img:"pc-jaws", target:75000000, label:"75M"},
+    {n:11, name:"Metallica", img:"metallica", target:30000000, label:"30M"},
+    {n:12, name:"Nitro Ground Shaker", img:"nitro-ground-shaker", target:300000, label:"300K"},
+    {n:13, name:"Sinbad", img:"sinbad", target:200000, label:"200K"},
+    {n:14, name:"White Water", img:"white-water", target:75000000, label:"75M"}
+  ]
+};
 // Machine rosters per location (not courses): every machine at the venue, so a course can be
 // picked from them later. The Manor: from Match Play "The Manor Mega Matchplay" arenas
 // (app.matchplay.events/tournaments/245339/arenas), Nov 2026; room = where it sits; opdb = Open Pinball DB id.
 var VENUE_MACHINES = {
+  chad: [ // Match Play tournament 284697 arenas (app.matchplay.events/tournaments/284697/arenas); note = venue's setting
+    {name:"Attack from Mars", opdb:"G4do5-MDlN7", note:"Tournament ROM, mystery gives out awards"},
+    {name:"Dirty Harry", opdb:"GrJ2Z-M61Xd"},
+    {name:"Dungeons & Dragons: The Tyrant's Eye (Premium)", opdb:"GK1Ej-MePok-A9VWD"},
+    {name:"Eight Ball", opdb:"GrN7J-MJ78q", note:"Has powerball"},
+    {name:"Godzilla (Premium)", opdb:"GweeP-Ml9pZ-ARZoY", note:"Skill shot ball save & Oxy destroyer off; custom A/V"},
+    {name:"Grand Lizard", opdb:"G4XPZ-M7Zob"},
+    {name:"Grand Prix", opdb:"G4O1L-MDW47", note:"5 ball; game can be rolled; play extra balls"},
+    {name:"Harlem Globetrotters", opdb:"GRnwQ-M9R5d", note:"Powerball; play EBs"},
+    {name:"Iron Maiden (Pro)", opdb:"G4dOQ-MyNbb", note:"Skill shot ball save off"},
+    {name:"JAWS (Pro)", opdb:"GLWll-MXr4N", note:"Skill shot ball save off; Life Ring hard"},
+    {name:"Metallica", opdb:"GRBE4-MQK1Z-A9Yn1", note:"Spinners tied to the guitar pick switches"},
+    {name:"Nitro Ground Shaker", opdb:"GrP6q-M5Rp1", note:"Has powerball"},
+    {name:"Sinbad", opdb:"G4xqN-MD1Rj", note:"Has powerball"},
+    {name:"White Water", opdb:"GRQKz-MyNXz"}
+  ],
   manor: [
     {name:"Attack From Mars (Remake)", room:"Garage", opdb:"G4do5-MkPnV"},
     {name:"Black Jack", room:"Back Room", opdb:"G5nbD-MDyXb"},
