@@ -221,6 +221,15 @@
     display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);
   }
   .hole-tile.done{border-color:var(--accent);}
+  /* Open holes (still need a score) get a gold ring + tag; finished holes go flat and dimmed with a DONE tag. */
+  .hole-tile.todo:not(:disabled){border-color:var(--gold);box-shadow:0 0 0 3px var(--gold), 0 6px 18px rgba(184,134,47,.28);}
+  .hole-tile .todo-tag,.hole-tile .done-tag{position:absolute;right:6px;bottom:6px;font-size:10px;font-weight:800;letter-spacing:.05em;padding:3px 7px;border-radius:6px;white-space:nowrap;}
+  .hole-tile .todo-tag{background:var(--gold);color:#1c1a12;}
+  .hole-tile:disabled .todo-tag{display:none;}
+  .hole-tile .done-tag{background:var(--accent);color:var(--accent-ink);}
+  .hole-tile.done{background:var(--surface-2);box-shadow:none;}
+  .hole-tile.done .art img{opacity:.45;filter:grayscale(.7);}
+  .hole-tile.done .mname{color:var(--text-dim);}
   .hole-tile .mull-tag{position:absolute;top:-7px;left:-7px;background:var(--gold);color:#1c1a12;font-size:10px;font-weight:800;
     padding:3px 6px;border-radius:999px;border:2px solid var(--bg);letter-spacing:.03em;}
   .mull-section{display:flex;flex-direction:column;gap:10px;margin-top:18px;}
@@ -1039,7 +1048,7 @@
       var removed = isHoleClosed(h.n), closed = removed || isHoleDown(h.n);
       var a = removed ? null : res.byHole[h.n];
       var btn = document.createElement('button');
-      btn.className = 'hole-tile' + (a ? ' done' : '') + (closed ? ' closed' : '');
+      btn.className = 'hole-tile' + (a ? ' done' : '') + (closed ? ' closed' : '') + (!a && !closed ? ' todo' : '');
       btn.disabled = !nameReady || closed;
       if (closed) {
         btn.innerHTML =
@@ -1052,7 +1061,8 @@
       var scoreLine = a ? (a.method === 'ball' ? ('Made ' + h.label + ' on ball ' + a.ball) : ('Score: ' + fmtNum(a.rawScore))) : ('Target ' + h.label);
       btn.innerHTML =
         (a && a.mulligan ? '<div class="mull-tag">MULL</div>' : '') +
-        '<div class="art"><img src="' + holeImg(h) + '" alt="" loading="lazy"><div class="hn tnum">' + h.n + '</div></div>' +
+        '<div class="art"><img src="' + holeImg(h) + '" alt="" loading="lazy"><div class="hn tnum">' + h.n + '</div>' +
+          (a ? '<div class="done-tag">\u2713 DONE</div>' : '<div class="todo-tag">NEEDS SCORE</div>') + '</div>' +
         '<div class="mname">' + h.name + '</div>' +
         '<div class="mtarget">' + scoreLine + '</div>' +
         (a ? '<div class="badge">' + a.strokes + '</div>' : '');
