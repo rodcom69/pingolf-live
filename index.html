@@ -144,6 +144,13 @@
   .signin-note{font-size:12px;color:var(--text-dim);margin-top:8px;line-height:1.4;}
   .signin-note.err{color:var(--bad);}
   .field-label .opt{text-transform:none;letter-spacing:0;}
+  .forgot-link{display:block;margin:8px auto 0;background:none;border:0;color:var(--accent);font-family:inherit;font-size:13.5px;font-weight:700;text-decoration:underline;cursor:pointer;padding:6px;}
+  .forgot-box{margin-top:8px;padding:12px;border-radius:10px;background:var(--surface-2);font-size:14px;line-height:1.4;}
+  .forgot-box b{display:block;margin-bottom:6px;}
+  .forgot-list{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+  .forgot-list button{text-align:left;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;}
+  .forgot-list .none{font-size:13px;color:var(--text-dim);}
+  .forgot-pin{font-size:13.5px;color:var(--text);}
   .news-check{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;color:var(--text);cursor:pointer;}
   .news-check input{width:20px;height:20px;margin:0;flex-shrink:0;accent-color:var(--accent);}
   .email-why{font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.35;}
@@ -490,6 +497,14 @@
         </div>
         <button class="signin-btn" id="signInBtn">Start</button>
         <div class="signin-note" id="signInNote">First time? Pick any 4 digits. Only someone with your PIN can enter your scores. Use it to get back in on any phone.</div>
+        <button class="forgot-link" id="forgotLink" type="button">Forgot your name or PIN?</button>
+        <div class="forgot-box" id="forgotBox" hidden>
+          <b>Find your name</b>
+          <input type="text" id="forgotSearch" placeholder="Start typing your name" autocomplete="off" maxlength="40">
+          <div class="forgot-list" id="forgotList"></div>
+          <b style="margin-top:12px;">Forgot your PIN?</b>
+          <div class="forgot-pin">Find the organizer. They can reset it in a few seconds, then you sign in with your name and a new PIN.</div>
+        </div>
       </div>
       <div class="me-row" id="meRow" hidden>
         <div><div class="field-label" style="margin-bottom:2px;">Playing as</div><div class="me-name" id="meName"></div></div>
@@ -701,6 +716,37 @@
     return id ? db.collection('playerUnlock').doc(id) : db.collection('playerUnlock').doc();
   }
   function proofData(){ return {playerKey: me.key, pin: me.code, at: FV.serverTimestamp()}; }
+
+  // "Forgot your name or PIN?": search the players who have signed up (names are already public on the boards);
+  // tapping one fills in the name. A forgotten PIN is reset by the organizer in admin.
+  document.getElementById('forgotLink').addEventListener('click', function(){
+    var box = document.getElementById('forgotBox');
+    box.hidden = !box.hidden;
+    if (!box.hidden) { var f = document.getElementById('forgotSearch'); f.value = nameInput.value; renderForgot(); f.focus(); }
+  });
+  function renderForgot(){
+    var q = document.getElementById('forgotSearch').value.trim().toLowerCase(), list = document.getElementById('forgotList');
+    if (!q) { list.innerHTML = ''; return; }
+    var words = q.split(/\s+/);
+    var hits = Object.keys(PLAYER_NAMES).filter(function(k){
+      var n = PLAYER_NAMES[k].toLowerCase();
+      return words.every(function(w){ return n.indexOf(w) !== -1 || k.indexOf(w) !== -1; }) || nameDistance(k, q) <= 2;
+    }).map(function(k){ return {key: k, name: PLAYER_NAMES[k]}; })
+      .sort(function(a, b){ return a.name.localeCompare(b.name); }).slice(0, 8);
+    list.innerHTML = hits.length ? hits.map(function(h){ return '<button type="button" data-key="' + esc(h.key) + '">' + esc(h.name) + '</button>'; }).join('')
+      : '<div class="none">No one by that name yet. If this is your first time, just sign up above.</div>';
+  }
+  document.getElementById('forgotSearch').addEventListener('input', renderForgot);
+  document.getElementById('forgotList').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-key]'); if (!b) return;
+    // Sign-in matches on the key (the name as first typed), so fill that in exactly.
+    nameInput.value = b.dataset.key.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+    resetNewNameConfirm();
+    document.getElementById('forgotBox').hidden = true;
+    var shown = PLAYER_NAMES[b.dataset.key] || '';
+    signInNote((shown.toLowerCase() !== b.dataset.key ? 'You signed up as \u201c' + nameInput.value + '\u201d. ' : '') + 'Now enter your 4-digit PIN.', false);
+    codeInput.focus();
+  });
 
   // New names take a second tap, with "did you mean" suggestions, so a typo doesn't create a second player.
   var confirmNewKey = null;

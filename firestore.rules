@@ -177,7 +177,8 @@ service cloud.firestore {
                     && request.resource.data.at == request.time
                     && request.resource.data.proof is string
                     && playerProved(request.resource.data.proof, key);
-      allow read: if false;
+      // The organizer's Google account (Firebase Auth uid), signed in on admin.html.
+      allow read: if request.auth != null && request.auth.uid == 'yBphTXSIxYT27i1xod4KdBcdUK32';
       allow delete: if false;
     }
 
