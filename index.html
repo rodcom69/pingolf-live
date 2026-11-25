@@ -843,6 +843,8 @@
     document.querySelectorAll('.ball-btn, #missSave').forEach(function(b){ b.disabled = off; });
   }
   document.getElementById('sheetGame').addEventListener('change', function(){
+    // A new game means a new target: an armed "Save anyway" from the last game no longer applies.
+    lowScoreArmed = null; document.getElementById('missSave').textContent = 'Save';
     var h = HOLES.find(function(x){ return String(x.n) === this.value; }, this);
     if (h) showSheetHole(h); else {
       currentHole = null;
