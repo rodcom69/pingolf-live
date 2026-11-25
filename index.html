@@ -172,6 +172,8 @@
   .ask-note{font-size:12.5px;margin-top:6px;color:var(--bad);}
   .ask-note:empty{display:none;}
   body.tv-mode .email-ask,body.scores-mode .email-ask{display:none!important;}
+  .email-ask input.ifpa-input{margin-top:8px;}
+  .email-why a,.email-ask a{color:var(--accent);font-weight:700;}
   .me-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .me-row[hidden]{display:none;}
   .me-name{font-size:20px;font-weight:700;color:var(--text);overflow-wrap:anywhere;}
@@ -523,10 +525,13 @@
           <div class="np-title">Welcome! One more step.</div>
           <div class="np-sub">You're signing up as <b id="npName"></b>. That's the name you'll sign in with.</div>
           <div id="npAlike"></div>
-          <label class="field-label" for="emailInput" style="margin-top:12px;">Your email</label>
+          <label class="field-label" for="emailInput" style="margin-top:12px;">Your email <span class="opt">(optional)</span></label>
           <input type="email" id="emailInput" placeholder="you@example.com" autocomplete="email" inputmode="email" maxlength="100">
           <label class="news-check"><input type="checkbox" id="newsInput"> <span class="news-text"></span></label>
-          <div class="email-why">We use it to send your name and PIN if you ever forget them, and news only if you tick the box.</div>
+          <div class="email-why">Lets us send your name and PIN if you ever forget them. News only if you tick the box.</div>
+          <label class="field-label" for="npIfpa" style="margin-top:12px;">IFPA number <span class="opt">(optional)</span></label>
+          <input type="text" id="npIfpa" class="ifpa-input" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 12345" autocomplete="off" maxlength="7">
+          <div class="email-why">For tournament results. <a href="https://www.ifpapinball.com/players/" target="_blank" rel="noopener">Look yours up</a>.</div>
           <button class="signin-btn" id="npCreate">Create my player</button>
           <div class="signin-note" id="npNote"></div>
           <button class="forgot-link" id="npBack" type="button">&larr; Change my name or PIN</button>
@@ -555,6 +560,12 @@
       <label class="news-check"><input type="checkbox" id="askNews"> <span class="news-text"></span></label>
       <div class="ask-btns"><button class="ask-save" id="askSave">Save</button><button class="ask-no" id="askNo">No thanks</button></div>
       <div class="ask-note" id="askNote"></div>
+    </div>
+    <div class="email-ask" id="ifpaAsk" hidden>
+      <div><b>Playing Dec 12?</b> Add your IFPA number for the tournament results. <a href="https://www.ifpapinball.com/players/" target="_blank" rel="noopener">Look it up</a></div>
+      <input type="text" id="askIfpa" class="ifpa-input" inputmode="numeric" pattern="[0-9]*" placeholder="IFPA number" autocomplete="off" maxlength="7">
+      <div class="ask-btns"><button class="ask-save" id="ifpaSave">Save</button><button class="ask-no" id="ifpaNo">No thanks</button></div>
+      <div class="ask-note" id="ifpaNote"></div>
     </div>
     <div class="install-tip" id="installTip" hidden>
       <img src="/icons/apple-touch-icon.png" alt="">
@@ -705,22 +716,50 @@
   function showEmailUI(){
     var cfg = emailCfg();
     document.querySelectorAll('.news-text').forEach(function(el){ el.textContent = cfg ? cfg.news : ''; });
-    var ask = document.getElementById('emailAsk');
+    var ask = document.getElementById('emailAsk'), ifpaCard = document.getElementById('ifpaAsk');
     ask.hidden = !cfg || !me || emailDone(me.key);
-    // One extra card at a time: the home-screen tip waits until the email card is done or dismissed.
-    document.body.classList.toggle('asking-email', !ask.hidden);
+    // Then (once) the IFPA number. One extra card at a time: the home-screen tip waits for both.
+    ifpaCard.hidden = !cfg || !me || !ask.hidden || ifpaDone(me.key);
+    document.body.classList.toggle('asking-email', !ask.hidden || !ifpaCard.hidden);
   }
-  function saveContact(who, email, news, cb){
+  // IFPA number: optional, digits only (1-9999999). Saved next to the email.
+  function parseIfpa(v){ var d = String(v || '').replace(/\D/g, ''); var n = d ? parseInt(d, 10) : 0; return n > 0 && n < 10000000 ? n : 0; }
+  function ifpaDoneKey(k){ return 'pingolf_ifpa_' + k; }
+  function ifpaDone(k){ try { return !!localStorage.getItem(ifpaDoneKey(k)); } catch(e){ return true; } }
+  // Saves email (+ news) and/or IFPA number. Merges, so adding an IFPA number later keeps the email.
+  function saveContact(who, email, news, cb, ifpa){
     var cfg = emailCfg();
-    if (!cfg || !validEmail(email)) { cb(false); return; }
+    var hasEmail = validEmail(email), n = parseIfpa(ifpa);
+    if (!cfg || (!hasEmail && !n)) { cb(false); return; }
+    var data = {venue: cfg.venue, at: FV.serverTimestamp()};
+    if (hasEmail) { data.email = email.toLowerCase(); data.news = !!news; }
+    if (n) data.ifpa = n;
     var batch = db.batch(), pref = proofRef();
     batch.set(pref, {playerKey: who.key, pin: who.code, at: FV.serverTimestamp()});
-    batch.set(db.collection('playerContacts').doc(who.key), {email: email.toLowerCase(), news: !!news, venue: cfg.venue, at: FV.serverTimestamp(), proof: pref.id});
+    data.proof = pref.id;
+    batch.set(db.collection('playerContacts').doc(who.key), data, {merge: true});
     batch.commit().then(function(){
-      try { localStorage.setItem(emailDoneKey(who.key), '1'); } catch(e){}
+      try {
+        if (hasEmail) localStorage.setItem(emailDoneKey(who.key), '1');
+        if (n) localStorage.setItem(ifpaDoneKey(who.key), String(n));
+      } catch(e){}
       cb(true);
     }, function(){ cb(false); });
   }
+  document.getElementById('ifpaSave').addEventListener('click', function(){
+    var n = parseIfpa(document.getElementById('askIfpa').value), note = document.getElementById('ifpaNote'), btn = this;
+    if (!me) return;
+    if (!n) { note.textContent = 'Your IFPA number is just digits, like 12345.'; return; }
+    btn.disabled = true; note.textContent = '';
+    saveContact(me, '', false, function(ok){
+      btn.disabled = false;
+      if (ok) showEmailUI(); else note.textContent = 'Couldn\u2019t save it. Check your signal and try again.';
+    }, n);
+  });
+  document.getElementById('ifpaNo').addEventListener('click', function(){
+    if (me) { try { localStorage.setItem(ifpaDoneKey(me.key), 'no'); } catch(e){} }
+    showEmailUI();
+  });
   document.getElementById('askSave').addEventListener('click', function(){
     var email = document.getElementById('askEmail').value.trim(), note = document.getElementById('askNote'), btn = this;
     if (!me) return;
@@ -820,18 +859,18 @@
   }
 
   // Signed in: remember this phone's player. A new player's email is saved right after, in its own batch.
-  function signedIn(key, realName, code, email, news){
+  function signedIn(key, realName, code, email, news, ifpa){
     me = {key: key, name: realName, code: code};
     try { localStorage.setItem('pingolf_me', JSON.stringify(me)); localStorage.setItem('pingolf_name', realName); } catch(e){}
     codeInput.value = '';
-    if (email) {
-      // Hide the "Add your email" card while this saves; bring it back if the save fails.
-      try { localStorage.setItem(emailDoneKey(key), 'saving'); } catch(e){}
+    if (email || ifpa) {
+      // Hide the cards while this saves; bring a card back if its save fails.
+      try { if (email) localStorage.setItem(emailDoneKey(key), 'saving'); if (ifpa) localStorage.setItem(ifpaDoneKey(key), 'saving'); } catch(e){}
       var who = me;
       saveContact(who, email, news, function(ok){
-        if (!ok) { try { localStorage.removeItem(emailDoneKey(who.key)); } catch(e){} }
+        if (!ok) { try { if (email) localStorage.removeItem(emailDoneKey(who.key)); if (ifpa) localStorage.removeItem(ifpaDoneKey(who.key)); } catch(e){} }
         showEmailUI();
-      });
+      }, ifpa);
     }
     showSignInStep('main');
     showMe(); renderScoreTab(); renderLeaderboard();
@@ -904,8 +943,10 @@
     var p = pendingNew, note = document.getElementById('npNote'), btn = this;
     if (!p) { showSignInStep('main'); return; }
     var email = document.getElementById('emailInput').value.trim(), news = document.getElementById('newsInput').checked;
-    if (!validEmail(email)) {
-      note.textContent = email ? 'That email doesn’t look right.' : 'Please add your email. It’s how you get your PIN back if you forget it.';
+    var ifpaRaw = document.getElementById('npIfpa').value.trim(), ifpa = parseIfpa(ifpaRaw);
+    if (ifpaRaw && !ifpa) { note.textContent = 'Your IFPA number is just digits, like 12345. Or leave it blank.'; note.className = 'signin-note err'; return; }
+    if (email && !validEmail(email)) {
+      note.textContent = 'That email doesn’t look right. Fix it or leave it blank.';
       note.className = 'signin-note err';
       document.getElementById('emailInput').focus();
       return;
@@ -916,9 +957,14 @@
     batch.set(db.collection('playerSecrets').doc(p.key), {pin: p.code});
     batch.commit().then(function(){
       btn.disabled = false; pendingNew = null;
-      document.getElementById('emailInput').value = ''; document.getElementById('newsInput').checked = false;
+      document.getElementById('emailInput').value = ''; document.getElementById('newsInput').checked = false; document.getElementById('npIfpa').value = '';
       signInNote('New here? Type your name and pick any 4 digits as your PIN.');
-      signedIn(p.key, p.name, p.code, email, news);
+      // Left blank here = don't ask again with the cards (they just saw both boxes).
+      try {
+        if (!email) localStorage.setItem(emailDoneKey(p.key), 'skipped');
+        if (!ifpa) localStorage.setItem(ifpaDoneKey(p.key), 'skipped');
+      } catch(e){}
+      signedIn(p.key, p.name, p.code, email, news, ifpa);
     }, function(){
       btn.disabled = false;
       note.className = 'signin-note err';
