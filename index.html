@@ -659,7 +659,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-25a"></script>
+<script src="course.js?v=2026-11-25b"></script>
 
 <script>
 (function(){
@@ -1795,21 +1795,35 @@
   function localToday(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function openEventElsewhere(notId){
     var t = localToday();
-    var open = EVENTS.filter(function(e){ return e.id !== notId && eventTakingScores(e) && !e.test; });
+    var open = EVENTS.filter(function(e){ return e.id !== notId && eventTakingScores(e) && eventListed(e); });
     return open.find(function(e){ return e.date === t; }) || open[0] || null;
   }
+  // A course is in everyone's dropdown if its event is a real one, or its course says listed (PinCrossing).
+  // Other test events (Basement) are link-only, but stay in the dropdown on phones that have opened them.
+  function eventListed(e){ return !e.test || !!courseInfo(e.course).listed; }
   function wantedEventId(){
     if (linkedEventId) return linkedEventId;
+    // The phone remembers the last course picked (dropdown or link) and the day it was picked.
+    var se = null, pickedToday = false;
+    try {
+      var saved = localStorage.getItem('pingolf_event');
+      se = EVENTS.find(function(e){ return e.id === saved; });
+      pickedToday = localStorage.getItem('pingolf_event_day') === localToday();
+    } catch(e){}
+    if (se && !eventTakingScores(se)) se = null;
+    // A course picked today always wins. Otherwise an open real event dated today (the Dec 12
+    // tournament) beats an older pick, so Practice Open / PinCrossing phones land on the tournament.
+    if (se && pickedToday) return se.id;
     var today = EVENTS.find(function(e){ return eventTakingScores(e) && !e.test && e.date === localToday(); });
     if (today) return today.id;
-    // A remembered event only counts while it's taking scores (otherwise go to the open one).
-    try { var saved = localStorage.getItem('pingolf_event'); var se = EVENTS.find(function(e){ return e.id === saved; }); if (saved && eventTakingScores(se) && !se.test) return saved; } catch(e){}
-    return null;
+    return se ? se.id : null;
   }
+  function myEvents(){ try { return JSON.parse(localStorage.getItem('pingolf_my_events') || '[]'); } catch(e){ return []; } }
+  function addMyEvent(id){ var m = myEvents(); if (m.indexOf(id) < 0) { m.push(id); try { localStorage.setItem('pingolf_my_events', JSON.stringify(m)); } catch(e){} } }
   function pickerEvents(){
-    // Only events taking scores right now (upcoming and finished ones stay hidden), plus one opened by link.
-    // Test events are link-only: they never show in the list for anyone else.
-    return EVENTS.filter(function(e){ return (eventTakingScores(e) && !e.test) || (CURRENT_EVENT && e.id === CURRENT_EVENT.id); });
+    // Events taking scores right now (upcoming and finished ones stay hidden), plus the one on screen.
+    var mine = myEvents();
+    return EVENTS.filter(function(e){ return (eventTakingScores(e) && (eventListed(e) || mine.indexOf(e.id) >= 0)) || (CURRENT_EVENT && e.id === CURRENT_EVENT.id); });
   }
   function renderEventPicker(){
     var sel = document.getElementById('eventSelect');
@@ -1838,7 +1852,7 @@
       : '<b>This event is finished</b>Scores are final. See the Leaderboard tab.';
     // Sitting on a finished/not-yet-open event while another one is taking scores (e.g. the
     // Practice Open just closed at noon and the tournament is open): offer a one-tap switch.
-    var other = ev.status !== 'upcoming' && !ev.test && openEventElsewhere(ev.id);
+    var other = ev.status !== 'upcoming' && eventListed(ev) && openEventElsewhere(ev.id);
     if (other) note.innerHTML += '<button class="signin-btn go-open" data-ev="' + esc(other.id) + '" style="margin-top:10px;">Go to ' + esc(eventTitle(other)) + ' \u2192</button>';
   }
   document.getElementById('eventNote').addEventListener('click', function(e){
@@ -1860,7 +1874,8 @@
     clearTimeout(window.closeTimer);
     var left = ev.closesAt ? ev.closesAt - Date.now() : 0;
     if (left > 0 && left < 2147483647) window.closeTimer = setTimeout(function(){ showEventInfo(); renderAll(); }, left + 1000);
-    if (remember) { try { localStorage.setItem('pingolf_event', ev.id); } catch(e){} }
+    if (remember) { try { localStorage.setItem('pingolf_event', ev.id); localStorage.setItem('pingolf_event_day', localToday()); } catch(e){} }
+    if (ev.test && !eventListed(ev)) addMyEvent(ev.id);
     // Keep the address bar pointing at this event, so a shared link opens it.
     var url = new URL(location.href);
     if (url.searchParams.get('e') !== ev.id) { url.searchParams.set('e', ev.id); history.replaceState(null, '', url); }
@@ -1928,7 +1943,9 @@
       return;
     }
     setConnNote('', false);
-    selectEvent(ev.id, false);
+    // Opening a course by link (QR, /pincrossing, home-screen app) makes it this phone's course,
+    // so plain playpingolf.com goes back to it next time.
+    selectEvent(ev.id, !!(linkedEventId && ev.id === linkedEventId && eventTakingScores(ev)));
     if (document.getElementById('panel-history').classList.contains('active')) loadHistory();
   }, function(err){
     setConnNote("Can't reach the scoreboard (" + err.message + '). Reload to try again.', true);

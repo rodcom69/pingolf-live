@@ -46,6 +46,7 @@ var COURSES = {
   'pincrossing-2026': {
     name: 'PinCrossing · 11 machines (draft)',
     brand: 'PINCROSSING PINGOLF', place: 'Limerick, PA', mulligans: 1,
+    listed: true, // in everyone's course dropdown even though its event is a test (link-only) event
     holes: [
       {n:1, name:"Avengers: Infinity Quest", img:"pc-avengers", target:50000000, label:"50M"},
       {n:2, name:"Batman 66", img:"pc-batman-66", target:100000000, label:"100M"},
