@@ -96,6 +96,53 @@ var COURSES = {
     ]
   }
 };
+// Machine rosters per location (not courses): every machine at the venue, so a course can be
+// picked from them later. The Manor: from Match Play "The Manor Mega Matchplay" arenas
+// (app.matchplay.events/tournaments/245339/arenas), Nov 2026; room = where it sits; opdb = Open Pinball DB id.
+var VENUE_MACHINES = {
+  manor: [
+    {name:"Attack From Mars (Remake)", room:"Garage", opdb:"G4do5-MkPnV"},
+    {name:"Black Jack", room:"Back Room", opdb:"G5nbD-MDyXb"},
+    {name:"Deadpool (Pro)", room:"Breezeway", opdb:"G6lnq-Mq1kv"},
+    {name:"Dracula", room:"Back Room", opdb:"G4Zl2-Ml90d"},
+    {name:"Eight Ball", room:"Back Room", opdb:"GrN7J-MJ78q"},
+    {name:"Eight Ball Deluxe (LE)", room:"Garage", opdb:"G5KXk-MLqNz"},
+    {name:"Elvira's House of Horrors (Premium)", room:"Horror Room", opdb:"GZVOd-MwNxZ-AOLoy"},
+    {name:"Evel Knievel", room:"Garage", opdb:"G59wx-MLnZ3"},
+    {name:"Firepower", room:"Back Room", opdb:"G5VDd-MJpqO"},
+    {name:"Fish Tales", room:"Back Room", opdb:"G5Wxd-MLxl3"},
+    {name:"Flash Gordon", room:"Garage", opdb:"G5728-MDbjD"},
+    {name:"Flight 2000", room:"Lodge", opdb:"G48kY-MDxRV"},
+    {name:"Foo Fighters (Pro)", room:"Lodge", opdb:"GpeoL-MyNPq"},
+    {name:"Godzilla (70th Anniversary)", room:"Back Room", opdb:"GweeP-Ml9pZ-AOvNL"},
+    {name:"Harlem Globetrotters On Tour", room:"Lodge", opdb:"GRnwQ-M9R5d"},
+    {name:"Iron Maiden: Legacy of the Beast", room:"Breezeway", opdb:"G4dOQ-MyNbb"},
+    {name:"JAWS (Pro)", room:"Back Room", opdb:"GLWll-MXr4N"},
+    {name:"Junk Yard", room:"Back Room", opdb:"GRLlj-MQZN8"},
+    {name:"Jurassic Park (Premium)", room:"Lodge", opdb:"GK17D-MKNKd-A15Yn"},
+    {name:"King Kong: Myth of Terror Island (Pro)", room:"Garage", opdb:"GEL0V-MBRyb"},
+    {name:"Metallica Remastered (Premium)", room:"Breezeway", opdb:"GO0q3-MOEy8-ARol7"},
+    {name:"Meteor", room:"Garage", opdb:"G5b38-MDqkx", inactive:true},
+    {name:"Mystic", room:"Garage", opdb:"G5Bnl-MLnw6"},
+    {name:"Paragon", room:"Breezeway", opdb:"GrXy3-ML0Ey"},
+    {name:"Pulp Fiction (SE)", room:"Lodge", opdb:"GoEkx-MdEzN-ARJQz"},
+    {name:"Solar City", room:"Breezeway", opdb:"GrEZ5-MJ9y3"},
+    {name:"Space Shuttle", room:"Garage", opdb:"G4q3L-MKN50"},
+    {name:"Star Trek (Pro)", room:"Garage", opdb:"Gryw4-MwNky"},
+    {name:"Stars", room:"Back Room", opdb:"GrXEW-MDEwr"},
+    {name:"Stranger Things (Premium)", room:"Back Room", opdb:"Gzy89-M0oPy-A1zrL"},
+    {name:"Strikes and Spares", room:"Back Room", opdb:"GrleW-MYeod"},
+    {name:"Super Orbit", room:"Lodge", opdb:"G4EPE-ML14r"},
+    {name:"Supersonic", room:"Breezeway", opdb:"GRLXd-ME07p"},
+    {name:"The Getaway: High Speed II", room:"Garage", opdb:"Grx8Y-MKNe9"},
+    {name:"The Shadow", room:"Garage", opdb:"G4jPX-M85YZ"},
+    {name:"The Sopranos", room:"Breezeway", opdb:"G5WoB-MDyNZ"},
+    {name:"The Walking Dead (Pro)", room:"Breezeway", opdb:"G5nz5-M3d38"},
+    {name:"Torch", room:"Breezeway", opdb:"G4JbV-M5Rqn"},
+    {name:"White Water", room:"Lodge", opdb:"GRQKz-MyNXz"},
+    {name:"World Cup Soccer", room:"Breezeway", opdb:"G42E2-MQP9e"}
+  ]
+};
 // Demo: the X-Golf machines and targets, for showing people the app. Lives under Home courses as
 // "Demo (try it out)", with a DEMO ribbon on screen (course demo: true) so it's never mistaken for the real event.
 COURSES['demo-xgolf'] = Object.assign({}, COURSES['xgolf-2026-12'], {
