@@ -220,6 +220,7 @@
     font-family:"Teko",sans-serif;font-size:17px;min-width:24px;height:24px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);
   }
+  .brand-logo{display:block;height:84px;width:auto;max-width:100%;border-radius:8px;background:#fff;}
   .demo-ribbon{margin:2px 0 8px;padding:6px 10px;border-radius:8px;text-align:center;font-weight:800;font-size:13px;letter-spacing:.06em;color:#1c1a12;background:repeating-linear-gradient(135deg,#f4c542 0 14px,#ffdf6e 14px 28px);border:1px solid #c99a1c;}
   .hole-tile.done{border-color:var(--accent);}
   /* Open holes (still need a score) get a gold ring + tag; finished holes go flat and dimmed with a DONE tag. */
@@ -670,7 +671,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-25i"></script>
+<script src="course.js?v=2026-11-25j"></script>
 
 <script>
 (function(){
@@ -1920,7 +1921,9 @@
     useCourse(ev.course, ev.removedHoles || [], ev.closedHoles || []);
     var ci = courseInfo(ev.course);
     showEmailUI();
-    document.getElementById('brandName').textContent = ci.brand || 'PINGOLF';
+    var bn = document.getElementById('brandName');
+    if (ci.logo) { bn.innerHTML = '<img class="brand-logo" src="' + esc(ci.logo) + '" alt="">'; bn.setAttribute('aria-label', ci.brand || 'PINGOLF'); }
+    else { bn.textContent = ci.brand || 'PINGOLF'; bn.removeAttribute('aria-label'); }
     document.getElementById('demoRibbon').hidden = !ci.demo;
     document.getElementById('brandPlace').textContent = ci.place || '';
     document.querySelectorAll('a.print-link').forEach(function(a){ a.href = 'scoring.html?course=' + encodeURIComponent(ev.course) + '&e=' + encodeURIComponent(ev.id); });

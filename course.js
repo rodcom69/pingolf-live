@@ -102,6 +102,7 @@ COURSES['manor-2026'] = {
   name: 'The Manor · 9 machines (draft)',
   brand: 'THE MANOR PINGOLF', place: 'The Manor', mulligans: 1,
   group: 'home', menuName: 'The Manor',
+  logo: 'img/manor-logo.jpg', // shown in the header instead of the brand text (The Manor Pinball logo, from Rodney)
   holes: [
     {n:1, name:"Attack From Mars (Remake)", target:2000000000, label:"2B"},
     {n:2, name:"Space Shuttle", target:500000, label:"500K"},
