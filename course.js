@@ -99,7 +99,7 @@ var COURSES = {
 // The Manor: 9 machines picked at random from VENUE_MACHINES.manor (Rodney: "randomly pick 9 to get us started"),
 // in walking order by room (Garage, Breezeway, Back Room, Lodge). Home course (link-only), 1 mulligan, draft targets.
 // Art: IPDB (AFM, Space Shuttle, Mystic, Flight 2000, Stranger Things Premium translite); Pinside game photos cropped from
-// the polaroid frame (Deadpool Pro, Iron Maiden LOTB Pro, Metallica Remastered Premium); TWD = X-Golf photo.
+// the polaroid frame (Deadpool Pro, Iron Maiden LOTB Pro, Metallica Remastered Premium, original 2014 Walking Dead Pro: walking-dead-2014, not X-Golf's walking-dead).
 COURSES['manor-2026'] = {
   name: 'The Manor · 9 machines (draft)',
   brand: 'THE MANOR PINGOLF', place: 'The Manor', mulligans: 1,
@@ -110,7 +110,7 @@ COURSES['manor-2026'] = {
     {n:2, name:"Space Shuttle", img:"space-shuttle", target:500000, label:"500K"},
     {n:3, name:"Mystic", img:"mystic", target:200000, label:"200K"},
     {n:4, name:"Metallica Remastered (Premium)", img:"metallica-remastered", target:30000000, label:"30M"},
-    {n:5, name:"The Walking Dead (Pro)", img:"walking-dead", target:75000000, label:"75M"},
+    {n:5, name:"The Walking Dead (Pro)", img:"walking-dead-2014", target:75000000, label:"75M"},
     {n:6, name:"Iron Maiden: Legacy of the Beast", img:"iron-maiden-lotb", target:100000000, label:"100M"},
     {n:7, name:"Deadpool (Pro)", img:"deadpool-pro", target:75000000, label:"75M"},
     {n:8, name:"Stranger Things (Premium)", img:"stranger-things-premium", target:150000000, label:"150M"},
