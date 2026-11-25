@@ -1790,6 +1790,9 @@
   // picks that event, including a finished one; otherwise the phone remembers its
   // last pick, or takes the first open event.
   var linkedEventId = new URLSearchParams(location.search).get('e');
+  // playpingolf.com/home (-> ?home=1) unlocks the Home courses section on this phone and opens a home course.
+  var homeLink = new URLSearchParams(location.search).get('home') === '1';
+  if (homeLink) { try { localStorage.setItem('pingolf_home', '1'); } catch(e){} }
   // An open (non-test) event dated today beats a remembered one, so on tournament day
   // a phone that played the Practice Open lands on the tournament.
   function localToday(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
@@ -1801,8 +1804,17 @@
   // A course is in everyone's dropdown if its event is a real one, or its course says listed (PinCrossing).
   // Other test events (home courses like Basement) are link-only, but show in the dropdown on phones that have opened one.
   function eventListed(e){ return !e.test || !!courseInfo(e.course).listed; }
+  function isHomeEvent(e){ return !!e && courseInfo(e.course).group === 'home'; }
   function wantedEventId(){
     if (linkedEventId) return linkedEventId;
+    if (homeLink) {
+      // The last home course this phone used, else the first open one (Rodney C.).
+      var last = null; try { last = localStorage.getItem('pingolf_home_event'); } catch(e){}
+      var le = EVENTS.find(function(e){ return e.id === last; });
+      if (isHomeEvent(le) && eventTakingScores(le)) return le.id;
+      var h = EVENTS.find(function(e){ return isHomeEvent(e) && eventTakingScores(e); });
+      if (h) return h.id;
+    }
     // The phone remembers the last course picked (dropdown or link) and the day it was picked.
     var se = null, pickedToday = false;
     try {
@@ -1824,8 +1836,9 @@
     // Events taking scores right now (upcoming and finished ones stay hidden), plus the one on screen.
     // Home courses: a phone that has opened any home-course link sees all of them; the public sees none.
     var mine = myEvents();
-    var isHome = function(e){ return courseInfo(e.course).group === 'home'; };
-    var homePhone = EVENTS.some(function(e){ return isHome(e) && mine.indexOf(e.id) >= 0; });
+    var isHome = isHomeEvent;
+    var homePhone = false; try { homePhone = localStorage.getItem('pingolf_home') === '1'; } catch(e){}
+    homePhone = homePhone || EVENTS.some(function(e){ return isHome(e) && mine.indexOf(e.id) >= 0; });
     return EVENTS.filter(function(e){ return (eventTakingScores(e) && (eventListed(e) || mine.indexOf(e.id) >= 0 || (homePhone && isHome(e)))) || (CURRENT_EVENT && e.id === CURRENT_EVENT.id); });
   }
   function renderEventPicker(){
@@ -1888,9 +1901,10 @@
     if (left > 0 && left < 2147483647) window.closeTimer = setTimeout(function(){ showEventInfo(); renderAll(); }, left + 1000);
     if (remember) { try { localStorage.setItem('pingolf_event', ev.id); localStorage.setItem('pingolf_event_day', localToday()); } catch(e){} }
     if (ev.test && !eventListed(ev)) addMyEvent(ev.id);
+    if (isHomeEvent(ev)) { try { localStorage.setItem('pingolf_home', '1'); localStorage.setItem('pingolf_home_event', ev.id); } catch(e){} }
     // Keep the address bar pointing at this event, so a shared link opens it.
     var url = new URL(location.href);
-    if (url.searchParams.get('e') !== ev.id) { url.searchParams.set('e', ev.id); history.replaceState(null, '', url); }
+    if (url.searchParams.get('e') !== ev.id || url.searchParams.has('home')) { url.searchParams.delete('home'); url.searchParams.set('e', ev.id); history.replaceState(null, '', url); }
     useCourse(ev.course, ev.removedHoles || [], ev.closedHoles || []);
     var ci = courseInfo(ev.course);
     showEmailUI();
@@ -1957,7 +1971,8 @@
     setConnNote('', false);
     // Opening a course by link (QR, /pincrossing, home-screen app) makes it this phone's course,
     // so plain playpingolf.com goes back to it next time.
-    selectEvent(ev.id, !!(linkedEventId && ev.id === linkedEventId && eventTakingScores(ev)));
+    selectEvent(ev.id, !!((linkedEventId && ev.id === linkedEventId) || (homeLink && isHomeEvent(ev))) && eventTakingScores(ev));
+    homeLink = false;
     if (document.getElementById('panel-history').classList.contains('active')) loadHistory();
   }, function(err){
     setConnNote("Can't reach the scoreboard (" + err.message + '). Reload to try again.', true);
