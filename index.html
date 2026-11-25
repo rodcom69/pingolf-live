@@ -730,7 +730,7 @@
 
   // "Email me my name and PIN": the Google Apps Script web app (apps-script/Code.gs) looks the email up
   // and mails the sign-in name + PIN to that address only. Same answer whether or not it's on file.
-  var PIN_HELPER_URL = '';
+  var PIN_HELPER_URL = 'https://script.google.com/macros/s/AKfycbyNFRqRNmgEcSsZvJUGjiWXuxs8EWNDZdHeq3WZc8vYGm1hztOIiitP0Rx3Otu3ENf0/exec';
   document.getElementById('mailPinWrap').hidden = !PIN_HELPER_URL;
   document.getElementById('mailPinEmail').addEventListener('input', function(){ document.getElementById('mailPinBtn').disabled = false; document.getElementById('mailPinNote').textContent = ''; });
   document.getElementById('mailPinBtn').addEventListener('click', function(){

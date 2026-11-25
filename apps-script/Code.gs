@@ -1,5 +1,5 @@
 // Pingolf "Forgot your name or PIN?" emailer (Google Apps Script web app).
-// Runs as the Pingolf Gmail account, which has read access (Cloud Datastore User) to the
+// Runs as the Pingolf Gmail account, which has read-only access (Cloud Datastore Viewer) to the
 // pingolf-95ba1 Firestore. The site POSTs {email}; if that address is on file in
 // playerContacts, this emails it the sign-in name(s) and PIN(s). It always answers the
 // same way, so it can't be used to check who has signed up, and each address gets at
