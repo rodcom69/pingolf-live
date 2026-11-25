@@ -76,6 +76,24 @@ var COURSES = {
       {n:4, name:"Star Wars: Fall of the Empire CE", img:"sw-fall-of-the-empire", target:300000000, label:"300M"},
       {n:5, name:"King Kong Premium", img:"pc-king-kong", target:300000000, label:"300M"}
     ]
+  },
+  // Michael Reimer's house: 8 machines, home course ("Michael R." under Home courses). Order as Rodney listed them.
+  // Targets are first drafts (hard, like Rodney C.'s). Editions of Foo Fighters / JAWS / Monster Bash TBD.
+  // No photos yet: holes without img get a name tile.
+  'michael-2026': {
+    name: 'Michael R. · 8 machines (draft)',
+    brand: 'MICHAEL R. PINGOLF', place: 'Home course', mulligans: 1,
+    group: 'home', menuName: 'Michael R.',
+    holes: [
+      {n:1, name:"Foo Fighters", target:250000000, label:"250M"},
+      {n:2, name:"The Getaway: High Speed II", target:60000000, label:"60M"},
+      {n:3, name:"Monster Bash", target:400000000, label:"400M"},
+      {n:4, name:"JAWS", img:"pc-jaws", target:250000000, label:"250M"},
+      {n:5, name:"Bobby Orr Power Play", target:250000, label:"250K"},
+      {n:6, name:"Stars", target:250000, label:"250K"},
+      {n:7, name:"Whirlwind", target:25000000, label:"25M"},
+      {n:8, name:"Fish Tales", target:200000000, label:"200M"}
+    ]
   }
 };
 var DEFAULT_COURSE = 'xgolf-2026-12';
