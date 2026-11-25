@@ -220,6 +220,7 @@
     font-family:"Teko",sans-serif;font-size:17px;min-width:24px;height:24px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);
   }
+  .demo-ribbon{margin:2px 0 8px;padding:6px 10px;border-radius:8px;text-align:center;font-weight:800;font-size:13px;letter-spacing:.06em;color:#1c1a12;background:repeating-linear-gradient(135deg,#f4c542 0 14px,#ffdf6e 14px 28px);border:1px solid #c99a1c;}
   .hole-tile.done{border-color:var(--accent);}
   /* Open holes (still need a score) get a gold ring + tag; finished holes go flat and dimmed with a DONE tag. */
   .hole-tile.todo:not(:disabled){border-color:var(--gold);box-shadow:0 0 0 3px var(--gold), 0 6px 18px rgba(184,134,47,.28);}
@@ -492,6 +493,7 @@
       <h1 id="brandName">XGOLF PINGOLF</h1>
       <span class="place" id="brandPlace">Chester Springs, PA</span>
     </div>
+    <div class="demo-ribbon" id="demoRibbon" hidden>DEMO &middot; just for fun &middot; scores don't count</div>
     <select id="eventSelect" class="event-select" aria-label="Event"><option value="">Loading events&hellip;</option></select>
     <div class="sub" id="eventSub"></div>
     <div class="tv-qr" id="tvQr" aria-hidden="true"><img alt=""><span>SCAN TO PLAY</span></div>
@@ -668,7 +670,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-25f"></script>
+<script src="course.js?v=2026-11-25g"></script>
 
 <script>
 (function(){
@@ -1919,6 +1921,7 @@
     var ci = courseInfo(ev.course);
     showEmailUI();
     document.getElementById('brandName').textContent = ci.brand || 'PINGOLF';
+    document.getElementById('demoRibbon').hidden = !ci.demo;
     document.getElementById('brandPlace').textContent = ci.place || '';
     document.querySelectorAll('a.print-link').forEach(function(a){ a.href = 'scoring.html?course=' + encodeURIComponent(ev.course) + '&e=' + encodeURIComponent(ev.id); });
     renderObjectives();

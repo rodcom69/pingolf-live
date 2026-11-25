@@ -96,6 +96,14 @@ var COURSES = {
     ]
   }
 };
+// Demo: the X-Golf machines and targets, for showing people the app. Lives under Home courses as
+// "Demo (try it out)", with a DEMO ribbon on screen (course demo: true) so it's never mistaken for the real event.
+COURSES['demo-xgolf'] = Object.assign({}, COURSES['xgolf-2026-12'], {
+  name: 'Demo · X-Golf machines (practice only)',
+  brand: 'PINGOLF DEMO', place: 'Try it out',
+  group: 'home', menuName: 'Demo (try it out)', demo: true,
+  collectEmail: null
+});
 var DEFAULT_COURSE = 'xgolf-2026-12';
 function courseInfo(courseId){ return COURSES[courseId] || COURSES[DEFAULT_COURSE]; }
 // Mulligans per card: 2 unless the course says otherwise (PinCrossing plays with 1).
