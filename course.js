@@ -47,7 +47,7 @@ var COURSES = {
     holes: [
       {n:1, name:"Avengers: Infinity Quest", img:"pc-avengers", target:50000000, label:"50M"},
       {n:2, name:"Batman 66", img:"pc-batman-66", target:100000000, label:"100M"},
-      {n:3, name:"Firepower", img:"pc-firepower", target:500000, label:"500K"},
+      {n:3, name:"Firepower", img:"pc-firepower", target:350000, label:"350K"},
       {n:4, name:"Flash Gordon", img:"pc-flash-gordon", target:500000, label:"500K"},
       {n:5, name:"Harry Potter", img:"pc-harry-potter", target:200000000, label:"200M"},
       {n:6, name:"JAWS", img:"pc-jaws", target:150000000, label:"150M"},

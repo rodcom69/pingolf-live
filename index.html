@@ -188,6 +188,7 @@
   .sheet-art[hidden]{display:none;}
   .score-preview{font-size:13px;color:var(--text-dim);margin-top:6px;min-height:18px;}
   .score-preview b{color:var(--text);}
+  .low-warn{margin-top:6px;padding:8px 10px;border-radius:8px;background:rgba(217,164,65,.15);border:1px solid #d9a441;color:var(--text);}
   .obj-thumb{width:64px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;align-self:center;background:#000;}
   .mull-card .mc-thumb{width:56px;height:36px;object-fit:cover;border-radius:6px;flex-shrink:0;}
   @media (max-width:480px){
@@ -498,7 +499,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-23k"></script>
+<script src="course.js?v=2026-11-24a"></script>
 
 <script>
 (function(){
@@ -753,9 +754,23 @@
     var val = parseInt(document.getElementById('missScore').value, 10);
     if (!currentHole || isNaN(val) || val < 0) { el.textContent = ''; return; }
     var st = chartStrokes(currentHole.target, val, holeBalls(currentHole));
-    el.innerHTML = '<b>' + fmtNum(val) + '</b> = ' + st + ' strokes' + (val >= currentHole.target ? ' (hit the target \u2014 use the ball buttons if you can)' : '');
+    el.innerHTML = '<b>' + fmtNum(val) + '</b> = ' + st + ' strokes' + (val >= currentHole.target ? ' (hit the target \u2014 use the ball buttons if you can)' : '') + lowScoreWarning(val);
   }
-  document.getElementById('missScore').addEventListener('input', updatePreview);
+  // A score under 1% of the target is almost always missing zeros (359,000 typed for 359,000,000).
+  // The warning shows as they type; the first Save tap only arms "Save anyway", the second saves.
+  var lowScoreArmed = null;
+  function lowScoreSuspect(val){ return !!currentHole && val < currentHole.target / 100; }
+  function lowScoreWarning(val){
+    var btn = document.getElementById('missSave');
+    var warn = lowScoreSuspect(val);
+    btn.textContent = warn && lowScoreArmed === val ? 'Save anyway' : 'Save';
+    if (!warn) return '';
+    var guess = val * 1000;
+    return '<div class="low-warn">\u26a0\ufe0f That\u2019s under 1% of the ' + esc(currentHole.label || fmtNum(currentHole.target)) + ' target. Check the zeros' +
+      (guess > 0 && guess <= currentHole.target * 10 ? ': did you mean <b>' + fmtNum(guess) + '</b>?' : '.') +
+      (lowScoreArmed === val ? ' If it\u2019s right, tap <b>Save anyway</b>.' : '') + '</div>';
+  }
+  document.getElementById('missScore').addEventListener('input', function(){ lowScoreArmed = null; updatePreview(); });
 
   // Tapping a hole: first entry, or fix the regular entry already there.
   // Shown when an entry is past the 2-minute window: no buttons, just a note.
@@ -841,6 +856,7 @@
   function closeSheet(){
     document.getElementById('overlay').style.display = 'none';
     currentHole = null; currentEditId = null; sheetMode = 'new';
+    lowScoreArmed = null; document.getElementById('missSave').textContent = 'Save';
     document.querySelectorAll('.ball-btn, #missSave').forEach(function(b){ b.disabled = false; });
     document.getElementById('missScore').disabled = false;
   }
@@ -919,6 +935,8 @@
   document.getElementById('missSave').addEventListener('click', function(){
     var val = parseInt(document.getElementById('missScore').value, 10);
     if (isNaN(val) || val < 0) return;
+    if (lowScoreSuspect(val) && lowScoreArmed !== val) { lowScoreArmed = val; updatePreview(); return; }
+    lowScoreArmed = null;
     var strokes = chartStrokes(currentHole.target, val, holeBalls(currentHole));
     submitAttempt(strokes, 'chart', {rawScore: val});
   });
