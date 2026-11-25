@@ -61,11 +61,14 @@ var COURSES = {
       {n:11, name:"Wizard!", img:"pc-wizard", target:50000, label:"50K"}
     ]
   },
-  // Rodney's basement: 5 machines, private practice course (link-only test event).
+  // Rodney's basement: 5 machines, a home course (link-only test event, "Rodney C." under Home courses).
   // Targets are set hard, around tournament-winning scores on 3 balls.
+  // Home courses (group 'home') are hidden from the public: the dropdown's "Home courses" section
+  // only appears on a phone that has opened a home-course link, and then shows all of them. menuName = label there.
   'basement-2026': {
     name: 'Basement · 5 machines',
-    brand: 'BASEMENT PINGOLF', place: 'Home course', mulligans: 1,
+    brand: 'RODNEY C. PINGOLF', place: 'Home course', mulligans: 1,
+    group: 'home', menuName: 'Rodney C.',
     holes: [
       {n:1, name:"Batman 66 (Catwoman)", img:"batman-66-catwoman", target:200000000, label:"200M"},
       {n:2, name:"Harry Potter CE", img:"harry-potter-ce", target:400000000, label:"400M"},

@@ -659,7 +659,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-25b"></script>
+<script src="course.js?v=2026-11-25c"></script>
 
 <script>
 (function(){
@@ -1799,7 +1799,7 @@
     return open.find(function(e){ return e.date === t; }) || open[0] || null;
   }
   // A course is in everyone's dropdown if its event is a real one, or its course says listed (PinCrossing).
-  // Other test events (Basement) are link-only, but stay in the dropdown on phones that have opened them.
+  // Other test events (home courses like Basement) are link-only, but show in the dropdown on phones that have opened one.
   function eventListed(e){ return !e.test || !!courseInfo(e.course).listed; }
   function wantedEventId(){
     if (linkedEventId) return linkedEventId;
@@ -1822,17 +1822,29 @@
   function addMyEvent(id){ var m = myEvents(); if (m.indexOf(id) < 0) { m.push(id); try { localStorage.setItem('pingolf_my_events', JSON.stringify(m)); } catch(e){} } }
   function pickerEvents(){
     // Events taking scores right now (upcoming and finished ones stay hidden), plus the one on screen.
+    // Home courses: a phone that has opened any home-course link sees all of them; the public sees none.
     var mine = myEvents();
-    return EVENTS.filter(function(e){ return (eventTakingScores(e) && (eventListed(e) || mine.indexOf(e.id) >= 0)) || (CURRENT_EVENT && e.id === CURRENT_EVENT.id); });
+    var isHome = function(e){ return courseInfo(e.course).group === 'home'; };
+    var homePhone = EVENTS.some(function(e){ return isHome(e) && mine.indexOf(e.id) >= 0; });
+    return EVENTS.filter(function(e){ return (eventTakingScores(e) && (eventListed(e) || mine.indexOf(e.id) >= 0 || (homePhone && isHome(e)))) || (CURRENT_EVENT && e.id === CURRENT_EVENT.id); });
   }
   function renderEventPicker(){
     var sel = document.getElementById('eventSelect');
     var list = pickerEvents();
     if (!list.length) { sel.innerHTML = '<option value="">No events yet</option>'; return; }
-    sel.innerHTML = list.map(function(e){
+    // Two sections: venues (X-Golf, PinCrossing) and home courses (Rodney C., ...), labelled by the course's menuName.
+    function opt(e){
+      var ci = courseInfo(e.course);
       var tag = e.status === 'upcoming' ? ' (upcoming)' : e.status === 'closed' ? ' (finished)' : '';
-      return '<option value="' + esc(e.id) + '">' + esc(eventTitle(e) + tag) + '</option>';
-    }).join('');
+      var label = ci.menuName || (ci.listed ? e.name : eventTitle(e));
+      return '<option value="' + esc(e.id) + '">' + esc(label + tag) + '</option>';
+    }
+    var home = list.filter(function(e){ return courseInfo(e.course).group === 'home'; });
+    var venues = list.filter(function(e){ return home.indexOf(e) < 0; });
+    sel.innerHTML = home.length
+      ? (venues.length ? '<optgroup label="Venues">' + venues.map(opt).join('') + '</optgroup>' : '') +
+        '<optgroup label="Home courses">' + home.map(opt).join('') + '</optgroup>'
+      : list.map(opt).join('');
     if (CURRENT_EVENT) sel.value = CURRENT_EVENT.id;
   }
   function showEventInfo(){
