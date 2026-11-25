@@ -134,6 +134,13 @@
       </div>
     </div>
     <div id="players"></div>
+    <div class="card" id="emailCard">
+      <div class="row">
+        <div style="flex:1;"><b>Player emails</b><div class="dim small">Optional emails players gave at sign-in (for PIN help and the news list). Only your Google account can see them.</div></div>
+        <button class="btn sm" id="gBtn">Sign in with Google</button>
+      </div>
+      <div id="emailOut" style="margin-top:10px;"></div>
+    </div>
     <div class="card" id="moveCard" hidden>
       <div class="row">
         <div style="flex:1;"><b>Move all scores</b><div class="dim small">Moves every score shown above to another event (for example, test scores entered under the wrong event)</div></div>
@@ -246,7 +253,8 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-24d"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="course.js?v=2026-11-25a"></script>
 <script>
 (function(){
   firebase.initializeApp(firebaseConfig);
@@ -825,6 +833,56 @@
     var v = parseInt($('sheetScore').value, 10), t = sheetTarget();
     if (isNaN(v) || v < 0 || !t) return;
     saveSheet({strokes: chartStrokes(t, v, holeBalls(sheetHole())), method: 'chart', rawScore: v});
+  });
+
+  // ---------- Player emails (Google sign-in; the rules let only the organizer's account read playerContacts) ----------
+  var auth = firebase.auth(), contacts = [];
+  function csvCell(v){ v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  function downloadCsv(name, rows){
+    var csv = rows.map(function(r){ return r.map(csvCell).join(','); }).join('\r\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'}));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  }
+  function contactName(c){ return registered[c.key] || c.key; }
+  function renderContacts(){
+    var out = $('emailOut');
+    var venues = {};
+    contacts.forEach(function(c){ venues[c.venue] = (venues[c.venue] || 0) + (c.news ? 1 : 0); });
+    var html = '<div class="dim small">' + contacts.length + ' email' + (contacts.length === 1 ? '' : 's') + ' &middot; ' +
+      contacts.filter(function(c){ return c.news; }).length + ' want news</div>' +
+      '<div class="row" style="flex-wrap:wrap;gap:6px;margin:8px 0;"><button class="btn sm" data-dl="all">Download all (CSV)</button>' +
+      Object.keys(venues).sort().map(function(v){ return '<button class="btn sm" data-dl="' + esc(v) + '">' + esc(v) + ' news list (' + venues[v] + ')</button>'; }).join('') + '</div>' +
+      '<table class="small" style="width:100%;border-collapse:collapse;">' + contacts.slice().sort(function(a,b){ return contactName(a).localeCompare(contactName(b)); }).map(function(c){
+        return '<tr style="border-top:1px solid var(--border);"><td style="padding:5px 4px;">' + esc(contactName(c)) + '</td><td style="padding:5px 4px;word-break:break-all;">' + esc(c.email) + '</td><td class="dim" style="padding:5px 4px;">' + esc(c.venue) + (c.news ? ' &middot; news' : '') + '</td></tr>';
+      }).join('') + '</table>';
+    out.innerHTML = html;
+  }
+  $('emailOut').addEventListener('click', function(e){
+    var b = e.target.closest('[data-dl]'); if (!b) return;
+    var v = b.dataset.dl, list = v === 'all' ? contacts : contacts.filter(function(c){ return c.venue === v && c.news; });
+    var rows = [['Name', 'Email', 'Venue', 'Wants news', 'Saved']].concat(list.map(function(c){
+      return [contactName(c), c.email, c.venue, c.news ? 'yes' : 'no', c.at && c.at.toDate ? c.at.toDate().toISOString().slice(0, 10) : ''];
+    }));
+    downloadCsv('pingolf-' + (v === 'all' ? 'emails' : v + '-news') + '.csv', rows);
+  });
+  $('gBtn').addEventListener('click', function(){
+    if (auth.currentUser) { auth.signOut(); return; }
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function(err){
+      $('emailOut').innerHTML = '<div class="status err">Google sign-in failed (' + esc(err.code || err.message) + ').</div>';
+    });
+  });
+  auth.onAuthStateChanged(function(u){
+    $('gBtn').textContent = u ? 'Sign out of Google' : 'Sign in with Google';
+    if (!u) { contacts = []; $('emailOut').innerHTML = ''; return; }
+    $('emailOut').innerHTML = '<div class="dim small">Loading&hellip;</div>';
+    db.collection('playerContacts').get().then(function(snap){
+      contacts = snap.docs.map(function(d){ var c = d.data(); c.key = d.id; return c; });
+      renderContacts();
+    }, function(){
+      $('emailOut').innerHTML = '<div class="status err">Signed in as ' + esc(u.email || '') + ', but this account can’t read the emails yet.</div>' +
+        '<div class="dim small" style="margin-top:4px;">Account ID (for the database rules): <code>' + esc(u.uid) + '</code></div>';
+    });
   });
 })();
 </script>

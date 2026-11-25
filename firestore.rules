@@ -17,6 +17,7 @@ rules_version = '2';
 //    which no client can read; the rules compare it here.
 //  - every score must have a sane shape (hole 1-30, strokes 1-8, short name)
 //  - events can only be created or changed by the organizer page
+//  - playerContacts/{name}: optional email, write-only for players, readable only by the organizer's Google sign-in
 //  - everything else is closed
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -161,6 +162,23 @@ service cloud.firestore {
                     && validPin(request.resource.data.pin)
                     && adminProved(request.resource.data);
       allow read, delete: if false;
+    }
+
+    // Optional player email (all events): PIN recovery + an opt-in news list (venue = where it was collected).
+    // A player can only save their own, signed with their PIN (playerUnlock in the same batch).
+    // No web page can read it; only the organizer's Google account (admin.html, Sign in with Google).
+    match /playerContacts/{key} {
+      allow create, update: if request.resource.data.keys().hasOnly(['email', 'news', 'venue', 'at', 'proof'])
+                    && request.resource.data.email is string
+                    && request.resource.data.email.size() <= 100
+                    && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+[.][^@\\s]+$')
+                    && request.resource.data.news is bool
+                    && request.resource.data.venue is string && request.resource.data.venue.size() <= 40
+                    && request.resource.data.at == request.time
+                    && request.resource.data.proof is string
+                    && playerProved(request.resource.data.proof, key);
+      allow read: if false;
+      allow delete: if false;
     }
 
     // One doc per player save. Write-only: the PIN in it can't be read back.

@@ -18,6 +18,8 @@ var COURSES = {
   'xgolf-2026-12': {
     name: 'X-Golf · 18 machines (Dec 2026)',
     brand: 'XGOLF PINGOLF', place: 'Chester Springs, PA',
+    // Email opt-in checkbox wording for this venue (every course asks for an optional email).
+    collectEmail: {venue: 'xgolf', news: 'Send me Clubhouse pinball news'},
     holes: [
       {n:1, name:"Cyclopes", target:200000, label:"200K", img:"cyclopes"},
       {n:2, name:"Mustang", target:50000, label:"50K", img:"mustang-em"},
@@ -75,6 +77,13 @@ var COURSES = {
 var DEFAULT_COURSE = 'xgolf-2026-12';
 function courseInfo(courseId){ return COURSES[courseId] || COURSES[DEFAULT_COURSE]; }
 // Mulligans per card: 2 unless the course says otherwise (PinCrossing plays with 1).
+// Every event asks for an optional email. venue tags where it was collected (for per-venue lists);
+// news = the opt-in checkbox text. A course can override both with collectEmail.
+function courseEmail(courseId){
+  var c = courseInfo(courseId).collectEmail;
+  return {venue: (c && c.venue) || String(courseId || 'pingolf').split('-')[0], news: (c && c.news) || 'Send me Pingolf event news'};
+}
+function validEmail(e){ return typeof e === 'string' && e.length <= 100 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); }
 function courseMulligans(courseId){ var m = courseInfo(courseId).mulligans; return typeof m === 'number' ? m : 2; }
 function mulliganWord(n){ return n + ' mulligan' + (n === 1 ? '' : 's'); }
 function courseHoles(courseId){ return courseInfo(courseId).holes; }

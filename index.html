@@ -13,6 +13,16 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1e1c11" media="(prefers-color-scheme: dark)">
+<script>
+// Link-only events get their own home-screen app (name + start page), e.g. playpingolf.com/basement -> "Basement".
+(function(){
+  var apps = {'basement-test': ['/basement/manifest.webmanifest', 'Basement'], 'pincrossing-test': ['/pincrossing/manifest.webmanifest', 'PinCrossing']};
+  var app = apps[new URLSearchParams(location.search).get('e')];
+  if (!app) return;
+  document.querySelector('link[rel="manifest"]').href = app[0];
+  document.querySelector('meta[name="apple-mobile-web-app-title"]').content = app[1];
+})();
+</script>
 <style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <style>
   :root{
@@ -119,11 +129,11 @@
   section.panel.active{display:block;}
 
   label.field-label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:6px;}
-  input[type="text"], input[type="number"], select{
+  input[type="text"], input[type="number"], input[type="email"], select{
     width:100%;padding:11px 12px;border-radius:9px;border:1px solid var(--border);
     background:var(--surface);color:var(--text);font-family:inherit;font-size:16px;
   }
-  input[type="text"]:focus, input[type="number"]:focus, select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  input[type="text"]:focus, input[type="number"]:focus, input[type="email"]:focus, select:focus{outline:2px solid var(--accent);outline-offset:1px;}
   select{appearance:auto;}
 
   .name-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow);}
@@ -132,6 +142,18 @@
   .pin-input{-webkit-text-security:disc;letter-spacing:.3em;}
   .signin-note{font-size:12px;color:var(--text-dim);margin-top:8px;line-height:1.4;}
   .signin-note.err{color:var(--bad);}
+  .field-label .opt{text-transform:none;letter-spacing:0;}
+  .news-check{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;color:var(--text);cursor:pointer;}
+  .news-check input{width:20px;height:20px;margin:0;flex-shrink:0;accent-color:var(--accent);}
+  .email-why{font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.35;}
+  .email-ask{margin-top:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--gold);background:var(--surface);font-size:14px;line-height:1.4;}
+  .email-ask input[type=email]{margin-top:8px;}
+  .ask-btns{display:flex;gap:8px;margin-top:10px;}
+  .ask-save{flex:1;border:0;border-radius:9px;padding:11px;background:var(--accent);color:var(--accent-ink);font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;}
+  .ask-no{border:1px solid var(--border);border-radius:9px;padding:11px 14px;background:none;color:var(--text-dim);font-family:inherit;font-weight:600;cursor:pointer;}
+  .ask-note{font-size:12.5px;margin-top:6px;color:var(--bad);}
+  .ask-note:empty{display:none;}
+  body.tv-mode .email-ask,body.scores-mode .email-ask{display:none!important;}
   .me-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .me-row[hidden]{display:none;}
   .me-name{font-size:20px;font-weight:700;color:var(--text);overflow-wrap:anywhere;}
@@ -459,6 +481,12 @@
         <input type="text" id="nameInput" placeholder="First and last name" autocomplete="off" maxlength="40">
         <label class="field-label" for="codeInput" style="margin-top:10px;">4-digit PIN</label>
         <input type="text" id="codeInput" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="off" maxlength="4" class="pin-input">
+        <div id="emailWrap" hidden>
+          <label class="field-label" for="emailInput" style="margin-top:10px;">Email <span class="opt">(optional)</span></label>
+          <input type="email" id="emailInput" placeholder="you@example.com" autocomplete="email" inputmode="email" maxlength="100">
+          <label class="news-check"><input type="checkbox" id="newsInput"> <span class="news-text"></span></label>
+          <div class="email-why">Only used to send you your PIN if you forget it, and news if you tick the box.</div>
+        </div>
         <button class="signin-btn" id="signInBtn">Start</button>
         <div class="signin-note" id="signInNote">First time? Pick any 4 digits. Only someone with your PIN can enter your scores. Use it to get back in on any phone.</div>
       </div>
@@ -479,6 +507,13 @@
       </div>
     </div>
 
+    <div class="email-ask" id="emailAsk" hidden>
+      <div><b>Add your email</b> so we can send your PIN if you ever forget it.</div>
+      <input type="email" id="askEmail" placeholder="you@example.com" autocomplete="email" inputmode="email" maxlength="100">
+      <label class="news-check"><input type="checkbox" id="askNews"> <span class="news-text"></span></label>
+      <div class="ask-btns"><button class="ask-save" id="askSave">Save</button><button class="ask-no" id="askNo">No thanks</button></div>
+      <div class="ask-note" id="askNote"></div>
+    </div>
     <div class="install-tip" id="installTip" hidden>
       <img src="/icons/apple-touch-icon.png" alt="">
       <div class="it-text"><b>Put Pingolf on your home screen</b><span id="installHow"></span></div>
@@ -571,7 +606,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-24d"></script>
+<script src="course.js?v=2026-11-25a"></script>
 
 <script>
 (function(){
@@ -616,7 +651,46 @@
     document.getElementById('signInWrap').hidden = !!me;
     document.getElementById('meRow').hidden = !me;
     document.getElementById('meName').textContent = me ? me.name + (MULTI_CARD ? ' \u00b7 Card ' + myCardNo() : '') : '';
+    showEmailUI();
   }
+
+  // ---------- Emails (every event; checkbox wording per course via courseEmail) ----------
+  // Stored in playerContacts/{key}, which no web page can read (only the organizer's Google account, from admin).
+  // Written in its own batch after sign-in, so a problem here can never block signing in or scoring.
+  function emailCfg(){ return CURRENT_EVENT ? courseEmail(CURRENT_EVENT.course) : null; }
+  function emailDoneKey(k){ return 'pingolf_email_' + k; }
+  function emailDone(k){ try { return !!localStorage.getItem(emailDoneKey(k)); } catch(e){ return true; } }
+  function showEmailUI(){
+    var cfg = emailCfg();
+    document.querySelectorAll('.news-text').forEach(function(el){ el.textContent = cfg ? cfg.news : ''; });
+    document.getElementById('emailWrap').hidden = !cfg || !!me;
+    document.getElementById('emailAsk').hidden = !cfg || !me || emailDone(me.key);
+  }
+  function saveContact(who, email, news, cb){
+    var cfg = emailCfg();
+    if (!cfg || !validEmail(email)) { cb(false); return; }
+    var batch = db.batch(), pref = proofRef();
+    batch.set(pref, {playerKey: who.key, pin: who.code, at: FV.serverTimestamp()});
+    batch.set(db.collection('playerContacts').doc(who.key), {email: email, news: !!news, venue: cfg.venue, at: FV.serverTimestamp(), proof: pref.id});
+    batch.commit().then(function(){
+      try { localStorage.setItem(emailDoneKey(who.key), '1'); } catch(e){}
+      cb(true);
+    }, function(){ cb(false); });
+  }
+  document.getElementById('askSave').addEventListener('click', function(){
+    var email = document.getElementById('askEmail').value.trim(), note = document.getElementById('askNote'), btn = this;
+    if (!me) return;
+    if (!validEmail(email)) { note.textContent = 'That doesn\u2019t look like an email address.'; return; }
+    btn.disabled = true; note.textContent = '';
+    saveContact(me, email, document.getElementById('askNews').checked, function(ok){
+      btn.disabled = false;
+      if (ok) showEmailUI(); else note.textContent = 'Couldn\u2019t save it. Check your signal and try again.';
+    });
+  });
+  document.getElementById('askNo').addEventListener('click', function(){
+    if (me) { try { localStorage.setItem(emailDoneKey(me.key), 'no'); } catch(e){} }
+    showEmailUI();
+  });
   function signInNote(msg, isErr){
     var el = document.getElementById('signInNote');
     el.textContent = msg; el.className = 'signin-note' + (isErr ? ' err' : '');
@@ -657,6 +731,9 @@
   document.getElementById('signInBtn').addEventListener('click', function(){
     var name = nameInput.value.trim().replace(/\s+/g, ' ').slice(0, 40);
     var code = codeInput.value.trim();
+    var emailIn = document.getElementById('emailInput'), email = emailCfg() ? emailIn.value.trim() : '';
+    var news = document.getElementById('newsInput').checked;
+    if (email && !validEmail(email)) { signInNote('That email doesn\u2019t look right. Fix it or leave it blank.', true); emailIn.focus(); return; }
     if (!name) { signInNote('Type your name first.', true); nameInput.focus(); return; }
     if (!/^[0-9]{4}$/.test(code)) { signInNote('Your PIN is 4 digits.', true); codeInput.focus(); return; }
     var key = playerKey(name);
@@ -665,6 +742,16 @@
       me = {key: key, name: realName, code: code};
       try { localStorage.setItem('pingolf_me', JSON.stringify(me)); localStorage.setItem('pingolf_name', realName); } catch(e){}
       codeInput.value = ''; btn.disabled = false;
+      if (email) {
+        // Hide the "Add your email" card while this saves; bring it back if the save fails.
+        try { localStorage.setItem(emailDoneKey(key), 'saving'); } catch(e){}
+        var who = me;
+        saveContact(who, email, news, function(ok){
+          if (!ok) { try { localStorage.removeItem(emailDoneKey(who.key)); } catch(e){} }
+          showEmailUI();
+        });
+        emailIn.value = ''; document.getElementById('newsInput').checked = false;
+      }
       showMe(); renderScoreTab(); renderLeaderboard();
     };
     db.collection('players').doc(key).get().then(function(snap){
@@ -1589,6 +1676,7 @@
     if (url.searchParams.get('e') !== ev.id) { url.searchParams.set('e', ev.id); history.replaceState(null, '', url); }
     useCourse(ev.course, ev.removedHoles || [], ev.closedHoles || []);
     var ci = courseInfo(ev.course);
+    showEmailUI();
     document.getElementById('brandName').textContent = ci.brand || 'PINGOLF';
     document.getElementById('brandPlace').textContent = ci.place || '';
     document.querySelectorAll('a.print-link').forEach(function(a){ a.href = 'scoring.html?course=' + encodeURIComponent(ev.course) + '&e=' + encodeURIComponent(ev.id); });
