@@ -98,21 +98,23 @@ var COURSES = {
 };
 // The Manor: 9 machines picked at random from VENUE_MACHINES.manor (Rodney: "randomly pick 9 to get us started"),
 // in walking order by room (Garage, Breezeway, Back Room, Lodge). Home course (link-only), 1 mulligan, draft targets.
+// Art: IPDB (AFM, Space Shuttle, Mystic, Flight 2000, Stranger Things Premium translite); Pinside game photos cropped from
+// the polaroid frame (Deadpool Pro, Iron Maiden LOTB Pro, Metallica Remastered Premium); TWD = X-Golf photo.
 COURSES['manor-2026'] = {
   name: 'The Manor · 9 machines (draft)',
   brand: 'THE MANOR PINGOLF', place: 'The Manor', mulligans: 1,
   group: 'home', menuName: 'The Manor',
   logo: 'img/manor-logo.jpg', // shown in the header instead of the brand text (The Manor Pinball logo, from Rodney)
   holes: [
-    {n:1, name:"Attack From Mars (Remake)", target:2000000000, label:"2B"},
-    {n:2, name:"Space Shuttle", target:500000, label:"500K"},
-    {n:3, name:"Mystic", target:200000, label:"200K"},
-    {n:4, name:"Metallica Remastered (Premium)", target:30000000, label:"30M"},
+    {n:1, name:"Attack From Mars (Remake)", img:"attack-from-mars", target:2000000000, label:"2B"},
+    {n:2, name:"Space Shuttle", img:"space-shuttle", target:500000, label:"500K"},
+    {n:3, name:"Mystic", img:"mystic", target:200000, label:"200K"},
+    {n:4, name:"Metallica Remastered (Premium)", img:"metallica-remastered", target:30000000, label:"30M"},
     {n:5, name:"The Walking Dead (Pro)", img:"walking-dead", target:75000000, label:"75M"},
-    {n:6, name:"Iron Maiden: Legacy of the Beast", target:100000000, label:"100M"},
-    {n:7, name:"Deadpool (Pro)", target:75000000, label:"75M"},
-    {n:8, name:"Stranger Things (Premium)", target:150000000, label:"150M"},
-    {n:9, name:"Flight 2000", target:250000, label:"250K"}
+    {n:6, name:"Iron Maiden: Legacy of the Beast", img:"iron-maiden-lotb", target:100000000, label:"100M"},
+    {n:7, name:"Deadpool (Pro)", img:"deadpool-pro", target:75000000, label:"75M"},
+    {n:8, name:"Stranger Things (Premium)", img:"stranger-things-premium", target:150000000, label:"150M"},
+    {n:9, name:"Flight 2000", img:"flight-2000", target:250000, label:"250K"}
   ]
 };
 // Machine rosters per location (not courses): every machine at the venue, so a course can be
