@@ -96,6 +96,24 @@ var COURSES = {
     ]
   }
 };
+// The Manor: 9 machines picked at random from VENUE_MACHINES.manor (Rodney: "randomly pick 9 to get us started"),
+// in walking order by room (Garage, Breezeway, Back Room, Lodge). Home course (link-only), 1 mulligan, draft targets.
+COURSES['manor-2026'] = {
+  name: 'The Manor · 9 machines (draft)',
+  brand: 'THE MANOR PINGOLF', place: 'The Manor', mulligans: 1,
+  group: 'home', menuName: 'The Manor',
+  holes: [
+    {n:1, name:"Attack From Mars (Remake)", target:2000000000, label:"2B"},
+    {n:2, name:"Space Shuttle", target:500000, label:"500K"},
+    {n:3, name:"Mystic", target:200000, label:"200K"},
+    {n:4, name:"Metallica Remastered (Premium)", target:30000000, label:"30M"},
+    {n:5, name:"The Walking Dead (Pro)", img:"walking-dead", target:75000000, label:"75M"},
+    {n:6, name:"Iron Maiden: Legacy of the Beast", target:100000000, label:"100M"},
+    {n:7, name:"Deadpool (Pro)", target:75000000, label:"75M"},
+    {n:8, name:"Stranger Things (Premium)", target:150000000, label:"150M"},
+    {n:9, name:"Flight 2000", target:250000, label:"250K"}
+  ]
+};
 // Machine rosters per location (not courses): every machine at the venue, so a course can be
 // picked from them later. The Manor: from Match Play "The Manor Mega Matchplay" arenas
 // (app.matchplay.events/tournaments/245339/arenas), Nov 2026; room = where it sits; opdb = Open Pinball DB id.
