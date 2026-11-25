@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="ball" cx="38%" cy="32%" r="70%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".35" stop-color="#d9dde2"/>
+      <stop offset=".8" stop-color="#7c838c"/>
+      <stop offset="1" stop-color="#4a4f56"/>
+    </radialGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1e1c11"/><stop offset="1" stop-color="#0c0b06"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- green -->
+  <ellipse cx="256" cy="372" rx="170" ry="44" fill="#136b3e"/>
+  <ellipse cx="256" cy="366" rx="170" ry="40" fill="#3fae6f"/>
+  <!-- cup -->
+  <ellipse cx="300" cy="366" rx="26" ry="8" fill="#0c0b06"/>
+  <!-- flag pole + flag -->
+  <rect x="296" y="120" width="8" height="248" rx="4" fill="#f2eddd"/>
+  <path d="M304 124 L392 152 L304 182 Z" fill="#e0ac3f"/>
+  <!-- pinball -->
+  <circle cx="196" cy="300" r="62" fill="url(#ball)"/>
+  <ellipse cx="196" cy="366" rx="48" ry="8" fill="#000" opacity=".25"/>
+</svg>

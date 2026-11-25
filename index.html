@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Pingolf Live</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pingolf">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1e1c11" media="(prefers-color-scheme: dark)">
 <style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <style>
   :root{
@@ -74,6 +83,20 @@
   .event-select{margin-top:8px;padding:8px 10px;font-weight:700;font-size:16px;}
   .event-note{margin-top:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--gold);background:var(--surface-2);font-size:14px;line-height:1.4;}
   .event-note b{display:block;font-size:15px;margin-bottom:2px;}
+  /* Home-screen app: the header runs under the iPhone status bar. */
+  @media (display-mode: standalone){
+    header.top{padding-top:calc(18px + env(safe-area-inset-top,0px));}
+  }
+  @media (display-mode: standalone) and (max-width:480px){
+    header.top{padding-top:calc(10px + env(safe-area-inset-top,0px));}
+  }
+  .install-tip{display:flex;gap:12px;align-items:center;margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font-size:13px;line-height:1.35;}
+  .install-tip img{width:40px;height:40px;border-radius:9px;flex-shrink:0;}
+  .install-tip .it-text{flex:1;}
+  .install-tip b{display:block;font-size:14px;}
+  .install-tip button{flex-shrink:0;border:0;background:none;color:var(--text-dim);font-size:20px;line-height:1;padding:4px;cursor:pointer;}
+  .install-tip button.it-go{background:var(--accent);color:var(--accent-ink);font-size:14px;font-weight:700;border-radius:8px;padding:8px 12px;}
+  body.tv-mode .install-tip,body.scores-mode .install-tip{display:none!important;}
   body.tv-mode .event-select{display:none;}
   .tv-qr{display:none;}
   body.tv-mode header.top .inner{position:relative;padding-right:15vw;}
@@ -425,6 +448,12 @@
       </div>
     </div>
 
+    <div class="install-tip" id="installTip" hidden>
+      <img src="/icons/apple-touch-icon.png" alt="">
+      <div class="it-text"><b>Put Pingolf on your home screen</b><span id="installHow"></span></div>
+      <button class="it-go" id="installGo" hidden>Install</button>
+      <button id="installX" aria-label="Dismiss">&times;</button>
+    </div>
     <div class="next-card-wrap" id="nextCardWrap"></div>
     <div class="event-note" id="eventNote" hidden></div>
     <div class="hole-grid" id="holeGrid"></div>
@@ -1451,6 +1480,51 @@
   }, function(err){
     setConnNote("Can't reach the scoreboard (" + err.message + '). Reload to try again.', true);
   });
+})();
+</script>
+<script>
+// Home-screen app (PWA): offline shell + "add to home screen" tip.
+(function(){
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); });
+  }
+  var standalone = window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  var special = /tv|scores/i.test(location.hash);
+  var dismissed = false;
+  try { dismissed = localStorage.getItem('pingolf_install_x') === '1'; } catch(e){}
+  if (standalone || special || dismissed) return;
+
+  var tip = document.getElementById('installTip');
+  var how = document.getElementById('installHow');
+  var go = document.getElementById('installGo');
+  var ua = navigator.userAgent;
+  var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var deferred = null;
+
+  document.getElementById('installX').addEventListener('click', function(){
+    tip.hidden = true;
+    try { localStorage.setItem('pingolf_install_x', '1'); } catch(e){}
+  });
+
+  if (isIOS) {
+    how.textContent = 'Tap the Share button, then “Add to Home Screen”. Sign in once there with your name and PIN.';
+    tip.hidden = false;
+  }
+  // Android Chrome / Edge: real install button.
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferred = e;
+    how.textContent = 'Opens full screen like an app. Sign in once there with your name and PIN.';
+    go.hidden = false;
+    tip.hidden = false;
+  });
+  go.addEventListener('click', function(){
+    if (!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.finally(function(){ deferred = null; tip.hidden = true; });
+  });
+  window.addEventListener('appinstalled', function(){ tip.hidden = true; });
 })();
 </script>
 </body>
