@@ -127,6 +127,7 @@ COURSES['chad-2026'] = {
   name: "Chad's House · 14 machines (draft)",
   brand: "CHAD'S HOUSE PINGOLF", place: "Chad's House", mulligans: 1,
   group: 'home', menuName: "Chad's House",
+  logo: 'img/chad-logo.jpg', // First State Flippers / Delaware Pinball logo, from Rodney
   holes: [
     {n:1, name:"Attack from Mars", img:"attack-from-mars-1995", target:3000000000, label:"3B"},
     {n:2, name:"Dirty Harry", img:"dirty-harry", target:300000000, label:"300M"},
