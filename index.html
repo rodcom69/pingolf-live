@@ -889,6 +889,12 @@
     if (!name) { signInNote('Type your name first.', true); nameInput.focus(); return; }
     if (!/^[0-9]{4}$/.test(code)) { signInNote('Your PIN is 4 digits.', true); codeInput.focus(); return; }
     var key = playerKey(name);
+    // A player whose board name was lengthened in admin (signed up as "Rodney", shows as "Rodney Comegys")
+    // can type either one: the full board name finds the original sign-up, so it never makes a second player.
+    if (!PLAYER_NAMES[key]) {
+      var orig = Object.keys(PLAYER_NAMES).find(function(k){ return String(PLAYER_NAMES[k]).toLowerCase() === key; });
+      if (orig) key = orig;
+    }
     var btn = this; btn.disabled = true; signInNote('Checking…');
     db.collection('players').doc(key).get().then(function(snap){
       btn.disabled = false;
