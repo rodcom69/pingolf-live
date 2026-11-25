@@ -64,7 +64,7 @@ var COURSES = {
     name: 'Basement · 5 machines',
     brand: 'BASEMENT PINGOLF', place: 'Home course', mulligans: 1,
     holes: [
-      {n:1, name:"Batman 66 (Catwoman)", img:"pc-batman-66", target:200000000, label:"200M"},
+      {n:1, name:"Batman 66 (Catwoman)", img:"batman-66-catwoman", target:200000000, label:"200M"},
       {n:2, name:"Harry Potter CE", img:"harry-potter-ce", target:400000000, label:"400M"},
       {n:3, name:"JAWS Premium", img:"pc-jaws", target:250000000, label:"250M"},
       {n:4, name:"Star Wars: Fall of the Empire CE", img:"sw-fall-of-the-empire", target:300000000, label:"300M"},
