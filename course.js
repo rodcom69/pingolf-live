@@ -124,9 +124,9 @@ COURSES['manor-2026'] = {
 // Shaker, Sinbad, White Water translite); Pinside polaroid crops (Godzilla Premium, D&D Tyrant's Eye Premium);
 // reused: iron-maiden-lotb (Manor), pc-jaws, metallica (X-Golf Pro translite).
 COURSES['chad-2026'] = {
-  name: "Chad's · 14 machines (draft)",
-  brand: "CHAD'S PINGOLF", place: "Chad's", mulligans: 1,
-  group: 'home', menuName: 'Chad',
+  name: "Chad's House · 14 machines (draft)",
+  brand: "CHAD'S HOUSE PINGOLF", place: "Chad's House", mulligans: 1,
+  group: 'home', menuName: "Chad's House",
   holes: [
     {n:1, name:"Attack from Mars", img:"attack-from-mars-1995", target:3000000000, label:"3B"},
     {n:2, name:"Dirty Harry", img:"dirty-harry", target:300000000, label:"300M"},
