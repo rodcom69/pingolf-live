@@ -151,6 +151,12 @@
   .forgot-list button{text-align:left;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;}
   .forgot-list .none{font-size:13px;color:var(--text-dim);}
   .forgot-pin{font-size:13.5px;color:var(--text);}
+  .forgot-link.small{font-size:12.5px;margin-top:4px;}
+  .np-title{font-family:"Teko",Impact,sans-serif;font-size:26px;line-height:1.1;}
+  .np-sub{font-size:14px;margin-top:4px;line-height:1.4;}
+  .np-alike{margin-top:10px;padding:10px 12px;border-radius:9px;border:1px solid #d9a441;background:rgba(217,164,65,.12);font-size:13.5px;}
+  .np-alike button{display:block;width:100%;margin-top:6px;text-align:left;padding:9px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer;}
+  body.asking-email .install-tip{display:none!important;}
   .forgot-pin:empty{display:none;}
   .mail-pin-btn{display:block;width:100%;margin:8px 0 6px;border:0;border-radius:9px;padding:11px;background:var(--accent);color:var(--accent-ink);font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;}
   .mail-pin-btn:disabled{opacity:.5;}
@@ -489,32 +495,41 @@
   <section class="panel active" id="panel-score">
     <div class="name-card">
       <div id="signInWrap">
-        <label class="field-label" for="nameInput">Your name</label>
-        <input type="text" id="nameInput" placeholder="First and last name" autocomplete="off" maxlength="40">
-        <label class="field-label" for="codeInput" style="margin-top:10px;">4-digit PIN</label>
-        <input type="text" id="codeInput" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="off" maxlength="4" class="pin-input">
-        <div id="emailWrap" hidden>
-          <label class="field-label" for="emailInput" style="margin-top:10px;">Email <span class="opt">(optional)</span></label>
+        <div id="signInMain">
+          <label class="field-label" for="nameInput">Your name</label>
+          <input type="text" id="nameInput" placeholder="First and last name" autocomplete="off" maxlength="40">
+          <label class="field-label" for="codeInput" style="margin-top:10px;">4-digit PIN</label>
+          <input type="text" id="codeInput" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="off" maxlength="4" class="pin-input">
+          <button class="signin-btn" id="signInBtn">Start</button>
+          <div class="signin-note" id="signInNote">New here? Type your name and pick any 4 digits as your PIN.</div>
+          <button class="forgot-link" id="forgotLink" type="button">Forgot your name or PIN?</button>
+          <div class="forgot-box" id="forgotBox" hidden>
+            <div id="mailPinWrap" hidden>
+              <b>Get your name and PIN by email</b>
+              <input type="email" id="mailPinEmail" placeholder="The email you signed up with" autocomplete="email" inputmode="email" maxlength="100">
+              <button class="mail-pin-btn" id="mailPinBtn" type="button">Send</button>
+              <div class="forgot-pin" id="mailPinNote"></div>
+              <button class="forgot-link small" id="noEmailLink" type="button">No email on file?</button>
+            </div>
+            <div id="noEmailBox">
+              <b>Find your name</b>
+              <input type="text" id="forgotSearch" placeholder="Start typing your name" autocomplete="off" maxlength="40">
+              <div class="forgot-list" id="forgotList"></div>
+              <div class="forgot-pin" style="margin-top:10px;">Forgot your PIN? Find the organizer. They can reset it in a few seconds.</div>
+            </div>
+          </div>
+        </div>
+        <div id="newPlayer" hidden>
+          <div class="np-title">Welcome! One more step.</div>
+          <div class="np-sub">You're signing up as <b id="npName"></b>. That's the name you'll sign in with.</div>
+          <div id="npAlike"></div>
+          <label class="field-label" for="emailInput" style="margin-top:12px;">Your email</label>
           <input type="email" id="emailInput" placeholder="you@example.com" autocomplete="email" inputmode="email" maxlength="100">
           <label class="news-check"><input type="checkbox" id="newsInput"> <span class="news-text"></span></label>
-          <div class="email-why">Only used to send you your PIN if you forget it, and news if you tick the box.</div>
-        </div>
-        <button class="signin-btn" id="signInBtn">Start</button>
-        <div class="signin-note" id="signInNote">First time? Pick any 4 digits. Only someone with your PIN can enter your scores. Use it to get back in on any phone.</div>
-        <button class="forgot-link" id="forgotLink" type="button">Forgot your name or PIN?</button>
-        <div class="forgot-box" id="forgotBox" hidden>
-          <div id="mailPinWrap" hidden>
-            <b>Email me my name and PIN</b>
-            <input type="email" id="mailPinEmail" placeholder="The email you gave when you signed up" autocomplete="email" inputmode="email" maxlength="100">
-            <button class="mail-pin-btn" id="mailPinBtn" type="button">Send</button>
-            <div class="forgot-pin" id="mailPinNote"></div>
-            <div class="forgot-or">or</div>
-          </div>
-          <b>Find your name</b>
-          <input type="text" id="forgotSearch" placeholder="Start typing your name" autocomplete="off" maxlength="40">
-          <div class="forgot-list" id="forgotList"></div>
-          <b style="margin-top:12px;">Forgot your PIN?</b>
-          <div class="forgot-pin">Find the organizer. They can reset it in a few seconds, then you sign in with your name and a new PIN.</div>
+          <div class="email-why">We use it to send your name and PIN if you ever forget them, and news only if you tick the box.</div>
+          <button class="signin-btn" id="npCreate">Create my player</button>
+          <div class="signin-note" id="npNote"></div>
+          <button class="forgot-link" id="npBack" type="button">&larr; Change my name or PIN</button>
         </div>
       </div>
       <div class="me-row" id="meRow" hidden>
@@ -690,8 +705,10 @@
   function showEmailUI(){
     var cfg = emailCfg();
     document.querySelectorAll('.news-text').forEach(function(el){ el.textContent = cfg ? cfg.news : ''; });
-    document.getElementById('emailWrap').hidden = !cfg || !!me;
-    document.getElementById('emailAsk').hidden = !cfg || !me || emailDone(me.key);
+    var ask = document.getElementById('emailAsk');
+    ask.hidden = !cfg || !me || emailDone(me.key);
+    // One extra card at a time: the home-screen tip waits until the email card is done or dismissed.
+    document.body.classList.toggle('asking-email', !ask.hidden);
   }
   function saveContact(who, email, news, cb){
     var cfg = emailCfg();
@@ -732,6 +749,12 @@
   // and mails the sign-in name + PIN to that address only. Same answer whether or not it's on file.
   var PIN_HELPER_URL = 'https://script.google.com/macros/s/AKfycbyNFRqRNmgEcSsZvJUGjiWXuxs8EWNDZdHeq3WZc8vYGm1hztOIiitP0Rx3Otu3ENf0/exec';
   document.getElementById('mailPinWrap').hidden = !PIN_HELPER_URL;
+  // With the emailer on, the name search sits behind "No email on file?".
+  document.getElementById('noEmailBox').hidden = !!PIN_HELPER_URL;
+  document.getElementById('noEmailLink').addEventListener('click', function(){
+    var b = document.getElementById('noEmailBox'); b.hidden = !b.hidden;
+    if (!b.hidden) document.getElementById('forgotSearch').focus();
+  });
   document.getElementById('mailPinEmail').addEventListener('input', function(){ document.getElementById('mailPinBtn').disabled = false; document.getElementById('mailPinNote').textContent = ''; });
   document.getElementById('mailPinBtn').addEventListener('click', function(){
     var email = document.getElementById('mailPinEmail').value.trim(), note = document.getElementById('mailPinNote'), btn = this;
@@ -747,7 +770,10 @@
   document.getElementById('forgotLink').addEventListener('click', function(){
     var box = document.getElementById('forgotBox');
     box.hidden = !box.hidden;
-    if (!box.hidden) { var f = document.getElementById('forgotSearch'); f.value = nameInput.value; renderForgot(); f.focus(); }
+    if (!box.hidden) {
+      var f = document.getElementById('forgotSearch'); f.value = nameInput.value; renderForgot();
+      (PIN_HELPER_URL ? document.getElementById('mailPinEmail') : f).focus();
+    }
   });
   function renderForgot(){
     var q = document.getElementById('forgotSearch').value.trim().toLowerCase(), list = document.getElementById('forgotList');
@@ -766,7 +792,6 @@
     var b = e.target.closest('button[data-key]'); if (!b) return;
     // Sign-in matches on the key (the name as first typed), so fill that in exactly.
     nameInput.value = b.dataset.key.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
-    resetNewNameConfirm();
     document.getElementById('forgotBox').hidden = true;
     var shown = PLAYER_NAMES[b.dataset.key] || '';
     signInNote((shown.toLowerCase() !== b.dataset.key ? 'You signed up as \u201c' + nameInput.value + '\u201d. ' : '') + 'Now enter your 4-digit PIN.', false);
@@ -774,7 +799,6 @@
   });
 
   // New names take a second tap, with "did you mean" suggestions, so a typo doesn't create a second player.
-  var confirmNewKey = null;
   function nameDistance(a, b){
     var prev = [], cur, i, j;
     for (j = 0; j <= b.length; j++) prev[j] = j;
@@ -794,76 +818,118 @@
              (parts.length === 1 && kp[0] === first);
     }).slice(0, 3).map(function(k){ return PLAYER_NAMES[k]; });
   }
-  function resetNewNameConfirm(){
-    confirmNewKey = null;
-    document.getElementById('signInBtn').textContent = 'Start';
-  }
-  nameInput.addEventListener('input', resetNewNameConfirm);
 
+  // Signed in: remember this phone's player. A new player's email is saved right after, in its own batch.
+  function signedIn(key, realName, code, email, news){
+    me = {key: key, name: realName, code: code};
+    try { localStorage.setItem('pingolf_me', JSON.stringify(me)); localStorage.setItem('pingolf_name', realName); } catch(e){}
+    codeInput.value = '';
+    if (email) {
+      // Hide the "Add your email" card while this saves; bring it back if the save fails.
+      try { localStorage.setItem(emailDoneKey(key), 'saving'); } catch(e){}
+      var who = me;
+      saveContact(who, email, news, function(ok){
+        if (!ok) { try { localStorage.removeItem(emailDoneKey(who.key)); } catch(e){} }
+        showEmailUI();
+      });
+    }
+    showSignInStep('main');
+    showMe(); renderScoreTab(); renderLeaderboard();
+  }
+  function showSignInStep(step){
+    document.getElementById('signInMain').hidden = step !== 'main';
+    document.getElementById('newPlayer').hidden = step !== 'new';
+  }
+
+  // Step 1: name + PIN. A returning player is checked against their PIN; a name nobody has used
+  // goes to step 2 (welcome + required email) before anything is written.
+  var pendingNew = null;
   document.getElementById('signInBtn').addEventListener('click', function(){
     var name = nameInput.value.trim().replace(/\s+/g, ' ').slice(0, 40);
     var code = codeInput.value.trim();
-    var emailIn = document.getElementById('emailInput'), email = emailCfg() ? emailIn.value.trim() : '';
-    var news = document.getElementById('newsInput').checked;
-    if (email && !validEmail(email)) { signInNote('That email doesn\u2019t look right. Fix it or leave it blank.', true); emailIn.focus(); return; }
     if (!name) { signInNote('Type your name first.', true); nameInput.focus(); return; }
     if (!/^[0-9]{4}$/.test(code)) { signInNote('Your PIN is 4 digits.', true); codeInput.focus(); return; }
     var key = playerKey(name);
-    var btn = this; btn.disabled = true; signInNote('Checking\u2026');
-    var done = function(realName){
-      me = {key: key, name: realName, code: code};
-      try { localStorage.setItem('pingolf_me', JSON.stringify(me)); localStorage.setItem('pingolf_name', realName); } catch(e){}
-      codeInput.value = ''; btn.disabled = false;
-      if (email) {
-        // Hide the "Add your email" card while this saves; bring it back if the save fails.
-        try { localStorage.setItem(emailDoneKey(key), 'saving'); } catch(e){}
-        var who = me;
-        saveContact(who, email, news, function(ok){
-          if (!ok) { try { localStorage.removeItem(emailDoneKey(who.key)); } catch(e){} }
-          showEmailUI();
-        });
-        emailIn.value = ''; document.getElementById('newsInput').checked = false;
-      }
-      showMe(); renderScoreTab(); renderLeaderboard();
-    };
+    var btn = this; btn.disabled = true; signInNote('Checking…');
     db.collection('players').doc(key).get().then(function(snap){
+      btn.disabled = false;
       if (snap.exists) {
-        // Returning player: check the PIN.
         var batch = db.batch();
         batch.set(proofRef(), {playerKey: key, pin: code, at: FV.serverTimestamp()});
-        return batch.commit().then(function(){ done(snap.data().name || name); }, function(){
+        btn.disabled = true;
+        return batch.commit().then(function(){ btn.disabled = false; signInNote(''); signedIn(key, snap.data().name || name, code); }, function(){
           btn.disabled = false;
-          signInNote(snap.data().name + ' is already signed up and that PIN doesn\'t match. Try again, or ask the organizer to reset it.', true);
+          signInNote(snap.data().name + ' is already signed up and that PIN doesn\'t match. Try again, or tap “Forgot your name or PIN?”', true);
         });
       }
-      // New player: confirm first (catches typos), then lock this name to this PIN.
-      if (confirmNewKey !== key) {
-        confirmNewKey = key;
-        btn.disabled = false;
-        btn.textContent = 'Yes, I\u2019m new \u2014 sign me up';
-        var alike = similarNames(key);
-        signInNote('No one named \u201c' + name + '\u201d has played yet. ' +
-          (alike.length ? 'Did you mean ' + alike.join(' or ') + '? If so, fix your name above. ' : 'Check the spelling. ') +
-          'If you\u2019re new, tap the button again.', !!alike.length);
-        return;
-      }
-      resetNewNameConfirm();
-      var batch = db.batch();
-      batch.set(db.collection('players').doc(key), {name: name, at: FV.serverTimestamp()});
-      batch.set(db.collection('playerSecrets').doc(key), {pin: code});
-      return batch.commit().then(function(){ done(name); }, function(){
-        btn.disabled = false;
-        signInNote('Could not sign you up. Check your connection and try again.', true);
-      });
+      signInNote('New here? Type your name and pick any 4 digits as your PIN.');
+      openNewPlayer(name, key, code);
     }).catch(function(err){
       btn.disabled = false;
       signInNote('Could not reach the scoreboard (' + err.message + '). Try again.', true);
+    });
+  });
+
+  // Step 2 (new players only): check the name, give an email (required), create the player.
+  function openNewPlayer(name, key, code){
+    pendingNew = {name: name, key: key, code: code};
+    document.getElementById('npName').textContent = name;
+    var alike = similarNames(key);
+    document.getElementById('npAlike').innerHTML = alike.length
+      ? '<div class="np-alike">Already played with us? These names are taken:' + alike.map(function(n){
+          return '<button type="button" data-name="' + esc(n) + '">I’m ' + esc(n) + '</button>'; }).join('') + '</div>'
+      : '';
+    document.getElementById('npNote').textContent = '';
+    document.getElementById('npNote').className = 'signin-note';
+    showSignInStep('new');
+    document.getElementById('emailInput').focus();
+  }
+  document.getElementById('npAlike').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-name]'); if (!b) return;
+    // Sign-in uses the name as first typed (the player key), which can differ from a lengthened display name.
+    var want = b.dataset.name.toLowerCase(), key = Object.keys(PLAYER_NAMES).find(function(k){ return PLAYER_NAMES[k].toLowerCase() === want; }) || want;
+    nameInput.value = key.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+    codeInput.value = '';
+    pendingNew = null;
+    showSignInStep('main');
+    signInNote('Welcome back! Enter your PIN.', false);
+    codeInput.focus();
+  });
+  document.getElementById('npBack').addEventListener('click', function(){
+    pendingNew = null;
+    showSignInStep('main');
+    nameInput.focus();
+  });
+  document.getElementById('npCreate').addEventListener('click', function(){
+    var p = pendingNew, note = document.getElementById('npNote'), btn = this;
+    if (!p) { showSignInStep('main'); return; }
+    var email = document.getElementById('emailInput').value.trim(), news = document.getElementById('newsInput').checked;
+    if (!validEmail(email)) {
+      note.textContent = email ? 'That email doesn’t look right.' : 'Please add your email. It’s how you get your PIN back if you forget it.';
+      note.className = 'signin-note err';
+      document.getElementById('emailInput').focus();
+      return;
+    }
+    btn.disabled = true; note.className = 'signin-note'; note.textContent = 'Creating your player…';
+    var batch = db.batch();
+    batch.set(db.collection('players').doc(p.key), {name: p.name, at: FV.serverTimestamp()});
+    batch.set(db.collection('playerSecrets').doc(p.key), {pin: p.code});
+    batch.commit().then(function(){
+      btn.disabled = false; pendingNew = null;
+      document.getElementById('emailInput').value = ''; document.getElementById('newsInput').checked = false;
+      signInNote('New here? Type your name and pick any 4 digits as your PIN.');
+      signedIn(p.key, p.name, p.code, email, news);
+    }, function(){
+      btn.disabled = false;
+      note.className = 'signin-note err';
+      note.textContent = 'Could not create your player. That name may have just been taken, or the signal dropped. Go back and try again.';
     });
   });
   document.getElementById('switchBtn').addEventListener('click', function(){
     me = null;
     try { localStorage.removeItem('pingolf_me'); } catch(e){}
     nameInput.value = ''; codeInput.value = '';
+    pendingNew = null; showSignInStep('main');
     signInNote('Enter your name and your 4-digit PIN.');
     showMe(); renderScoreTab(); renderLeaderboard();
   });
