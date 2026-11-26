@@ -15,7 +15,7 @@ rules_version = '2';
 //  - the organizer page (admin.html) can change anything, but every change must come
 //    with a one-time unlock doc carrying the admin PIN. The PIN lives in secrets/admin,
 //    which no client can read; the rules compare it here.
-//  - every score must have a sane shape (hole 1-30, strokes 1-9 (9 = objective hole not done), short name)
+//  - every score must have a sane shape (hole 1-60, strokes 1-9 (9 = objective hole not done), short name)
 //  - events can only be created or changed by the organizer page
 //  - playerContacts/{name}: optional email, write-only for players, readable only by the organizer's Google sign-in
 //  - location admins (admin.html?loc=<id>): each location has its own PIN in secrets/loc_<id> (set by the organizer,
@@ -47,7 +47,7 @@ service cloud.firestore {
                                'ball', 'rawScore', 'mulligan', 'void', 'unlockId', 'editedByAdmin', 'proof', 'card'])
         && validName(d.playerName)
         && d.playerKey is string && d.playerKey.size() > 0 && d.playerKey.size() <= 40
-        && d.hole is int && d.hole >= 1 && d.hole <= 30
+        && d.hole is int && d.hole >= 1 && d.hole <= 60
         && d.strokes is int && d.strokes >= 1 && d.strokes <= 9
         && d.method in ['ball', 'chart']
         && d.ts is int
@@ -235,6 +235,26 @@ service cloud.firestore {
                     && request.resource.data.at == request.time
                     && request.resource.data.pin == get(db('secrets/admin')).data.pin;
       allow read, update, delete: if false;
+    }
+
+    // Courses a location builds itself (admin > Build a course; The Manor first, 2026-11-26).
+    // Anyone can read them (the scorecard needs them). A location can create/update only its own
+    // (loc unchanged); the organizer can too. Never deleted from a page (an event may use it).
+    function courseShape(d) {
+      return d.keys().hasOnly(['loc', 'name', 'holes', 'mulligans', 'unlockId', 'updatedAt'])
+        && d.loc is string && d.loc.matches('^[a-z0-9-]{1,30}$')
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 60
+        && d.holes is list && d.holes.size() >= 1 && d.holes.size() <= 60
+        && d.mulligans is int && d.mulligans >= 0 && d.mulligans <= 2
+        && d.updatedAt is int;
+    }
+    match /courses/{courseId} {
+      allow read: if true;
+      allow create: if courseId.matches('^c-[a-z0-9-]{1,40}$') && courseShape(request.resource.data)
+                    && (locProved(request.resource.data.unlockId, request.resource.data.loc) || adminProved(request.resource.data));
+      allow update: if courseShape(request.resource.data) && request.resource.data.loc == resource.data.loc
+                    && (locProved(request.resource.data.unlockId, resource.data.loc) || adminProved(request.resource.data));
+      allow delete: if false;
     }
 
     // One doc per location-admin change. Write-only: the PIN in it can't be read back.

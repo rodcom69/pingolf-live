@@ -37,6 +37,14 @@
   .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);}
   .btn.danger{color:var(--bad);border-color:var(--bad);background:transparent;}
   .btn.sm{padding:5px 9px;font-size:12.5px;}
+  .bm-room{font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:12px 0 4px;display:flex;gap:8px;align-items:center;}
+  .bm-row{display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);}
+  .bm-row label{flex:1;display:flex;gap:8px;align-items:center;font-size:14px;min-width:0;}
+  .bm-row label span{overflow:hidden;text-overflow:ellipsis;}
+  .bm-row input[type=checkbox]{width:20px;height:20px;flex-shrink:0;}
+  .bm-row input[type=text]{width:120px;flex-shrink:0;text-align:right;}
+  .bm-row select{width:auto;flex-shrink:0;}
+  .bm-row.off input[type=text], .bm-row.off select{opacity:.35;}
   .btn:disabled{opacity:.45;cursor:not-allowed;}
   input,select{width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:16px;}
   label.fl{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:0 0 6px;}
@@ -140,6 +148,31 @@
         <button class="btn sm" id="gBtn">Sign in with Google</button>
       </div>
       <div id="emailOut" style="margin-top:10px;"></div>
+    </div>
+    <div class="card" id="buildCard" hidden>
+      <div class="row">
+        <div style="flex:1;"><b>Build a course</b><div class="dim small">Pick the machines, set each target, save. Then start a competition with it (New event &rsaquo; Course).</div></div>
+        <button class="btn sm primary" id="buildNew">New course</button>
+      </div>
+      <div id="buildList" style="margin-top:8px;"></div>
+      <div id="buildEditor" hidden style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+        <label class="fl" for="buildName">Course name</label>
+        <input type="text" id="buildName" maxlength="40" placeholder="e.g. Garage Night">
+        <div class="row" style="margin-top:10px;">
+          <label class="fl" for="buildMulls" style="margin:0;">Mulligans</label>
+          <select id="buildMulls" style="width:auto;"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option></select>
+          <div style="flex:1;"></div>
+          <button class="btn sm" id="buildAll">All</button><button class="btn sm" id="buildNone">None</button>
+        </div>
+        <div class="dim small" id="buildLock" hidden style="margin-top:8px;color:#b3261e;"></div>
+        <div id="buildMachines" style="margin-top:8px;"></div>
+        <div class="row" style="margin-top:12px;position:sticky;bottom:0;background:var(--surface);padding:8px 0;">
+          <b id="buildCount" style="flex:1;"></b>
+          <button class="btn" id="buildCancel">Cancel</button>
+          <button class="btn" id="buildSaveNew" hidden>Save as new</button>
+          <button class="btn primary" id="buildSave">Save course</button>
+        </div>
+      </div>
     </div>
     <div class="card" id="locPinCard">
       <div class="row">
@@ -267,8 +300,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="course.js?v=2026-11-26f"></script>
-<script src="objectives.js?v=2026-11-26f"></script>
+<script src="course.js?v=2026-11-26g"></script>
+<script src="objectives.js?v=2026-11-26g"></script>
 <script>
 (function(){
   firebase.initializeApp(firebaseConfig);
@@ -342,6 +375,7 @@
     $('gateHelp').textContent = 'Enter your location PIN. It stays unlocked in this browser tab until you lock it or close the tab.';
     // Organizer-only tools.
     ['emailCard', 'moveCard', 'locPinCard', 'evTestWrap'].forEach(function(id){ $(id).hidden = true; });
+    $('buildCard').hidden = !VENUE_MACHINES[LOC];
   }
   try { var saved = sessionStorage.getItem(PIN_KEY); if (saved) tryPin(saved); } catch(e){}
 
@@ -357,6 +391,14 @@
       strayIds = Object.keys(ids);
       renderEventSelect();
     });
+    // Courses built here (courses/{id}) load first, so events on them find their holes.
+    var started = false;
+    watchDbCourses(db, function(){
+      renderBuildList();
+      if (started) { if (currentEvent) render(); renderEventList(); return; }
+      started = true; startEvents();
+    });
+    function startEvents(){
     db.collection('events').onSnapshot(function(snap){
       ALL_EVENT_IDS = snap.docs.map(function(d){ return d.id; });
       EVENTS = sortEvents(snap.docs.map(function(d){ var e = d.data(); e.id = d.id; return e; })).filter(myEvent);
@@ -364,7 +406,9 @@
       eventsSeen = true;
       renderEventList();
       renderEventSelect();
+      renderBuildList();
     }, function(err){ setStatus('Could not load events (' + err.message + ')', 'err'); });
+    }
   }
   // Organizer: give every event its location (events/{id}.loc) so location admins can manage it. Runs once per load.
   var backfilled = false;
@@ -902,6 +946,102 @@
     if (isNaN(v) || v < 0 || !t) return;
     saveSheet({strokes: chartStrokes(t, v, holeBalls(sheetHole())), method: 'chart', rawScore: v});
   });
+
+  // ---------- Build a course (location admin; roster = VENUE_MACHINES[LOC]) ----------
+  // Saved to courses/c-<loc>-<slug>. A course an event already uses keeps its machines (scores are
+  // stored by hole number); only targets and balls can change. "Save as new" makes a copy.
+  var building = null; // {id, locked}
+  function courseEvents(id){ return EVENTS.filter(function(e){ return e.course === id; }); }
+  function renderBuildList(){
+    if (!LOC || !VENUE_MACHINES[LOC]) return;
+    var ids = myCourses().filter(function(k){ return COURSES[k].custom; });
+    $('buildList').innerHTML = ids.length ? ids.map(function(k){
+      var used = courseEvents(k).length;
+      return '<div class="row" style="padding:6px 0;border-bottom:1px solid var(--border);"><div style="flex:1;"><b>' + esc(COURSES[k].menuName) + '</b> <span class="dim small">' +
+        COURSES[k].holes.length + ' machines' + (used ? ' · used by ' + used + ' event' + (used > 1 ? 's' : '') : '') + '</span></div>' +
+        '<button class="btn sm" data-buildedit="' + esc(k) + '">Edit</button></div>';
+    }).join('') : '<div class="dim small">No courses built yet.</div>';
+    $('buildList').querySelectorAll('[data-buildedit]').forEach(function(b){ b.onclick = function(){ openBuilder(b.dataset.buildedit); }; });
+  }
+  function parseNum(v){ var d = String(v || '').replace(/\D/g, ''); return d ? parseInt(d, 10) : NaN; }
+  function openBuilder(id){
+    var c = id ? COURSES[id] : null, picked = {};
+    if (c) c.holes.forEach(function(h){ picked[h.name] = h; });
+    var locked = !!(c && courseEvents(id).length);
+    building = {id: id || null, locked: locked};
+    $('buildName').value = c ? c.menuName : '';
+    $('buildMulls').value = String(c ? c.mulligans : 1);
+    $('buildLock').hidden = !locked;
+    $('buildLock').textContent = locked ? 'An event uses this course, so its machines are fixed (scores are saved by hole). You can change targets here, or tap "Save as new" to make a copy with different machines.' : '';
+    $('buildSaveNew').hidden = !c;
+    var roster = VENUE_MACHINES[LOC].filter(function(m){ return !m.inactive; });
+    var rooms = [], byRoom = {};
+    roster.forEach(function(m){ var r = m.room || ''; if (!byRoom[r]) { byRoom[r] = []; rooms.push(r); } byRoom[r].push(m); });
+    $('buildMachines').innerHTML = rooms.map(function(r){
+      return (r ? '<div class="bm-room">' + esc(r) + ' <button class="btn sm" data-room="' + esc(r) + '">all</button></div>' : '') +
+        byRoom[r].map(function(m){
+          var d = machineDefaults(LOC, m.name), h = picked[m.name], on = !!h;
+          var t = h ? h.target : d.target, b = (h ? h.balls : d.balls) || 3;
+          return '<div class="bm-row' + (on ? '' : ' off') + '" data-name="' + esc(m.name) + '" data-room="' + esc(r) + '">' +
+            '<label><input type="checkbox"' + (on ? ' checked' : '') + (locked ? ' disabled' : '') + '><span>' + esc(m.name) + '</span></label>' +
+            '<select title="Balls"><option value="3"' + (b === 3 ? ' selected' : '') + '>3 ball</option><option value="5"' + (b === 5 ? ' selected' : '') + '>5 ball</option></select>' +
+            '<input type="text" inputmode="numeric" placeholder="Target" value="' + (t ? Number(t).toLocaleString('en-US') : '') + '"></div>';
+        }).join('');
+    }).join('');
+    var box = $('buildMachines');
+    box.querySelectorAll('.bm-row').forEach(function(row){
+      var cb = row.querySelector('input[type=checkbox]'), tx = row.querySelector('input[type=text]');
+      cb.onchange = function(){ row.classList.toggle('off', !cb.checked); buildCount(); };
+      tx.oninput = function(){ var n = parseNum(tx.value); tx.value = isNaN(n) ? '' : n.toLocaleString('en-US'); };
+    });
+    box.querySelectorAll('[data-room]').forEach(function(b){ if (b.tagName === 'BUTTON') b.onclick = function(){ setAll(true, b.dataset.room); }; });
+    $('buildAll').disabled = $('buildNone').disabled = locked;
+    box.querySelectorAll('.bm-room .btn').forEach(function(b){ b.disabled = locked; });
+    buildCount();
+    $('buildEditor').hidden = false;
+    $('buildName').focus();
+  }
+  function setAll(on, room){
+    $('buildMachines').querySelectorAll('.bm-row').forEach(function(row){
+      if (room != null && row.dataset.room !== room) return;
+      var cb = row.querySelector('input[type=checkbox]'); cb.checked = on; row.classList.toggle('off', !on);
+    });
+    buildCount();
+  }
+  function buildCount(){
+    var n = $('buildMachines').querySelectorAll('.bm-row input[type=checkbox]:checked').length;
+    $('buildCount').textContent = n + ' machine' + (n === 1 ? '' : 's') + ' · par ' + (n * PAR);
+  }
+  function slug(t){ return String(t).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || 'course'; }
+  function saveBuilder(asNew){
+    var name = $('buildName').value.trim();
+    if (!name) { setStatus('Give the course a name.', 'err'); $('buildName').focus(); return; }
+    var holes = [], bad = [];
+    $('buildMachines').querySelectorAll('.bm-row').forEach(function(row){
+      if (!row.querySelector('input[type=checkbox]').checked) return;
+      var t = parseNum(row.querySelector('input[type=text]').value), b = parseInt(row.querySelector('select').value, 10);
+      if (isNaN(t) || t < 1) { bad.push(row.dataset.name); return; }
+      var h = {name: row.dataset.name, target: t, img: machineDefaults(LOC, row.dataset.name).img || ''};
+      if (b !== 3) h.balls = b;
+      holes.push(h);
+    });
+    if (bad.length) { setStatus('Set a target for: ' + bad.join(', '), 'err'); return; }
+    if (!holes.length) { setStatus('Pick at least one machine.', 'err'); return; }
+    var id = (!asNew && building.id) || ('c-' + LOC + '-' + slug(name) + '-' + Date.now().toString(36).slice(-4));
+    var data = {loc: LOC, name: name, holes: holes, mulligans: parseInt($('buildMulls').value, 10), updatedAt: Date.now()};
+    adminBatch(function(batch, stamp){
+      batch.set(db.collection('courses').doc(id), Object.assign(data, {unlockId: stamp.unlockId}));
+    }).then(function(){
+      $('buildEditor').hidden = true; building = null;
+      setStatus('Saved "' + name + '" (' + holes.length + ' machines). Start a competition with it: New event, then pick it under Course.', 'ok');
+    }).catch(failed);
+  }
+  $('buildNew').onclick = function(){ openBuilder(null); };
+  $('buildCancel').onclick = function(){ $('buildEditor').hidden = true; building = null; };
+  $('buildAll').onclick = function(){ setAll(true); };
+  $('buildNone').onclick = function(){ setAll(false); };
+  $('buildSave').onclick = function(){ saveBuilder(false); };
+  $('buildSaveNew').onclick = function(){ saveBuilder(true); };
 
   // ---------- Location admin PINs (organizer only) ----------
   $('locPinToggle').onclick = function(){

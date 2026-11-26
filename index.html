@@ -658,8 +658,8 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-26f"></script>
-<script src="objectives.js?v=2026-11-26f"></script>
+<script src="course.js?v=2026-11-26g"></script>
+<script src="objectives.js?v=2026-11-26g"></script>
 
 <script>
 (function(){
@@ -1957,7 +1957,7 @@
     else { bn.textContent = ci.brand || 'PINGOLF'; bn.removeAttribute('aria-label'); }
     document.getElementById('demoRibbon').hidden = !ci.demo;
     document.getElementById('brandPlace').textContent = ci.place || '';
-    document.querySelectorAll('a.print-link').forEach(function(a){ a.href = 'scoring.html?course=' + encodeURIComponent(ev.course) + '&e=' + encodeURIComponent(ev.id); a.parentNode.hidden = !!courseInfo(ev.course).objectives; });
+    document.querySelectorAll('a.print-link').forEach(function(a){ a.href = 'scoring.html?course=' + encodeURIComponent(ev.course) + '&e=' + encodeURIComponent(ev.id); a.parentNode.hidden = !!(courseInfo(ev.course).objectives || courseInfo(ev.course).custom); });
     renderObjectives();
     if (changed) startAttemptsListener();
     renderEventPicker();
@@ -2003,6 +2003,14 @@
     if (typeof renderTvBoard === 'function') renderTvBoard();
   }, function(){});
 
+  // Courses built in admin (courses/{id}) load first, so an event on one finds its holes.
+  var coursesReady = false;
+  watchDbCourses(db, function(){
+    if (!coursesReady) { coursesReady = true; startEvents(); return; }
+    // A course changed (targets edited): redraw if it's the one on screen.
+    if (CURRENT_EVENT && courseInfo(CURRENT_EVENT.course).custom) { var id = CURRENT_EVENT.id; CURRENT_EVENT = null; selectEvent(id, false); }
+  });
+  function startEvents(){
   db.collection('events').onSnapshot(function(snap){
     EVENTS = sortEvents(snap.docs.map(function(d){ var e = d.data(); e.id = d.id; return e; }));
     var want = CURRENT_EVENT ? CURRENT_EVENT.id : wantedEventId();
@@ -2024,6 +2032,7 @@
   }, function(err){
     setConnNote("Can't reach the scoreboard (" + err.message + '). Reload to try again.', true);
   });
+  }
 })();
 </script>
 <script>

@@ -510,3 +510,48 @@ function placeLabels(players){
 // only the organizer page can change it (the database rules enforce the same window).
 var EDIT_WINDOW_MS = 2 * 60 * 1000;
 function canStillChange(a){ return Date.now() - a.ts < EDIT_WINDOW_MS; }
+
+// ---------- Courses built in admin (Firestore courses/{id}, id starts "c-") ----------
+// A location picks machines from VENUE_MACHINES[loc] and sets targets (admin > Build a course).
+// Pages load them with watchDbCourses() and they behave like any course here. Look (brand, logo,
+// place) comes from the location's own course in this file.
+function shortLabel(n){
+  function f(v, u){ var s = (Math.round(v * 10) / 10).toString(); return s + u; }
+  return n >= 1e9 ? f(n / 1e9, 'B') : n >= 1e6 ? f(n / 1e6, 'M') : n >= 1e3 ? f(n / 1e3, 'K') : String(n);
+}
+function locBaseCourse(loc){
+  var id = Object.keys(COURSE_LOCATION).filter(function(k){ return COURSE_LOCATION[k] === loc && COURSES[k] && !COURSES[k].custom && !COURSES[k].objectives; })[0];
+  return id ? COURSES[id] : null;
+}
+// Art + draft target for a roster machine, from the location's own course (matched by name).
+function machineDefaults(loc, name){
+  var out = {};
+  Object.keys(COURSE_LOCATION).forEach(function(k){
+    if (COURSE_LOCATION[k] !== loc || !COURSES[k] || COURSES[k].objectives) return;
+    COURSES[k].holes.forEach(function(h){ if (h.name === name && !out.img) { out.img = h.img; out.target = h.target; out.balls = h.balls; } });
+  });
+  return out;
+}
+function registerDbCourse(id, d){
+  var base = locBaseCourse(d.loc) || {};
+  var n = (d.holes || []).length;
+  COURSES[id] = {
+    name: d.name + ' · ' + n + ' machine' + (n === 1 ? '' : 's'),
+    brand: base.brand || (LOCATIONS[d.loc] || '').toUpperCase() + ' PINGOLF', place: base.place || LOCATIONS[d.loc] || '',
+    group: 'home', menuName: d.name, logo: base.logo, mulligans: typeof d.mulligans === 'number' ? d.mulligans : 1,
+    custom: true,
+    holes: (d.holes || []).map(function(h, i){
+      var o = {n: i + 1, name: h.name, img: h.img || '', target: h.target, label: shortLabel(h.target)};
+      if (h.balls && h.balls !== 3) o.balls = h.balls;
+      return o;
+    })
+  };
+  COURSE_LOCATION[id] = d.loc;
+}
+// Calls onChange() after every load/change (first call = courses ready).
+function watchDbCourses(db, onChange, onErr){
+  return db.collection('courses').onSnapshot(function(snap){
+    snap.docs.forEach(function(doc){ registerDbCourse(doc.id, doc.data()); });
+    onChange(snap);
+  }, function(err){ if (onErr) onErr(err); onChange(null); });
+}
