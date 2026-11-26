@@ -702,9 +702,12 @@
     var cfg = emailCfg();
     document.querySelectorAll('.news-text').forEach(function(el){ el.textContent = cfg ? cfg.news : ''; });
     var ask = document.getElementById('emailAsk'), ifpaCard = document.getElementById('ifpaAsk');
-    ask.hidden = !cfg || !me || emailDone(me.key);
+    // No reminder cards on home courses or Demo (Rodney 2026-11-26: they kept asking there). The optional
+    // email on the "Welcome! One more step" screen still applies everywhere.
+    var homeCourse = CURRENT_EVENT && courseInfo(CURRENT_EVENT.course).group === 'home';
+    ask.hidden = !cfg || !me || homeCourse || emailDone(me.key);
     // Then (once) the IFPA number. One extra card at a time.
-    ifpaCard.hidden = !cfg || !me || !ask.hidden || ifpaDone(me.key);
+    ifpaCard.hidden = !cfg || !me || homeCourse || !ask.hidden || ifpaDone(me.key);
     document.body.classList.toggle('asking-email', !ask.hidden || !ifpaCard.hidden);
   }
   // IFPA number: optional, digits only (1-9999999). Saved next to the email.
