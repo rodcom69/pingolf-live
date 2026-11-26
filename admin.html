@@ -300,8 +300,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="course.js?v=2026-11-26g"></script>
-<script src="objectives.js?v=2026-11-26g"></script>
+<script src="course.js?v=2026-11-26h"></script>
+<script src="objectives.js?v=2026-11-26h"></script>
 <script>
 (function(){
   firebase.initializeApp(firebaseConfig);
@@ -1054,9 +1054,9 @@
   function rememberPin(id, code){ var m = seenPins(); m[id] = code; try { localStorage.setItem('pingolf_locpins', JSON.stringify(m)); } catch(e){} }
   function renderLocPins(){
     var known = seenPins();
-    $('locPinList').innerHTML = Object.keys(LOCATIONS).map(function(id){
+    $('locPinList').innerHTML = Object.keys(LOCATIONS).concat(['master']).map(function(id){
       return '<div class="row" style="padding:6px 0;border-top:1px solid rgba(128,128,128,.2);gap:6px;flex-wrap:wrap;">' +
-        '<div style="flex:1;min-width:150px;"><b>' + esc(LOCATIONS[id]) + '</b><div class="dim small">playpingolf.com/admin/' + esc(id) + '</div>' +
+        '<div style="flex:1;min-width:150px;"><b>' + (id === 'master' ? 'Master PIN' : esc(LOCATIONS[id])) + '</b><div class="dim small">' + (id === 'master' ? 'Works on every location admin page' : 'playpingolf.com/admin/' + esc(id)) + '</div>' +
         '<div class="small" data-locnow="' + esc(id) + '">' + (known[id] ? 'PIN: <b>' + esc(known[id]) + '</b>' : '<span class="dim">PIN: not set from this computer</span>') + '</div></div>' +
         '<input type="text" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="New PIN" data-locpin="' + esc(id) + '" style="width:110px;">' +
         '<button class="btn sm" data-locset="' + esc(id) + '">Set</button>' +
@@ -1074,7 +1074,7 @@
     adminBatch(function(batch, stamp){
       batch.set(db.collection('secrets').doc('loc_' + id), {pin: code, unlockId: stamp.unlockId});
     }).then(function(){ b.disabled = false; input.value = ''; rememberPin(id, code);
-        $('locPinList').querySelector('[data-locnow="' + id + '"]').innerHTML = 'PIN: <b>' + esc(code) + '</b>'; say('\u2713 Saved. ' + LOCATIONS[id] + ' can sign in with it now.', true); })
+        $('locPinList').querySelector('[data-locnow="' + id + '"]').innerHTML = 'PIN: <b>' + esc(code) + '</b>'; say('\u2713 Saved. ' + (id === 'master' ? 'It works on every location page now.' : LOCATIONS[id] + ' can sign in with it now.'), true); })
       .catch(function(err){ b.disabled = false; say('Not saved: ' + err.message, false); });
   });
 

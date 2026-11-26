@@ -262,7 +262,10 @@ service cloud.firestore {
       allow create: if request.resource.data.keys().hasOnly(['loc', 'pin', 'at'])
                     && request.resource.data.loc is string && request.resource.data.loc.matches('^[a-z0-9-]{1,30}$')
                     && request.resource.data.at == request.time
-                    && request.resource.data.pin == get(db('secrets/loc_' + request.resource.data.loc)).data.pin;
+                    && (request.resource.data.pin == get(db('secrets/loc_' + request.resource.data.loc)).data.pin
+                        // master PIN (secrets/loc_master, set by the organizer): works on every location page
+                        || (exists(db('secrets/loc_master')) && request.resource.data.pin == get(db('secrets/loc_master')).data.pin))
+                    && request.resource.data.loc != 'master';
       allow read, update, delete: if false;
     }
 
