@@ -266,11 +266,12 @@ var VENUE_MACHINES = {
 };
 // Demo: the X-Golf machines and targets, for showing people the app. Lives under Home courses as
 // "Demo (try it out)", with a DEMO ribbon on screen (course demo: true) so it's never mistaken for the real event.
-// Joe F.'s house (Rodney 2026-11-26, from his photo): home course (link-only), 1 mulligan, all 3-ball.
-// Order = left to right in the photo, Fallout LE last. Targets: X-Golf's for GotG/Metallica/GoT, Manor's for
-// Deadpool, Fallout is a guess (new game, no data yet). Art reused; Fallout LE backglass cropped from Stern's LE page.
+// Joe F.'s house (Rodney 2026-11-26, from his photo): home course (link-only), 1 mulligan, all 3-ball, 6 machines.
+// Order = left to right in the photo (Walking Dead LE is the far right one), Fallout LE last. Targets: X-Golf's for
+// GotG/Metallica/GoT/TWD, Manor's for Deadpool, Fallout is a guess (new game, no data yet). Art reused (TWD = X-Golf's
+// orange translite, same art as Joe's); Fallout = Vault Boy (Fallout wiki art) on a sunburst tile (Rodney's pick).
 COURSES['joe-2026'] = {
-  name: "Joe's House · 5 machines (draft)",
+  name: "Joe's House · 6 machines (draft)",
   brand: "JOE'S HOUSE PINGOLF", place: "Joe's House", mulligans: 1,
   group: 'home', menuName: "Joe's House",
   holes: [
@@ -278,7 +279,8 @@ COURSES['joe-2026'] = {
     {n:2, name:"Metallica", img:"metallica", target:30000000, label:"30M"},
     {n:3, name:"Deadpool", img:"deadpool-pro", target:75000000, label:"75M"},
     {n:4, name:"Game of Thrones", img:"game-of-thrones", target:75000000, label:"75M"},
-    {n:5, name:"Fallout (LE)", img:"fallout-le", target:100000000, label:"100M"}
+    {n:5, name:"The Walking Dead (LE)", img:"walking-dead", target:75000000, label:"75M"},
+    {n:6, name:"Fallout (LE)", img:"fallout-vault-boy", target:100000000, label:"100M"}
   ]
 };
 // PinCrossing Players Pick 7 (Rodney 2026-11-26): same 11 machines and targets as pincrossing-2026,
