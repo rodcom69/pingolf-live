@@ -97,25 +97,63 @@ var COURSES = {
     ]
   }
 };
-// The Manor: 9 machines picked at random from VENUE_MACHINES.manor (Rodney: "randomly pick 9 to get us started"),
-// in walking order by room (Garage, Breezeway, Back Room, Lodge). Home course (link-only), 1 mulligan, draft targets.
-// Art: IPDB (AFM, Space Shuttle, Mystic, Flight 2000, Stranger Things Premium translite); Pinside game photos cropped from
-// the polaroid frame (Deadpool Pro, Iron Maiden LOTB Pro, Metallica Remastered Premium, original 2014 Walking Dead Pro: walking-dead-2014, not X-Golf's walking-dead).
+// The Manor: every active machine (39; Meteor is inactive) from VENUE_MACHINES.manor (Rodney 2026-11-26:
+// "make every game in the course"; it started as 9 random picks). Walking order by room (Garage, Breezeway,
+// Back Room, Lodge, Horror Room), alphabetical within a room. Home course (link-only), 1 mulligan, draft targets.
+// Art: IPDB scans/translites for the classics + WCS, Shadow, Sopranos, Junk Yard; Pinside polaroid crops for Deadpool,
+// Iron Maiden, Metallica Remastered, TWD 2014, Elvira HoH, Godzilla 70th, Jurassic Park, Star Trek Pro; reused
+// pc-* (Flash Gordon, King Kong, Firepower, JAWS, Pulp Fiction), getaway-hs2, fish-tales, foo-fighters-pro, stars,
+// eight-ball, harlem-globetrotters, white-water.
 COURSES['manor-2026'] = {
-  name: 'The Manor · 9 machines (draft)',
+  name: 'The Manor · 39 machines (draft)',
   brand: 'THE MANOR PINGOLF', place: 'The Manor', mulligans: 1,
   group: 'home', menuName: 'The Manor',
   logo: 'img/manor-logo.jpg', // shown in the header instead of the brand text (The Manor Pinball logo, from Rodney)
   holes: [
+    // Garage
     {n:1, name:"Attack From Mars (Remake)", img:"attack-from-mars", target:2000000000, label:"2B"},
-    {n:2, name:"Space Shuttle", img:"space-shuttle", target:500000, label:"500K"},
-    {n:3, name:"Mystic", img:"mystic", target:200000, label:"200K"},
-    {n:4, name:"Metallica Remastered (Premium)", img:"metallica-remastered", target:30000000, label:"30M"},
-    {n:5, name:"The Walking Dead (Pro)", img:"walking-dead-2014", target:75000000, label:"75M"},
-    {n:6, name:"Iron Maiden: Legacy of the Beast", img:"iron-maiden-lotb", target:100000000, label:"100M"},
-    {n:7, name:"Deadpool (Pro)", img:"deadpool-pro", target:75000000, label:"75M"},
-    {n:8, name:"Stranger Things (Premium)", img:"stranger-things-premium", target:150000000, label:"150M"},
-    {n:9, name:"Flight 2000", img:"flight-2000", target:250000, label:"250K"}
+    {n:2, name:"Eight Ball Deluxe (LE)", img:"eight-ball-deluxe", target:500000, label:"500K"},
+    {n:3, name:"Evel Knievel", img:"evel-knievel", target:150000, label:"150K"},
+    {n:4, name:"Flash Gordon", img:"pc-flash-gordon", target:500000, label:"500K"},
+    {n:5, name:"King Kong: Myth of Terror Island (Pro)", img:"pc-king-kong", target:75000000, label:"75M"},
+    {n:6, name:"Mystic", img:"mystic", target:200000, label:"200K"},
+    {n:7, name:"Space Shuttle", img:"space-shuttle", target:500000, label:"500K"},
+    {n:8, name:"Star Trek (Pro)", img:"star-trek-pro", target:100000000, label:"100M"},
+    {n:9, name:"The Getaway: High Speed II", img:"getaway-hs2", target:30000000, label:"30M"},
+    {n:10, name:"The Shadow", img:"the-shadow", target:300000000, label:"300M"},
+    // Breezeway
+    {n:11, name:"Deadpool (Pro)", img:"deadpool-pro", target:75000000, label:"75M"},
+    {n:12, name:"Iron Maiden: Legacy of the Beast", img:"iron-maiden-lotb", target:100000000, label:"100M"},
+    {n:13, name:"Metallica Remastered (Premium)", img:"metallica-remastered", target:30000000, label:"30M"},
+    {n:14, name:"Paragon", img:"paragon", target:150000, label:"150K"},
+    {n:15, name:"Solar City", img:"solar-city", target:75000, label:"75K"},
+    {n:16, name:"The Sopranos", img:"sopranos", target:50000000, label:"50M"},
+    {n:17, name:"Supersonic", img:"supersonic", target:150000, label:"150K"},
+    {n:18, name:"Torch", img:"torch", target:200000, label:"200K"},
+    {n:19, name:"The Walking Dead (Pro)", img:"walking-dead-2014", target:75000000, label:"75M"},
+    {n:20, name:"World Cup Soccer", img:"world-cup-soccer", target:1000000000, label:"1B"},
+    // Back Room
+    {n:21, name:"Black Jack", img:"black-jack", target:150000, label:"150K"},
+    {n:22, name:"Dracula", img:"dracula-stern", target:300000, label:"300K"},
+    {n:23, name:"Eight Ball", img:"eight-ball", target:150000, label:"150K"},
+    {n:24, name:"Firepower", img:"pc-firepower", target:350000, label:"350K"},
+    {n:25, name:"Fish Tales", img:"fish-tales", target:25000000, label:"25M"},
+    {n:26, name:"Godzilla (70th Anniversary)", img:"godzilla-70th", target:400000000, label:"400M"},
+    {n:27, name:"JAWS (Pro)", img:"pc-jaws", target:75000000, label:"75M"},
+    {n:28, name:"Junk Yard", img:"junk-yard", target:40000000, label:"40M"},
+    {n:29, name:"Stars", img:"stars", target:80000, label:"80K"},
+    {n:30, name:"Stranger Things (Premium)", img:"stranger-things-premium", target:150000000, label:"150M"},
+    {n:31, name:"Strikes and Spares", img:"strikes-and-spares", target:300000, label:"300K"},
+    // Lodge
+    {n:32, name:"Flight 2000", img:"flight-2000", target:250000, label:"250K"},
+    {n:33, name:"Foo Fighters (Pro)", img:"foo-fighters-pro", target:75000000, label:"75M"},
+    {n:34, name:"Harlem Globetrotters On Tour", img:"harlem-globetrotters", target:300000, label:"300K"},
+    {n:35, name:"Jurassic Park (Premium)", img:"jurassic-park-premium", target:200000000, label:"200M"},
+    {n:36, name:"Pulp Fiction (SE)", img:"pc-pulp-fiction", target:1500000, label:"1.5M"},
+    {n:37, name:"Super Orbit", img:"super-orbit", target:500000, label:"500K"},
+    {n:38, name:"White Water", img:"white-water", target:75000000, label:"75M"},
+    // Horror Room
+    {n:39, name:"Elvira's House of Horrors (Premium)", img:"elvira-hoh", target:75000000, label:"75M"}
   ]
 };
 // Chad's: Chad's home course, all 14 machines from Match Play tournament 284697 arenas (Wednesday Night Pinball
