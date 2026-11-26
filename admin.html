@@ -467,9 +467,10 @@
     editingEvent = ev || null;
     var last = EVENTS.find(function(e){ return !e.test; }) || {};
     var e = ev || {name: 'Pingolf', location: last.location || '', date: '', time: last.time || '', course: last.course || DEFAULT_COURSE, status: 'upcoming', test: false};
+    // A location's new competition: its own name, course and today's date, open right away.
+    if (LOC && !ev) e = {name: LOCATIONS[LOC] + ' Pingolf', location: LOCATIONS[LOC], date: new Date().toLocaleDateString('en-CA'), time: 'Anytime', course: myCourses()[0], status: 'open', test: courseInfo(myCourses()[0]).group === 'home'};
     $('evTitle').textContent = ev ? 'Edit event' : 'New event';
     $('evName').value = e.name; $('evLocation').value = e.location || ''; $('evDate').value = e.date || ''; $('evTime').value = e.time || '';
-    if (LOC && !ev) e = {name: LOCATIONS[LOC] + ' Pingolf', location: LOCATIONS[LOC], date: '', time: 'Anytime', course: myCourses()[0], status: 'open', test: courseInfo(myCourses()[0]).group === 'home'};
     $('evCourse').disabled = !!(LOC && ev);
     $('evCourse').innerHTML = (LOC ? myCourses() : Object.keys(COURSES)).map(function(k){ return '<option value="' + esc(k) + '">' + esc(COURSES[k].name) + '</option>'; }).join('') +
       (COURSES[e.course] ? '' : '<option value="' + esc(e.course) + '">' + esc(e.course) + '</option>');
