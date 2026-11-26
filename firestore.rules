@@ -15,7 +15,7 @@ rules_version = '2';
 //  - the organizer page (admin.html) can change anything, but every change must come
 //    with a one-time unlock doc carrying the admin PIN. The PIN lives in secrets/admin,
 //    which no client can read; the rules compare it here.
-//  - every score must have a sane shape (hole 1-30, strokes 1-8, short name)
+//  - every score must have a sane shape (hole 1-30, strokes 1-9 (9 = objective hole not done), short name)
 //  - events can only be created or changed by the organizer page
 //  - playerContacts/{name}: optional email, write-only for players, readable only by the organizer's Google sign-in
 //  - location admins (admin.html?loc=<id>): each location has its own PIN in secrets/loc_<id> (set by the organizer,
@@ -48,7 +48,7 @@ service cloud.firestore {
         && validName(d.playerName)
         && d.playerKey is string && d.playerKey.size() > 0 && d.playerKey.size() <= 40
         && d.hole is int && d.hole >= 1 && d.hole <= 30
-        && d.strokes is int && d.strokes >= 1 && d.strokes <= 8
+        && d.strokes is int && d.strokes >= 1 && d.strokes <= 9
         && d.method in ['ball', 'chart']
         && d.ts is int
         && (!('mulligan' in d) || d.mulligan == true)

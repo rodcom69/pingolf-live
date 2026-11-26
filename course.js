@@ -183,6 +183,39 @@ COURSES['chad-2026'] = {
     {n:14, name:"White Water", img:"white-water", target:75000000, label:"75M"}
   ]
 };
+// Chad's House Objectives: same 14 machines, but each hole is a task (Rodney 2026-11-26).
+// Up to 9 balls (3-ball games = up to 3 games in a row, ball count carries on); strokes = the ball you
+// complete it on; not done after 9 balls = 9. goal = short task, how = how to do it.
+// Rodney chose the hard objectives. easy = the easier one kept ready: swap it in by moving easy.goal/how into goal/how.
+// Research + Chad's edit doc: https://claude.ai/artifact/RqFU1JUzudradGTumCNDkx
+COURSES['chad-obj-2026'] = {
+  name: "Chad's House Objectives · 14 machines (draft)",
+  brand: "CHAD'S HOUSE OBJECTIVES", place: "Chad's House", mulligans: 1,
+  group: 'home', menuName: "Chad's House Objectives", objectives: true,
+  logo: 'img/chad-logo.jpg',
+  holes: [
+    {n:1, name:"Attack from Mars", img:"attack-from-mars-1995", goal:"Start multiball", how:"Shoot the lock lane left of the saucer to light locks (one shot lights all 3 the first time), then lock 3 balls."},
+    {n:2, name:"Dirty Harry", img:"dirty-harry", goal:"Start multiball", how:"Hit all 5 badge shots (HQ, side ramp, safe house, Warehouse, right ramp), then shoot the Warehouse or side ramp.",
+      easy:{goal:"Start a mode", how:"Shoot the lit HQ hole. Not lit? Shoot a lit orbit to light it."}},
+    {n:3, name:"Dungeons & Dragons: The Tyrant's Eye (Premium)", img:"dnd-tyrants-eye", goal:"Start Dragon Multiball", how:"Hit the 3 targets under the dragon."},
+    {n:4, name:"Eight Ball", img:"eight-ball", goal:"Sink the 8 ball", how:"Collect pool balls 1-7 (top lanes and targets), then hit the lit 8-ball target. Has powerball.",
+      easy:{goal:"Collect pool balls 1-4", how:"Roll through top lanes 1, 2, 3 and 4."}},
+    {n:5, name:"Godzilla (Premium)", img:"godzilla-premium", goal:"Start Godzilla Multiball", how:"Hit the ramps and the building to fill damage, then lock 3 balls at the building."},
+    {n:6, name:"Grand Lizard", img:"grand-lizard", goal:"Start multiball", how:"Lock balls in the horseshoe lane right of the A ramp. With 2 locked, lock the 3rd or hit the top-right Release target."},
+    {n:7, name:"Grand Prix", img:"grand-prix", goal:"Earn an extra ball", how:"Knock down both pairs of drops (A+B and C+D) to light extra ball at the inlane, then roll through it. 5-ball game: balls keep counting (game 2, ball 1 = ball 6)."},
+    {n:8, name:"Harlem Globetrotters", img:"harlem-globetrotters", goal:"Collect all GLOBE letters", how:"Complete G-L-O-B-E. Has powerball."},
+    {n:9, name:"Iron Maiden (Pro)", img:"iron-maiden-lotb", goal:"Start Trooper Multiball", how:"Drop targets light Trooper Lock on the orbits; lock 3 balls."},
+    {n:10, name:"JAWS (Pro)", img:"pc-jaws", goal:"Start JAWS Multiball", how:"Chum the water: hit the chum bucket, then the flashing red shots to fill the meter. Raise the fin: hit a lit yellow shot, hit the fin, then shoot the ramp."},
+    {n:11, name:"Metallica", img:"metallica", goal:"Start Grave Marker multiball", how:"Clear the 3 in-line drop targets, then hit the standup behind them."},
+    {n:12, name:"Nitro Ground Shaker", img:"nitro-ground-shaker", goal:"Complete A-F", how:"Complete the A through F lights (lights the 20,000 super bonus). Has powerball."},
+    {n:13, name:"Sinbad", img:"sinbad", goal:"Get 3X bonus lit", how:"Knock down the white drop target (2X), then the yellow targets (3X). Has powerball."},
+    {n:14, name:"White Water", img:"white-water", goal:"Start multiball", how:"Hit each green standup to light locks, then lock 3 balls in No Way Out.",
+      easy:{goal:"Complete the first raft", how:"Make one lit hazard shot to complete the raft."}}
+  ]
+};
+// Objective holes: no score target. target:1 + balls:9 make the shared code treat a "done"
+// on ball N as N strokes and "not done" (method 'chart', rawScore 0) as 9.
+COURSES['chad-obj-2026'].holes.forEach(function(h){ h.target = 1; h.balls = 9; h.label = h.goal; });
 // Zac's House: Zac's home course, 7 machines in the order Rodney listed them (2026-11-25), all 3-ball.
 // Home course (link-only), 1 mulligan, draft targets. Monte Carlo = 1987 Gottlieb/Premier (Rodney).
 // Art: IPDB (Aladdin's Castle, Monte Carlo 1987 photographic translite, Led Zeppelin Premium translite, Genie);
@@ -287,7 +320,7 @@ var LOCATIONS = {
 };
 var COURSE_LOCATION = {
   'xgolf-2026-12': 'xgolf', 'pincrossing-2026': 'pincrossing', 'basement-2026': 'basement',
-  'michael-2026': 'michael', 'manor-2026': 'manor', 'chad-2026': 'chad', 'zac-2026': 'zac'
+  'michael-2026': 'michael', 'manor-2026': 'manor', 'chad-2026': 'chad', 'chad-obj-2026': 'chad', 'zac-2026': 'zac'
   // demo-xgolf: no location (organizer only)
 };
 function courseLoc(courseId){ return COURSE_LOCATION[courseId] || ''; }
@@ -368,6 +401,7 @@ function sortEvents(list){
 var MAX_MULLIGANS = 2, PAR = 3;
 function rulesText(holes){
   var n = openHoleCount(holes);
+  if (holes.length && isGoal(holes[0])) return 'Each machine has one objective. You get up to 9 balls to do it: on a 3-ball game that is up to 3 games in a row, and the ball count carries on (game 2, ball 1 = ball 4). Your strokes = the ball you do it on (ball 1 = 1 stroke, ball 9 = 9). Not done after 9 balls = 9 strokes. Once it\'s done, the hole is over. Play all ' + n + ' holes. Then you get ' + mulliganWord(MAX_MULLIGANS) + ': play one objective again; it replaces that hole only if it\'s better. Lowest total wins. ' + TIEBREAK_TEXT;
   var five = holes.filter(function(h){ return holeBalls(h) === 5; }).map(function(h){ return h.name; });
   return 'Hit the target on ball 1, 2, or 3 — that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4–8) are looked up automatically. ' +
     (five.length ? five.join(' and ') + (five.length > 1 ? ' are' : ' is') + ' a 5-ball game: hit the target on ball 4 = 4 strokes, ball 5 = 5; still short after 5 balls = 6–8 strokes. ' : '') +
@@ -380,6 +414,8 @@ function rulesText(holes){
 // thirds (6-8) for 5-ball games.
 var MAX_STROKES = 8;
 function holeBalls(h){ return (h && h.balls) || 3; }
+function isGoal(h){ return !!(h && h.goal); }
+var GOAL_MISS = 9; // objective not done after 9 balls
 function strokeRanges(target, balls){
   balls = balls || 3;
   var k = MAX_STROKES - balls, out = [], hi = target - 1;
@@ -392,6 +428,7 @@ function strokeRanges(target, balls){
 }
 function chartStrokes(target, score, balls){
   balls = balls || 3;
+  if (balls >= MAX_STROKES) return GOAL_MISS; // objective hole: 'not done' = 9
   if (score >= target) return balls;
   // Use the same rounded bands the printed chart shows, so they always agree.
   var r = strokeRanges(target, balls);
@@ -404,7 +441,7 @@ function esc(v){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
   });
 }
-function attemptScoreLabel(a){ return a.method === 'ball' ? ('Ball ' + a.ball) : fmtNum(a.rawScore); }
+function attemptScoreLabel(a){ return a.method === 'ball' ? ('Ball ' + a.ball) : (a.strokes === GOAL_MISS ? 'Not done' : fmtNum(a.rawScore)); }
 function playerKey(name){ return name.trim().toLowerCase(); }
 // Work out which entry counts on each hole. Each hole has one regular entry
 // (the newest, if a double-tap ever saved two). Mulligans are extra entries,

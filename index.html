@@ -615,6 +615,10 @@
           <button class="ball-btn" data-ball="3"></button>
           <button class="ball-btn" data-ball="4" hidden></button>
           <button class="ball-btn" data-ball="5" hidden></button>
+          <button class="ball-btn" data-ball="6" hidden></button>
+          <button class="ball-btn" data-ball="7" hidden></button>
+          <button class="ball-btn" data-ball="8" hidden></button>
+          <button class="ball-btn" data-ball="9" hidden></button>
         </div>
         <button class="miss-open" id="missOpen"><span id="missHead">Didn't make it</span><small id="missOpenSub">Enter your final score</small></button>
         <div class="miss-box" id="missBox" hidden>
@@ -644,7 +648,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-26b"></script>
+<script src="course.js?v=2026-11-26c"></script>
 
 <script>
 (function(){
@@ -1037,7 +1041,9 @@
         grid.appendChild(btn);
         return;
       }
-      var scoreLine = a ? (a.method === 'ball' ? ('Made ' + h.label + ' on ball ' + a.ball) : ('Score: ' + fmtNum(a.rawScore))) : ('Target ' + h.label);
+      var scoreLine = isGoal(h)
+        ? (a ? (a.method === 'ball' ? ('Done on ball ' + a.ball) : 'Not done in 9 balls') : esc(h.goal))
+        : a ? (a.method === 'ball' ? ('Made ' + h.label + ' on ball ' + a.ball) : ('Score: ' + fmtNum(a.rawScore))) : ('Target ' + h.label);
       btn.innerHTML =
         (a && a.mulligan ? '<div class="mull-tag">MULL</div>' : '') +
         '<div class="art"><img src="' + holeImg(h) + '" alt="" loading="lazy"><div class="hn tnum">' + h.n + '</div>' +
@@ -1112,6 +1118,11 @@
     document.getElementById('missHead').textContent = "Didn't make " + (hole ? hole.label : 'it');
     document.getElementById('missOpenSub').textContent = 'Enter your final score (' + (balls + 1) + '–' + MAX_STROKES + ' strokes)';
     document.getElementById('missSub').innerHTML = (balls > 3 ? balls + '-ball game. ' : '') + 'Your final score after all ' + balls + ' balls:';
+    if (isGoal(hole)) {
+      document.getElementById('pickQ').innerHTML = 'Which ball did you do it on?';
+      document.getElementById('missHead').textContent = 'Not done in 9 balls';
+      document.getElementById('missOpenSub').textContent = '9 strokes';
+    }
     document.querySelectorAll('.ball-btn').forEach(function(b){
       var n = +b.dataset.ball;
       b.hidden = n > balls;
@@ -1136,7 +1147,9 @@
     currentHole = hole;
     setBallLabels(hole);
     document.getElementById('sheetHoleName').textContent = (sheetMode === 'mull' ? 'Mulligan: ' : '') + hole.n + '. ' + hole.name;
-    document.getElementById('sheetTarget').textContent = 'Target: ' + fmtNum(hole.target);
+    var tl = document.getElementById('sheetTarget');
+    if (isGoal(hole)) tl.innerHTML = 'Objective: ' + esc(hole.goal) + '<div style="font-size:13px;font-weight:500;margin-top:4px;color:var(--text-dim);">' + esc(hole.how) + '</div>';
+    else tl.textContent = 'Target: ' + fmtNum(hole.target);
     var art = document.getElementById('sheetArt');
     art.src = holeImg(hole); art.hidden = false;
     updatePreview();
@@ -1168,6 +1181,7 @@
   }
   document.getElementById('missOpen').addEventListener('click', function(){
     if (!currentHole) return;
+    if (isGoal(currentHole)) { showConfirm({strokes: GOAL_MISS, method: 'chart', extra: {rawScore: 0}}); return; }
     this.classList.add('on');
     document.getElementById('missBox').hidden = false;
     updatePreview();
@@ -1180,7 +1194,9 @@
     if (!currentHole) return;
     pendingEntry = entry;
     var h = currentHole, st = entry.strokes, res = scoreRound(myAttempts());
-    document.getElementById('confirmWhat').innerHTML = entry.method === 'ball'
+    document.getElementById('confirmWhat').innerHTML = isGoal(h)
+      ? (entry.method === 'ball' ? '<b>' + esc(h.goal) + '</b> on <b>Ball ' + entry.extra.ball + '</b>' : '<b>' + esc(h.goal) + '</b>: not done in 9 balls')
+      : entry.method === 'ball'
       ? 'Made <b>' + esc(h.label) + '</b> on <b>Ball ' + entry.extra.ball + '</b>'
       : 'Final score <b>' + fmtNum(entry.extra.rawScore) + '</b>';
     var circle = document.getElementById('confirmStrokes');
@@ -1723,6 +1739,14 @@
 
   function renderObjectives(){
   document.getElementById('objList').innerHTML = HOLES.map(function(h){
+    if (isGoal(h)) return '<div class="obj-card' + (isHoleShut(h.n) ? ' closed' : '') + '">' +
+      '<div class="obj-head">' +
+        '<img class="obj-thumb" src="' + holeImg(h) + '" alt="" loading="lazy">' +
+        '<div class="obj-num tnum">' + h.n + '</div>' +
+        '<div class="obj-name">' + h.name + (isHoleClosed(h.n) ? ' <b style="color:#b3261e;">(closed permanently)</b>' : isHoleDown(h.n) ? ' <b style="color:#b3261e;">(closed temporarily)</b>' : '') + '</div>' +
+      '</div>' +
+      '<div style="padding:6px 2px 2px;font-size:14px;"><b>' + esc(h.goal) + '</b><div style="color:var(--text-dim);font-size:13px;margin-top:2px;">' + esc(h.how) + '</div></div>' +
+      '</div>';
     var ranges = strokeRanges(h.target, holeBalls(h));
     var rangeHtml = (holeBalls(h) > 3 ? '<div class="obj-range"><b>4</b>ball 4</div><div class="obj-range"><b>5</b>ball 5</div>' : '') + ranges.map(function(r){
       return '<div class="obj-range"><b>' + r.s + '</b>' + fmtNum(r.lo) + '&ndash;' + fmtNum(r.hi) + '</div>';
@@ -1908,7 +1932,7 @@
     else { bn.textContent = ci.brand || 'PINGOLF'; bn.removeAttribute('aria-label'); }
     document.getElementById('demoRibbon').hidden = !ci.demo;
     document.getElementById('brandPlace').textContent = ci.place || '';
-    document.querySelectorAll('a.print-link').forEach(function(a){ a.href = 'scoring.html?course=' + encodeURIComponent(ev.course) + '&e=' + encodeURIComponent(ev.id); });
+    document.querySelectorAll('a.print-link').forEach(function(a){ a.href = 'scoring.html?course=' + encodeURIComponent(ev.course) + '&e=' + encodeURIComponent(ev.id); a.parentNode.hidden = !!courseInfo(ev.course).objectives; });
     renderObjectives();
     if (changed) startAttemptsListener();
     renderEventPicker();

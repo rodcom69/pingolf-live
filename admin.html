@@ -180,9 +180,14 @@
       <button class="btn primary" data-ball="3">Ball 3 · 3</button>
       <button class="btn primary" data-ball="4" hidden>Ball 4 · 4</button>
       <button class="btn primary" data-ball="5" hidden>Ball 5 · 5</button>
+      <button class="btn primary" data-ball="6" hidden>Ball 6 · 6</button>
+      <button class="btn primary" data-ball="7" hidden>Ball 7 · 7</button>
+      <button class="btn primary" data-ball="8" hidden>Ball 8 · 8</button>
+      <button class="btn primary" data-ball="9" hidden>Ball 9 · 9</button>
     </div>
-    <div class="dim small" style="margin:14px 0 6px;">or, short of target, the final score:</div>
-    <div class="row">
+    <button class="btn" id="sheetMiss" style="width:100%;margin-top:10px;" hidden>Not done in 9 balls · 9</button>
+    <div class="dim small" id="sheetScoreHint" style="margin:14px 0 6px;">or, short of target, the final score:</div>
+    <div class="row" id="sheetScoreRow">
       <input type="number" id="sheetScore" inputmode="numeric" placeholder="Final score">
       <button class="btn" id="sheetSave" style="flex-shrink:0;">Save</button>
     </div>
@@ -262,7 +267,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="course.js?v=2026-11-26b"></script>
+<script src="course.js?v=2026-11-26c"></script>
 <script>
 (function(){
   firebase.initializeApp(firebaseConfig);
@@ -811,7 +816,10 @@
     if (h) $('sheetArt').src = holeImg(h);
     var label = sheet.mode === 'edit' ? 'Edit' : (sheet.mode === 'addMull' ? 'Add mulligan' : 'Add score');
     $('sheetTitle').textContent = label + (h ? ': ' + h.n + '. ' + h.name : '');
-    $('sheetSub').textContent = (sheet.player ? sheet.player.name + ' · ' : '') + (t ? 'Target ' + fmtNum(t) : 'Choose a hole');
+    var goal = isGoal(h);
+    $('sheetSub').textContent = (sheet.player ? sheet.player.name + ' · ' : '') + (!t ? 'Choose a hole' : goal ? 'Objective: ' + h.goal : 'Target ' + fmtNum(t));
+    $('sheetMiss').hidden = !goal; $('sheetMiss').disabled = !t;
+    $('sheetScoreHint').hidden = goal; $('sheetScoreRow').hidden = goal;
     var ok = !!t;
     document.querySelectorAll('.balls .btn, #sheetSave').forEach(function(b){ b.disabled = !ok; });
     document.querySelectorAll('.balls .btn').forEach(function(b){ b.hidden = +b.dataset.ball > holeBalls(h); });
@@ -884,6 +892,9 @@
       var n = parseInt(b.dataset.ball, 10);
       saveSheet({strokes: n, method: 'ball', ball: n});
     });
+  });
+  $('sheetMiss').addEventListener('click', function(){
+    saveSheet({strokes: GOAL_MISS, method: 'chart', rawScore: 0});
   });
   $('sheetSave').addEventListener('click', function(){
     var v = parseInt($('sheetScore').value, 10), t = sheetTarget();
