@@ -25,7 +25,7 @@ var COURSES = {
       {n:2, name:"Mustang", target:50000, label:"50K", img:"mustang-em"},
       {n:3, name:"Wheel of Fortune", target:9000000, label:"9M", img:"wheel-of-fortune"},
       {n:4, name:"Dune", target:100000000, label:"100M", img:"dune"},
-      {n:5, name:"Walking Dead", target:75000000, label:"75M", img:"walking-dead"},
+      {n:5, name:"Walking Dead Remastered", target:75000000, label:"75M", img:"walking-dead"},
       {n:6, name:"SeaWitch", target:400000, label:"400K", img:"seawitch"},
       {n:7, name:"Beatles", target:2000000, label:"2M", img:"beatles"},
       {n:8, name:"Joker Poker", target:175000, label:"175K", img:"joker-poker", balls:5},
