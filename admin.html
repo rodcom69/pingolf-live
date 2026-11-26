@@ -899,17 +899,22 @@
       return '<div class="row" style="padding:6px 0;border-top:1px solid rgba(128,128,128,.2);gap:6px;flex-wrap:wrap;">' +
         '<div style="flex:1;min-width:150px;"><b>' + esc(LOCATIONS[id]) + '</b><div class="dim small">playpingolf.com/admin/' + esc(id) + '</div></div>' +
         '<input type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="New PIN" data-locpin="' + esc(id) + '" style="width:110px;">' +
-        '<button class="btn sm" data-locset="' + esc(id) + '">Set</button></div>';
+        '<button class="btn sm" data-locset="' + esc(id) + '">Set</button>' +
+        '<div class="small" data-locmsg="' + esc(id) + '" style="flex-basis:100%;text-align:right;"></div></div>';
     }).join('');
   }
   $('locPinList').addEventListener('click', function(e){
     var b = e.target.closest('[data-locset]'); if (!b) return;
     var id = b.dataset.locset, input = $('locPinList').querySelector('[data-locpin="' + id + '"]');
-    var code = input.value.trim();
-    if (!/^[0-9]{4,8}$/.test(code)) { setStatus('A location PIN is 4 to 8 digits.', 'err'); return; }
+    var code = input.value.trim(), msg = $('locPinList').querySelector('[data-locmsg="' + id + '"]');
+    // Result shows on the row itself (the page's status line is far up the page).
+    function say(t, ok){ msg.textContent = t; msg.style.color = ok ? 'var(--ok, #1e7d3a)' : '#b3261e'; }
+    if (!/^[0-9]{4,8}$/.test(code)) { say('A location PIN is 4 to 8 digits.', false); return; }
+    b.disabled = true; say('Saving\u2026', true);
     adminBatch(function(batch, stamp){
       batch.set(db.collection('secrets').doc('loc_' + id), {pin: code, unlockId: stamp.unlockId});
-    }).then(function(){ input.value = ''; setStatus('PIN set for ' + LOCATIONS[id] + '.', 'ok'); }).catch(failed);
+    }).then(function(){ b.disabled = false; input.value = ''; say('\u2713 Saved. ' + LOCATIONS[id] + ' can sign in with it now.', true); })
+      .catch(function(err){ b.disabled = false; say('Not saved: ' + err.message, false); });
   });
 
   // ---------- Player emails (Google sign-in; the rules let only the organizer's account read playerContacts) ----------
