@@ -145,6 +145,24 @@ COURSES['chad-2026'] = {
     {n:14, name:"White Water", img:"white-water", target:75000000, label:"75M"}
   ]
 };
+// Zac's House: Zac's home course, 7 machines in the order Rodney listed them (2026-11-25), all 3-ball.
+// Home course (link-only), 1 mulligan, draft targets. Monte Carlo = 1987 Gottlieb/Premier (Rodney).
+// Art: IPDB (Aladdin's Castle, Monte Carlo 1987 photographic translite, Led Zeppelin Premium translite, Genie);
+// Pinside polaroid crops (Texas Chainsaw Massacre CE, Rush Pro); JAWS Premium reuses pc-jaws.
+COURSES['zac-2026'] = {
+  name: "Zac's House · 7 machines (draft)",
+  brand: "ZAC'S HOUSE PINGOLF", place: "Zac's House", mulligans: 1,
+  group: 'home', menuName: "Zac's House",
+  holes: [
+    {n:1, name:"Aladdin's Castle", img:"aladdins-castle", target:50000, label:"50K"},
+    {n:2, name:"Monte Carlo", img:"monte-carlo-1987", target:5000000, label:"5M"},
+    {n:3, name:"Led Zeppelin (Premium)", img:"led-zeppelin", target:150000000, label:"150M"},
+    {n:4, name:"Texas Chainsaw Massacre (CE)", img:"tcm-ce", target:50000000, label:"50M"},
+    {n:5, name:"JAWS Premium", img:"pc-jaws", target:75000000, label:"75M"},
+    {n:6, name:"Rush (Pro)", img:"rush-pro", target:300000000, label:"300M"},
+    {n:7, name:"Genie", img:"genie", target:200000, label:"200K"}
+  ]
+};
 // Machine rosters per location (not courses): every machine at the venue, so a course can be
 // picked from them later. The Manor: from Match Play "The Manor Mega Matchplay" arenas
 // (app.matchplay.events/tournaments/245339/arenas), Nov 2026; room = where it sits; opdb = Open Pinball DB id.
