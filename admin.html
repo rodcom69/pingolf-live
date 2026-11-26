@@ -143,7 +143,7 @@
     </div>
     <div class="card" id="locPinCard">
       <div class="row">
-        <div style="flex:1;"><b>Location admin PINs</b><div class="dim small">Each location has its own admin page and PIN. With it they can start competitions, open/finish their events, close holes, and fix, void or add scores, only at their own location. Type a PIN (4&ndash;8 digits) and tap Set; it can't be read back.</div></div>
+        <div style="flex:1;"><b>Location admin PINs</b><div class="dim small">Each location has its own admin page and PIN. With it they can start competitions, open/finish their events, close holes, and fix, void or add scores, only at their own location. Type a PIN (4&ndash;8 digits) and tap Set. PINs you set here are shown on this computer.</div></div>
         <button class="btn sm" id="locPinToggle">Show</button>
       </div>
       <div id="locPinList" hidden style="margin-top:10px;"></div>
@@ -332,6 +332,7 @@
     document.title = LOCATIONS[LOC] + ' admin';
     $('adminTitle').textContent = LOCATIONS[LOC].toUpperCase() + ' ADMIN';
     $('gateTitle').textContent = LOCATIONS[LOC] + ' admin';
+    $('pinInput').type = 'text'; $('pinInput').autocomplete = 'off';
     $('gateHelp').textContent = 'Enter your location PIN. It stays unlocked in this browser tab until you lock it or close the tab.';
     // Organizer-only tools.
     ['emailCard', 'moveCard', 'locPinCard', 'evTestWrap'].forEach(function(id){ $(id).hidden = true; });
@@ -894,11 +895,17 @@
     var l = $('locPinList'); l.hidden = !l.hidden; this.textContent = l.hidden ? 'Show' : 'Hide';
     if (!l.hidden && !l.innerHTML) renderLocPins();
   };
+  // PINs set from this browser are remembered here so the organizer can see them (Rodney 2026-11-26: low stakes,
+  // show them). Only on this computer; the database copy (secrets/loc_<id>) stays unreadable from any page.
+  function seenPins(){ try { return JSON.parse(localStorage.getItem('pingolf_locpins') || '{}'); } catch(e){ return {}; } }
+  function rememberPin(id, code){ var m = seenPins(); m[id] = code; try { localStorage.setItem('pingolf_locpins', JSON.stringify(m)); } catch(e){} }
   function renderLocPins(){
+    var known = seenPins();
     $('locPinList').innerHTML = Object.keys(LOCATIONS).map(function(id){
       return '<div class="row" style="padding:6px 0;border-top:1px solid rgba(128,128,128,.2);gap:6px;flex-wrap:wrap;">' +
-        '<div style="flex:1;min-width:150px;"><b>' + esc(LOCATIONS[id]) + '</b><div class="dim small">playpingolf.com/admin/' + esc(id) + '</div></div>' +
-        '<input type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="New PIN" data-locpin="' + esc(id) + '" style="width:110px;">' +
+        '<div style="flex:1;min-width:150px;"><b>' + esc(LOCATIONS[id]) + '</b><div class="dim small">playpingolf.com/admin/' + esc(id) + '</div>' +
+        '<div class="small" data-locnow="' + esc(id) + '">' + (known[id] ? 'PIN: <b>' + esc(known[id]) + '</b>' : '<span class="dim">PIN: not set from this computer</span>') + '</div></div>' +
+        '<input type="text" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="New PIN" data-locpin="' + esc(id) + '" style="width:110px;">' +
         '<button class="btn sm" data-locset="' + esc(id) + '">Set</button>' +
         '<div class="small" data-locmsg="' + esc(id) + '" style="flex-basis:100%;text-align:right;"></div></div>';
     }).join('');
@@ -913,7 +920,8 @@
     b.disabled = true; say('Saving\u2026', true);
     adminBatch(function(batch, stamp){
       batch.set(db.collection('secrets').doc('loc_' + id), {pin: code, unlockId: stamp.unlockId});
-    }).then(function(){ b.disabled = false; input.value = ''; say('\u2713 Saved. ' + LOCATIONS[id] + ' can sign in with it now.', true); })
+    }).then(function(){ b.disabled = false; input.value = ''; rememberPin(id, code);
+        $('locPinList').querySelector('[data-locnow="' + id + '"]').innerHTML = 'PIN: <b>' + esc(code) + '</b>'; say('\u2713 Saved. ' + LOCATIONS[id] + ' can sign in with it now.', true); })
       .catch(function(err){ b.disabled = false; say('Not saved: ' + err.message, false); });
   });
 
