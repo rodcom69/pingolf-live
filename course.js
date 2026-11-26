@@ -266,6 +266,21 @@ var VENUE_MACHINES = {
 };
 // Demo: the X-Golf machines and targets, for showing people the app. Lives under Home courses as
 // "Demo (try it out)", with a DEMO ribbon on screen (course demo: true) so it's never mistaken for the real event.
+// Joe F.'s house (Rodney 2026-11-26, from his photo): home course (link-only), 1 mulligan, all 3-ball.
+// Order = left to right in the photo, Fallout LE last. Targets: X-Golf's for GotG/Metallica/GoT, Manor's for
+// Deadpool, Fallout is a guess (new game, no data yet). Art reused; Fallout LE backglass cropped from Stern's LE page.
+COURSES['joe-2026'] = {
+  name: "Joe's House · 5 machines (draft)",
+  brand: "JOE'S HOUSE PINGOLF", place: "Joe's House", mulligans: 1,
+  group: 'home', menuName: "Joe's House",
+  holes: [
+    {n:1, name:"Guardians of the Galaxy", img:"guardians", target:40000000, label:"40M"},
+    {n:2, name:"Metallica", img:"metallica", target:30000000, label:"30M"},
+    {n:3, name:"Deadpool", img:"deadpool-pro", target:75000000, label:"75M"},
+    {n:4, name:"Game of Thrones", img:"game-of-thrones", target:75000000, label:"75M"},
+    {n:5, name:"Fallout (LE)", img:"fallout-le", target:100000000, label:"100M"}
+  ]
+};
 // PinCrossing Players Pick 7 (Rodney 2026-11-26): same 11 machines and targets as pincrossing-2026,
 // but each player plays only 7 games of their choice. After the 7th, the other machines lock and the
 // 1 mulligan opens (replay one of your 7); then the card is done. pick:N = games per card, par 3 x N.
@@ -289,11 +304,12 @@ var LOCATIONS = {
   michael:     "Michael's House",
   manor:       'The Manor',
   chad:        "Chad's House",
-  zac:         "Zac's House"
+  zac:         "Zac's House",
+  joe:         "Joe's House"
 };
 var COURSE_LOCATION = {
   'xgolf-2026-12': 'xgolf', 'pincrossing-2026': 'pincrossing', 'pincrossing-pick7': 'pincrossing', 'basement-2026': 'basement',
-  'michael-2026': 'michael', 'manor-2026': 'manor', 'chad-2026': 'chad', 'zac-2026': 'zac'
+  'michael-2026': 'michael', 'manor-2026': 'manor', 'chad-2026': 'chad', 'zac-2026': 'zac', 'joe-2026': 'joe'
   // demo-xgolf: no location (organizer only)
 };
 function courseLoc(courseId){ return COURSE_LOCATION[courseId] || ''; }
