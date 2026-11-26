@@ -75,10 +75,17 @@
   .brand-row h1{font-size:34px;line-height:1;color:var(--text);}
   .brand-row .place{font-size:13px;color:var(--text-dim);}
   .sub{font-size:13px;color:var(--text-dim);margin-top:2px;}
-  .event-select{margin-top:8px;padding:8px 10px;font-weight:700;font-size:16px;}
+  /* Course switcher: labelled, outlined box with a "Switch" pill so it's obvious you can change course. */
+  .course-pick{margin-top:10px;}
+  .cp-label{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin:0 0 4px 2px;}
+  .cp-box{position:relative;}
+  .event-select{width:100%;margin:0;padding:11px 96px 11px 12px;font-weight:800;font-size:17px;-webkit-appearance:none;appearance:none;border:2px solid var(--accent);border-radius:10px;background:var(--surface);color:var(--text);cursor:pointer;}
+  .event-select:focus{outline:3px solid var(--gold);outline-offset:1px;}
+  .cp-switch{position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;background:var(--accent);color:var(--accent-ink);font-size:13px;font-weight:800;border-radius:7px;padding:6px 10px;}
+  .cp-box:not(:has(.cp-switch:not([hidden]))) .event-select{padding-right:12px;}
   .event-note{margin-top:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--gold);background:var(--surface-2);font-size:14px;line-height:1.4;}
   .event-note b{display:block;font-size:15px;margin-bottom:2px;}
-  body.tv-mode .event-select{display:none;}
+  body.tv-mode .course-pick{display:none;}
   .tv-qr{display:none;}
   body.tv-mode header.top .inner{position:relative;padding-right:15vw;}
   body.tv-mode .tv-qr{display:flex;flex-direction:column;align-items:center;gap:.3vw;position:absolute;right:0;top:50%;transform:translateY(-50%);}
@@ -403,7 +410,7 @@
   .share-bar .only-scores{display:none;}
   body.scores-mode .share-bar .only-scores{display:inline;}
   body.scores-mode .share-bar .only-board{display:none;}
-  body.scores-mode .tabs, body.scores-mode #panel-score, body.scores-mode .event-select, body.scores-mode details.rules{display:none !important;}
+  body.scores-mode .tabs, body.scores-mode #panel-score, body.scores-mode .course-pick, body.scores-mode details.rules{display:none !important;}
   body.scores-mode #panel-board{display:block !important;}
   body.scores-mode header.top{position:static;}
   @media (min-width:701px){ body.scores-mode .wrap{max-width:1100px;} body.scores-mode .lb-list, body.scores-mode .lb-hint{display:none;} }
@@ -464,7 +471,10 @@
       <span class="place" id="brandPlace">Chester Springs, PA</span>
     </div>
     <div class="demo-ribbon" id="demoRibbon" hidden>DEMO &middot; just for fun &middot; scores don't count</div>
-    <select id="eventSelect" class="event-select" aria-label="Event"><option value="">Loading events&hellip;</option></select>
+    <div class="course-pick" id="coursePick">
+      <label for="eventSelect" class="cp-label" id="cpLabel">Course</label>
+      <div class="cp-box"><select id="eventSelect" class="event-select"><option value="">Loading events&hellip;</option></select><span class="cp-switch" id="cpSwitch" hidden>Switch &#9662;</span></div>
+    </div>
     <div class="sub" id="eventSub"></div>
     <div class="tv-qr" id="tvQr" aria-hidden="true"><img alt=""><span>SCAN TO PLAY</span></div>
     <div class="tabs">
@@ -1835,6 +1845,12 @@
         '<optgroup label="Home courses">' + home.map(opt).join('') + '</optgroup>'
       : list.map(opt).join('');
     if (CURRENT_EVENT) sel.value = CURRENT_EVENT.id;
+    // Say plainly that this is a switcher (and how many courses are behind it).
+    var many = list.length > 1;
+    document.getElementById('cpSwitch').hidden = !many;
+    document.getElementById('cpLabel').textContent = many
+      ? (home.length && CURRENT_EVENT && isHomeEvent(CURRENT_EVENT) ? 'Home course' : 'Course') + ' \u00b7 tap to switch (' + list.length + ' courses)'
+      : 'Course';
   }
   function showEventInfo(){
     var ev = CURRENT_EVENT;
