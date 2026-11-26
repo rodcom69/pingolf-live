@@ -897,7 +897,7 @@
   function renderLocPins(){
     $('locPinList').innerHTML = Object.keys(LOCATIONS).map(function(id){
       return '<div class="row" style="padding:6px 0;border-top:1px solid rgba(128,128,128,.2);gap:6px;flex-wrap:wrap;">' +
-        '<div style="flex:1;min-width:150px;"><b>' + esc(LOCATIONS[id]) + '</b><div class="dim small">playpingolf.com/admin/' + esc(id) + '</div>' +
+        '<div style="flex:1;min-width:150px;"><b>' + esc(LOCATIONS[id]) + '</b><div class="dim small">playpingolf.com/admin/' + esc(id) + '</div></div>' +
         '<input type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="New PIN" data-locpin="' + esc(id) + '" style="width:110px;">' +
         '<button class="btn sm" data-locset="' + esc(id) + '">Set</button></div>';
     }).join('');
