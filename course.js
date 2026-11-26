@@ -66,9 +66,9 @@ var COURSES = {
   // Home courses (group 'home') are hidden from the public: the dropdown's "Home courses" section
   // only appears on a phone that has opened a home-course link, and then shows all of them. menuName = label there.
   'basement-2026': {
-    name: 'Basement · 5 machines',
-    brand: 'RODNEY C. PINGOLF', place: 'Home course', mulligans: 1,
-    group: 'home', menuName: 'Rodney C.',
+    name: "Rodney's House · 5 machines",
+    brand: "RODNEY'S HOUSE PINGOLF", place: "Rodney's House", mulligans: 1,
+    group: 'home', menuName: "Rodney's House",
     holes: [
       {n:1, name:"Batman 66 (Catwoman)", img:"batman-66-catwoman", target:200000000, label:"200M"},
       {n:2, name:"Harry Potter CE", img:"harry-potter-ce", target:400000000, label:"400M"},
@@ -82,9 +82,9 @@ var COURSES = {
   // (proposal https://claude.ai/artifact/WsvdFtsQ5ne8jjdrXEpnrs, Michael approved). Editions per Michael: Foo Fighters Pro, JAWS Premium, Monster Bash remake SE (CGC).
   // Art from IPDB (Foo Fighters Pro + Fish Tales translites; others backglass photos, cropped), JAWS reuses pc-jaws.
   'michael-2026': {
-    name: 'Michael R. · 8 machines',
-    brand: 'MICHAEL R. PINGOLF', place: 'Home course', mulligans: 1,
-    group: 'home', menuName: 'Michael R.',
+    name: "Michael's House · 8 machines",
+    brand: "MICHAEL'S HOUSE PINGOLF", place: "Michael's House", mulligans: 1,
+    group: 'home', menuName: "Michael's House",
     holes: [
       {n:1, name:"Foo Fighters Pro", img:"foo-fighters-pro", target:75000000, label:"75M"},
       {n:2, name:"The Getaway: High Speed II", img:"getaway-hs2", target:30000000, label:"30M"},
@@ -273,6 +273,24 @@ COURSES['demo-xgolf'] = Object.assign({}, COURSES['xgolf-2026-12'], {
   collectEmail: null
 });
 var DEFAULT_COURSE = 'xgolf-2026-12';
+// Locations: each one has its own admin login (admin.html?loc=<id>, its own PIN, set by the organizer on
+// admin.html > Location PINs). A location admin sees only events whose course belongs to that location and can
+// close/reopen holes, fix/void/add scores and hide players there (enforced by firestore.rules via events/{id}.loc).
+var LOCATIONS = {
+  xgolf:       'X-Golf',
+  pincrossing: 'PinCrossing',
+  basement:    "Rodney's House",
+  michael:     "Michael's House",
+  manor:       'The Manor',
+  chad:        "Chad's House",
+  zac:         "Zac's House"
+};
+var COURSE_LOCATION = {
+  'xgolf-2026-12': 'xgolf', 'pincrossing-2026': 'pincrossing', 'basement-2026': 'basement',
+  'michael-2026': 'michael', 'manor-2026': 'manor', 'chad-2026': 'chad', 'zac-2026': 'zac'
+  // demo-xgolf: no location (organizer only)
+};
+function courseLoc(courseId){ return COURSE_LOCATION[courseId] || ''; }
 function courseInfo(courseId){ return COURSES[courseId] || COURSES[DEFAULT_COURSE]; }
 // Mulligans per card: 2 unless the course says otherwise (PinCrossing plays with 1).
 // Every event asks for an optional email. venue tags where it was collected (for per-venue lists);

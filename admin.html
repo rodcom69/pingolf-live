@@ -91,7 +91,7 @@
 </head>
 <body>
 <header><div class="inner">
-  <h1>PINGOLF ADMIN</h1>
+  <h1 id="adminTitle">PINGOLF ADMIN</h1>
   <a class="btn sm" href="./" style="text-decoration:none;">Scorecard</a>
   <button class="btn sm" id="lockBtn" hidden>Lock</button>
 </div></header>
@@ -99,8 +99,8 @@
 <div class="wrap">
   <!-- PIN gate -->
   <div class="card" id="gate">
-    <h2>Organizer sign-in</h2>
-    <p class="dim small" style="margin:6px 0 12px;">Enter the admin PIN. It stays unlocked in this browser tab until you lock it or close the tab.</p>
+    <h2 id="gateTitle">Organizer sign-in</h2>
+    <p class="dim small" style="margin:6px 0 12px;" id="gateHelp">Enter the admin PIN. It stays unlocked in this browser tab until you lock it or close the tab.</p>
     <form id="pinForm" class="row">
       <input type="password" id="pinInput" inputmode="numeric" autocomplete="current-password" placeholder="PIN">
       <button class="btn primary" type="submit">Unlock</button>
@@ -140,6 +140,13 @@
         <button class="btn sm" id="gBtn">Sign in with Google</button>
       </div>
       <div id="emailOut" style="margin-top:10px;"></div>
+    </div>
+    <div class="card" id="locPinCard">
+      <div class="row">
+        <div style="flex:1;"><b>Location admin PINs</b><div class="dim small">Each location has its own admin page and PIN. With it they can start competitions, open/finish their events, close holes, and fix, void or add scores, only at their own location. Type a PIN (4&ndash;8 digits) and tap Set; it can't be read back.</div></div>
+        <button class="btn sm" id="locPinToggle">Show</button>
+      </div>
+      <div id="locPinList" hidden style="margin-top:10px;"></div>
     </div>
     <div class="card" id="moveCard" hidden>
       <div class="row">
@@ -225,7 +232,7 @@
         <option value="closed">Finished: read-only, shown in History</option>
       </select>
     </div>
-    <label class="row small" style="margin-top:12px;gap:8px;"><input type="checkbox" id="evTest" style="width:auto;"> Test / practice event</label>
+    <label class="row small" style="margin-top:12px;gap:8px;" id="evTestWrap"><input type="checkbox" id="evTest" style="width:auto;"> Test / practice event</label>
     <label class="row small" style="margin-top:8px;gap:8px;"><input type="checkbox" id="evMulti" style="width:auto;"> Multiple cards (players can start another card after finishing one, like the Practice Open)</label>
     <div id="evIdWrap" style="margin-top:10px;">
       <label class="fl" for="evId">Link name (can't be changed later)</label>
@@ -255,7 +262,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="course.js?v=2026-11-26a"></script>
+<script src="course.js?v=2026-11-26b"></script>
 <script>
 (function(){
   firebase.initializeApp(firebaseConfig);
@@ -263,6 +270,11 @@
   var FV = firebase.firestore.FieldValue;
 
   var pin = null;
+  // Location mode: admin.html?loc=<id> (LOCATIONS in course.js). Own PIN, own events only.
+  var LOC = (function(){ var l = new URLSearchParams(location.search).get('loc'); return l && LOCATIONS[l] ? l : ''; })();
+  var PIN_KEY = LOC ? 'pingolf_loc_pin_' + LOC : 'pingolf_admin_pin';
+  function myEvent(e){ return !LOC || courseLoc(e.course) === LOC; }
+  function myCourses(){ return Object.keys(COURSES).filter(function(k){ return !LOC || courseLoc(k) === LOC; }); }
   var currentEvent = null;      // event whose scores are shown (from EVENTS, or a stray id found on scores)
   var EVENTS = [];              // events/{id}, newest first
   var attempts = [];            // all docs in the selected event, including voided
@@ -279,8 +291,9 @@
   // was written in the same request; the PIN itself can never be read back.
   function adminBatch(build){
     var batch = db.batch();
-    var unlockRef = db.collection('adminUnlock').doc();
-    batch.set(unlockRef, {pin: pin, at: FV.serverTimestamp()});
+    // A location admin signs with locUnlock {loc, pin}; the rules then allow only that location's events/scores.
+    var unlockRef = db.collection(LOC ? 'locUnlock' : 'adminUnlock').doc();
+    batch.set(unlockRef, LOC ? {loc: LOC, pin: pin, at: FV.serverTimestamp()} : {pin: pin, at: FV.serverTimestamp()});
     build(batch, {unlockId: unlockRef.id, editedByAdmin: true});
     return batch.commit();
   }
@@ -289,7 +302,7 @@
   function tryPin(p){
     pin = p;
     return adminBatch(function(){}).then(function(){
-      try { sessionStorage.setItem('pingolf_admin_pin', p); } catch(e){}
+      try { sessionStorage.setItem(PIN_KEY, p); } catch(e){}
       $('gate').hidden = true; $('main').hidden = false; $('lockBtn').hidden = false;
       loadEvents();
       db.collection('players').onSnapshot(function(snap){
@@ -299,7 +312,7 @@
       });
     }).catch(function(err){
       pin = null;
-      try { sessionStorage.removeItem('pingolf_admin_pin'); } catch(e){}
+      try { sessionStorage.removeItem(PIN_KEY); } catch(e){}
       $('gateStatus').className = 'status err';
       $('gateStatus').textContent = /permission/i.test(err.message) ? 'Wrong PIN.' : ('Could not check the PIN (' + err.message + ').');
     });
@@ -312,13 +325,22 @@
     tryPin(p);
   });
   $('lockBtn').addEventListener('click', function(){
-    try { sessionStorage.removeItem('pingolf_admin_pin'); } catch(e){}
+    try { sessionStorage.removeItem(PIN_KEY); } catch(e){}
     location.reload();
   });
-  try { var saved = sessionStorage.getItem('pingolf_admin_pin'); if (saved) tryPin(saved); } catch(e){}
+  if (LOC) {
+    document.title = LOCATIONS[LOC] + ' admin';
+    $('adminTitle').textContent = LOCATIONS[LOC].toUpperCase() + ' ADMIN';
+    $('gateTitle').textContent = LOCATIONS[LOC] + ' admin';
+    $('gateHelp').textContent = 'Enter your location PIN. It stays unlocked in this browser tab until you lock it or close the tab.';
+    // Organizer-only tools.
+    ['emailCard', 'moveCard', 'locPinCard', 'evTestWrap'].forEach(function(id){ $(id).hidden = true; });
+  }
+  try { var saved = sessionStorage.getItem(PIN_KEY); if (saved) tryPin(saved); } catch(e){}
 
   // ---------- Events ----------
   // ---------- Events ----------
+  var ALL_EVENT_IDS = [];       // every event id (a location only sees its own, but link names must be unique)
   var strayIds = [];            // event ids that have scores but no event doc
   var eventsSeen = false;
   function loadEvents(){
@@ -329,14 +351,28 @@
       renderEventSelect();
     });
     db.collection('events').onSnapshot(function(snap){
-      EVENTS = sortEvents(snap.docs.map(function(d){ var e = d.data(); e.id = d.id; return e; }));
+      ALL_EVENT_IDS = snap.docs.map(function(d){ return d.id; });
+      EVENTS = sortEvents(snap.docs.map(function(d){ var e = d.data(); e.id = d.id; return e; })).filter(myEvent);
+      backfillLoc();
       eventsSeen = true;
       renderEventList();
       renderEventSelect();
     }, function(err){ setStatus('Could not load events (' + err.message + ')', 'err'); });
   }
+  // Organizer: give every event its location (events/{id}.loc) so location admins can manage it. Runs once per load.
+  var backfilled = false;
+  function backfillLoc(){
+    if (LOC || backfilled) return;
+    var need = EVENTS.filter(function(e){ return (e.loc || '') !== courseLoc(e.course); });
+    backfilled = true;
+    if (!need.length) return;
+    adminBatch(function(batch, stamp){
+      need.forEach(function(e){ batch.update(db.collection('events').doc(e.id), {loc: courseLoc(e.course), unlockId: stamp.unlockId}); });
+    }).then(done('Set the location on ' + need.length + ' event' + (need.length === 1 ? '' : 's') + '.')).catch(failed);
+  }
   function allScoreEvents(){
     var list = EVENTS.slice();
+    if (LOC) return list;
     strayIds.forEach(function(id){
       if (!EVENTS.some(function(e){ return e.id === id; })) list.push({id: id, name: id + ' (no event set up)', course: DEFAULT_COURSE, stray: true});
     });
@@ -362,6 +398,7 @@
     RANK_FINISHED_FIRST = !!(ev && ev.rankFinishedFirst);
     MAX_MULLIGANS = courseMulligans(ev.course);
     $('eventLink').textContent = ev.stray ? '' : 'Player link: playpingolf.com/?e=' + ev.id;
+    $('moveCard').hidden = true;
     $('moveTo').innerHTML = EVENTS.filter(function(e){ return e.id !== ev.id; }).map(function(e){
       return '<option value="' + esc(e.id) + '">to ' + esc(eventTitle(e)) + '</option>';
     }).join('');
@@ -376,6 +413,7 @@
   function renderEventList(){
     var el = $('eventList');
     if (!EVENTS.length) {
+      if (LOC) { el.innerHTML = '<div class="dim small">No competitions yet. Tap New event to start one.</div>'; return; }
       el.innerHTML = '<div class="dim small" style="margin-bottom:8px;">No events set up yet.</div>' +
         '<button class="btn primary" id="starterBtn">Create Test Event + Dec 12 event</button>';
       $('starterBtn').onclick = function(){
@@ -413,6 +451,9 @@
     var live = EVENTS.find(function(e){ return e.id === id; }) || {};
     ['closesAt', 'rankFinishedFirst', 'note', 'multiCard', 'hiddenPlayers'].forEach(function(k){ if (live[k] != null) d[k] = live[k]; });
     if (typeof ev.multiCard === 'boolean') d.multiCard = ev.multiCard; // the event sheet's Multiple cards box
+    // events/{id}.loc = the course's location; the rules use it to decide which location admin may change it.
+    d.loc = live.loc != null && LOC ? live.loc : courseLoc(d.course);
+    if (LOC && live.id) { d.course = live.course; d.test = !!live.test; }
     return adminBatch(function(batch, stamp){
       d.unlockId = stamp.unlockId;
       batch.set(db.collection('events').doc(id), d);
@@ -427,7 +468,9 @@
     var e = ev || {name: 'Pingolf', location: last.location || '', date: '', time: last.time || '', course: last.course || DEFAULT_COURSE, status: 'upcoming', test: false};
     $('evTitle').textContent = ev ? 'Edit event' : 'New event';
     $('evName').value = e.name; $('evLocation').value = e.location || ''; $('evDate').value = e.date || ''; $('evTime').value = e.time || '';
-    $('evCourse').innerHTML = Object.keys(COURSES).map(function(k){ return '<option value="' + esc(k) + '">' + esc(COURSES[k].name) + '</option>'; }).join('') +
+    if (LOC && !ev) e = {name: LOCATIONS[LOC] + ' Pingolf', location: LOCATIONS[LOC], date: '', time: 'Anytime', course: myCourses()[0], status: 'open', test: courseInfo(myCourses()[0]).group === 'home'};
+    $('evCourse').disabled = !!(LOC && ev);
+    $('evCourse').innerHTML = (LOC ? myCourses() : Object.keys(COURSES)).map(function(k){ return '<option value="' + esc(k) + '">' + esc(COURSES[k].name) + '</option>'; }).join('') +
       (COURSES[e.course] ? '' : '<option value="' + esc(e.course) + '">' + esc(e.course) + '</option>');
     $('evCourse').value = e.course;
     $('evStatus').value = e.status; $('evTest').checked = !!e.test;
@@ -440,7 +483,8 @@
   function updateEvId(){
     if ($('evId').dataset.auto) {
       var loc = slugify(($('evLocation').value.split(',')[0] || 'event'));
-      $('evId').value = $('evTest').checked ? 'test-' + ($('evDate').value || Date.now().toString(36)) : (loc || 'event') + '-' + ($('evDate').value || 'tbd');
+      $('evId').value = LOC ? LOC + '-' + ($('evDate').value || Date.now().toString(36))
+        : $('evTest').checked ? 'test-' + ($('evDate').value || Date.now().toString(36)) : (loc || 'event') + '-' + ($('evDate').value || 'tbd');
     }
     $('evIdPreview').textContent = $('evId').value;
   }
@@ -457,12 +501,14 @@
     if (!name) { setStatus('Give the event a name.', 'err'); return; }
     var id = editingEvent ? editingEvent.id : slugify($('evId').value);
     if (!id) { setStatus('Give the event a link name.', 'err'); return; }
-    if (!editingEvent && EVENTS.some(function(e){ return e.id === id; })) { setStatus('There is already an event with the link name ' + id + '.', 'err'); return; }
+    if (!editingEvent && ALL_EVENT_IDS.indexOf(id) !== -1) { setStatus('There is already an event with the link name ' + id + '.', 'err'); return; }
     $('evOverlay').classList.remove('show');
     // Hole lists come from the live copy, so closes made while this sheet was open aren't undone.
     var live = editingEvent ? (EVENTS.find(function(e){ return e.id === id; }) || editingEvent) : null;
     saveEvent(id, {name: name, location: $('evLocation').value.trim(), date: $('evDate').value, time: $('evTime').value.trim(),
-                   course: $('evCourse').value, status: $('evStatus').value, test: $('evTest').checked, multiCard: $('evMulti').checked,
+                   course: $('evCourse').value, status: $('evStatus').value,
+                   test: LOC ? (editingEvent ? !!editingEvent.test : courseInfo($('evCourse').value).group === 'home') : $('evTest').checked,
+                   multiCard: $('evMulti').checked,
                    closedHoles: live ? (live.closedHoles || []) : [],
                    removedHoles: live ? (live.removedHoles || []) : []},
               editingEvent ? 'Event saved.' : 'Event created: playpingolf.com/?e=' + id);
@@ -555,7 +601,7 @@
   function render(){
     if (!currentEvent) return;
     renderHoles();
-    $('moveCard').hidden = !attempts.length || !$('moveTo').options.length;
+    $('moveCard').hidden = !!LOC || !attempts.length || !$('moveTo').options.length;
     var byPlayer = {}, hasScores = {};
     // Multi-card events (Practice Open): each card is its own row, "Name · Card N".
     var multi = !!currentEvent.multiCard;
@@ -567,7 +613,7 @@
       hasScores[a.playerKey] = true;
     });
     // Signed-up players with no scores yet show too (live event only).
-    if (currentEvent.status === 'open') Object.keys(registered).forEach(function(k){
+    if (currentEvent.status === 'open' && !LOC) Object.keys(registered).forEach(function(k){
       if (!hasScores[k]) byPlayer[k] = {key: k, card: 1, rowKey: k, name: registered[k], all: []};
     });
     var players = Object.keys(byPlayer).map(function(k){
@@ -641,8 +687,8 @@
     var counted = {};
     p.res.countedIds.forEach(function(id){ counted[id] = true; });
     var html = '<div class="p-actions">' +
-      '<button class="btn sm" data-act="rename">Rename</button>' +
-      '<button class="btn sm" data-act="setCode">' + (p.signedUp ? 'Reset PIN' : 'Set PIN') + '</button>' +
+      (LOC ? '' : '<button class="btn sm" data-act="rename">Rename</button>' +
+      '<button class="btn sm" data-act="setCode">' + (p.signedUp ? 'Reset PIN' : 'Set PIN') + '</button>') +
       (isHidden(p.key) ? '<button class="btn sm" data-act="unhide">Show on boards</button>'
                        : '<button class="btn sm" data-act="hide">Hide from boards</button>') +
       (p.removed ? '<button class="btn sm" data-act="restoreAll">Restore player</button>'
@@ -841,6 +887,29 @@
     var v = parseInt($('sheetScore').value, 10), t = sheetTarget();
     if (isNaN(v) || v < 0 || !t) return;
     saveSheet({strokes: chartStrokes(t, v, holeBalls(sheetHole())), method: 'chart', rawScore: v});
+  });
+
+  // ---------- Location admin PINs (organizer only) ----------
+  $('locPinToggle').onclick = function(){
+    var l = $('locPinList'); l.hidden = !l.hidden; this.textContent = l.hidden ? 'Show' : 'Hide';
+    if (!l.hidden && !l.innerHTML) renderLocPins();
+  };
+  function renderLocPins(){
+    $('locPinList').innerHTML = Object.keys(LOCATIONS).map(function(id){
+      return '<div class="row" style="padding:6px 0;border-top:1px solid rgba(128,128,128,.2);gap:6px;flex-wrap:wrap;">' +
+        '<div style="flex:1;min-width:150px;"><b>' + esc(LOCATIONS[id]) + '</b><div class="dim small">playpingolf.com/admin/' + esc(id) + '</div>' +
+        '<input type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="New PIN" data-locpin="' + esc(id) + '" style="width:110px;">' +
+        '<button class="btn sm" data-locset="' + esc(id) + '">Set</button></div>';
+    }).join('');
+  }
+  $('locPinList').addEventListener('click', function(e){
+    var b = e.target.closest('[data-locset]'); if (!b) return;
+    var id = b.dataset.locset, input = $('locPinList').querySelector('[data-locpin="' + id + '"]');
+    var code = input.value.trim();
+    if (!/^[0-9]{4,8}$/.test(code)) { setStatus('A location PIN is 4 to 8 digits.', 'err'); return; }
+    adminBatch(function(batch, stamp){
+      batch.set(db.collection('secrets').doc('loc_' + id), {pin: code, unlockId: stamp.unlockId});
+    }).then(function(){ input.value = ''; setStatus('PIN set for ' + LOCATIONS[id] + '.', 'ok'); }).catch(failed);
   });
 
   // ---------- Player emails (Google sign-in; the rules let only the organizer's account read playerContacts) ----------

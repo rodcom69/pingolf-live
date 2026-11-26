@@ -18,6 +18,10 @@ rules_version = '2';
 //  - every score must have a sane shape (hole 1-30, strokes 1-8, short name)
 //  - events can only be created or changed by the organizer page
 //  - playerContacts/{name}: optional email, write-only for players, readable only by the organizer's Google sign-in
+//  - location admins (admin.html?loc=<id>): each location has its own PIN in secrets/loc_<id> (set by the organizer,
+//    never readable). A change carries a one-time locUnlock doc {loc, pin}. With it, a location can create events for
+//    itself (events/{id}.loc = its id), and on its own events change everything except loc/course/test, and add, fix
+//    or void scores. It can never touch another location's events or scores, players, PINs or secrets/admin.
 //  - everything else is closed
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -73,6 +77,18 @@ service cloud.firestore {
         && getAfter(db('adminUnlock/' + d.unlockId)).data.at == request.time;
     }
 
+    // The same request created locUnlock/{id} for location `loc` (with that location's PIN).
+    function locProved(unlockId, loc) {
+      return unlockId is string && loc is string && loc != ''
+        && getAfter(db('locUnlock/' + unlockId)).data.at == request.time
+        && getAfter(db('locUnlock/' + unlockId)).data.loc == loc;
+    }
+    // A location write to a score: the score's event belongs to the location that signed this change.
+    function isLocWrite(d) {
+      return hasValidShape(d) && 'unlockId' in d
+        && locProved(d.unlockId, get(db('events/' + d.eventId)).data.get('loc', ''));
+    }
+
     // A player write: current event, no organizer-only fields, signed with their PIN.
     function isPlayerWrite(d) {
       return hasValidShape(d)
@@ -95,23 +111,36 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    function eventShape(d) {
+      return d.keys().hasOnly(['name', 'location', 'date', 'time', 'course', 'status', 'test', 'closedHoles', 'removedHoles', 'closesAt', 'rankFinishedFirst', 'note', 'multiCard', 'hiddenPlayers', 'unlockId', 'loc'])
+                    && (!('loc' in d) || (d.loc is string && d.loc.size() <= 30))
+                    && (!('closedHoles' in d) || (d.closedHoles is list && d.closedHoles.size() <= 30))
+                    && (!('hiddenPlayers' in d) || (d.hiddenPlayers is list && d.hiddenPlayers.size() <= 100))
+                    && (!('removedHoles' in d) || (d.removedHoles is list && d.removedHoles.size() <= 30))
+                    && (!('closesAt' in d) || d.closesAt is int)
+                    && (!('rankFinishedFirst' in d) || d.rankFinishedFirst is bool)
+                    && (!('multiCard' in d) || d.multiCard is bool)
+                    && (!('note' in d) || (d.note is string && d.note.size() <= 300))
+                    && d.name is string && d.name.size() > 0 && d.name.size() <= 60
+                    && d.location is string && d.location.size() <= 80
+                    && d.date is string && d.time is string
+                    && d.course is string
+                    && d.status in ['upcoming', 'open', 'closed']
+                    && d.test is bool;
+    }
+
     match /events/{eventId} {
       allow read: if true;
-      allow create, update: if request.resource.data.keys().hasOnly(['name', 'location', 'date', 'time', 'course', 'status', 'test', 'closedHoles', 'removedHoles', 'closesAt', 'rankFinishedFirst', 'note', 'multiCard', 'hiddenPlayers', 'unlockId'])
-                    && (!('closedHoles' in request.resource.data) || (request.resource.data.closedHoles is list && request.resource.data.closedHoles.size() <= 30))
-                    && (!('hiddenPlayers' in request.resource.data) || (request.resource.data.hiddenPlayers is list && request.resource.data.hiddenPlayers.size() <= 100))
-                    && (!('removedHoles' in request.resource.data) || (request.resource.data.removedHoles is list && request.resource.data.removedHoles.size() <= 30))
-                    && (!('closesAt' in request.resource.data) || request.resource.data.closesAt is int)
-                    && (!('rankFinishedFirst' in request.resource.data) || request.resource.data.rankFinishedFirst is bool)
-                    && (!('multiCard' in request.resource.data) || request.resource.data.multiCard is bool)
-                    && (!('note' in request.resource.data) || (request.resource.data.note is string && request.resource.data.note.size() <= 300))
-                    && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
-                    && request.resource.data.location is string && request.resource.data.location.size() <= 80
-                    && request.resource.data.date is string && request.resource.data.time is string
-                    && request.resource.data.course is string
-                    && request.resource.data.status in ['upcoming', 'open', 'closed']
-                    && request.resource.data.test is bool
+      allow create, update: if eventShape(request.resource.data)
                     && adminProved(request.resource.data);
+      // A location admin: create an event for itself, or change its own (never loc, course or test).
+      allow create: if eventShape(request.resource.data)
+                    && locProved(request.resource.data.get('unlockId', ''), request.resource.data.get('loc', ''));
+      allow update: if eventShape(request.resource.data)
+                    && locProved(request.resource.data.get('unlockId', ''), resource.data.get('loc', ''))
+                    && request.resource.data.get('loc', '') == resource.data.get('loc', '')
+                    && request.resource.data.course == resource.data.course
+                    && request.resource.data.test == resource.data.test;
       allow delete: if false;
     }
 
@@ -120,7 +149,8 @@ service cloud.firestore {
       allow create: if (isPlayerWrite(request.resource.data)
                         && request.resource.data.ts > nowMs() - 1800000
                         && request.resource.data.ts < nowMs() + 300000)
-                    || isAdminWrite(request.resource.data);
+                    || isAdminWrite(request.resource.data)
+                    || isLocWrite(request.resource.data);
       allow update: if (isPlayerWrite(request.resource.data)
                         && resource.data.eventId == request.resource.data.eventId
                         && resource.data.playerKey == request.resource.data.playerKey
@@ -128,7 +158,13 @@ service cloud.firestore {
                         && !('editedByAdmin' in resource.data)
                         && request.resource.data.ts == resource.data.ts
                         && inEditWindow(resource.data))
-                    || isAdminWrite(request.resource.data);
+                    || isAdminWrite(request.resource.data)
+                    // A location admin fixing/voiding a score on its own event (same event, player, card, hole).
+                    || (isLocWrite(request.resource.data)
+                        && resource.data.eventId == request.resource.data.eventId
+                        && resource.data.playerKey == request.resource.data.playerKey
+                        && resource.data.get('card', 1) == request.resource.data.get('card', 1)
+                        && resource.data.hole == request.resource.data.hole);
       // Undo: the same request creates playerUnlock/del_{attemptId} for the owner.
       allow delete: if eventOpen(resource.data.eventId)
                     && !('editedByAdmin' in resource.data)
@@ -199,6 +235,25 @@ service cloud.firestore {
                     && request.resource.data.at == request.time
                     && request.resource.data.pin == get(db('secrets/admin')).data.pin;
       allow read, update, delete: if false;
+    }
+
+    // One doc per location-admin change. Write-only: the PIN in it can't be read back.
+    match /locUnlock/{unlockId} {
+      allow create: if request.resource.data.keys().hasOnly(['loc', 'pin', 'at'])
+                    && request.resource.data.loc is string && request.resource.data.loc.matches('^[a-z0-9-]{1,30}$')
+                    && request.resource.data.at == request.time
+                    && request.resource.data.pin == get(db('secrets/loc_' + request.resource.data.loc)).data.pin;
+      allow read, update, delete: if false;
+    }
+
+    // Location PINs (secrets/loc_<id>): only the organizer can set them; nobody can read them.
+    // secrets/admin is never writable from a page.
+    match /secrets/{secretId} {
+      allow create, update: if secretId.matches('^loc_[a-z0-9-]{1,30}$')
+                    && request.resource.data.keys().hasOnly(['pin', 'unlockId'])
+                    && request.resource.data.pin is string && request.resource.data.pin.matches('^[0-9]{4,8}$')
+                    && adminProved(request.resource.data);
+      allow read, delete: if false;
     }
 
     match /{document=**} {
