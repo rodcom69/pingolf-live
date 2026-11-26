@@ -42,6 +42,8 @@
   .bm-row label{flex:1;display:flex;gap:8px;align-items:center;font-size:14px;min-width:0;}
   .bm-row label span{overflow:hidden;text-overflow:ellipsis;}
   .bm-row input[type=checkbox]{width:20px;height:20px;flex-shrink:0;}
+  .bm-n{min-width:22px;height:22px;border-radius:11px;background:var(--accent);color:var(--accent-ink);font-size:12px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .bm-n:empty{visibility:hidden;}
   .bm-row input[type=text]{width:150px;flex-shrink:0;text-align:right;}
   .bm-row select{width:auto;flex-shrink:0;}
   .bm-row.off input[type=text], .bm-row.off select{opacity:.35;}
@@ -151,7 +153,7 @@
     </div>
     <div class="card" id="buildCard" hidden>
       <div class="row">
-        <div style="flex:1;"><b>Build a course</b><div class="dim small">Pick the machines, set each target, save. Then start a competition with it (New event &rsaquo; Course).</div></div>
+        <div style="flex:1;"><b>Build a course</b><div class="dim small">Tick machines in the order you want to play them (the number shows the hole), set each target, save. Then start a competition with it (New event &rsaquo; Course).</div></div>
         <button class="btn sm primary" id="buildNew">New course</button>
       </div>
       <div id="buildList" style="margin-top:8px;"></div>
@@ -300,8 +302,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="course.js?v=2026-11-26h"></script>
-<script src="objectives.js?v=2026-11-26h"></script>
+<script src="course.js?v=2026-11-26i"></script>
+<script src="objectives.js?v=2026-11-26i"></script>
 <script>
 (function(){
   firebase.initializeApp(firebaseConfig);
@@ -950,7 +952,8 @@
   // ---------- Build a course (location admin; roster = VENUE_MACHINES[LOC]) ----------
   // Saved to courses/c-<loc>-<slug>. A course an event already uses keeps its machines (scores are
   // stored by hole number); only targets and balls can change. "Save as new" makes a copy.
-  var building = null; // {id, locked}
+  var building = null; // {id, locked, order: [machine names in hole order]}
+  // Hole order = the order machines are ticked (untick + tick again moves one to the end).
   function courseEvents(id){ return EVENTS.filter(function(e){ return e.course === id; }); }
   function renderBuildList(){
     if (!LOC || !VENUE_MACHINES[LOC]) return;
@@ -968,7 +971,7 @@
     var c = id ? COURSES[id] : null, picked = {};
     if (c) c.holes.forEach(function(h){ picked[h.name] = h; });
     var locked = !!(c && courseEvents(id).length);
-    building = {id: id || null, locked: locked};
+    building = {id: id || null, locked: locked, order: c ? c.holes.map(function(h){ return h.name; }) : []};
     $('buildName').value = c ? c.menuName : '';
     $('buildMulls').value = String(c ? c.mulligans : 1);
     $('buildLock').hidden = !locked;
@@ -983,7 +986,7 @@
           var d = machineDefaults(LOC, m.name), h = picked[m.name], on = !!h;
           var t = h ? h.target : d.target, b = (h ? h.balls : d.balls) || 3;
           return '<div class="bm-row' + (on ? '' : ' off') + '" data-name="' + esc(m.name) + '" data-room="' + esc(r) + '">' +
-            '<label><input type="checkbox"' + (on ? ' checked' : '') + (locked ? ' disabled' : '') + '><span>' + esc(m.name) + '</span></label>' +
+            '<label><input type="checkbox"' + (on ? ' checked' : '') + (locked ? ' disabled' : '') + '><b class="bm-n"></b><span>' + esc(m.name) + '</span></label>' +
             '<select title="Balls"><option value="3"' + (b === 3 ? ' selected' : '') + '>3 ball</option><option value="5"' + (b === 5 ? ' selected' : '') + '>5 ball</option></select>' +
             '<input type="text" inputmode="numeric" placeholder="Target" value="' + (t ? Number(t).toLocaleString('en-US') : '') + '"></div>';
         }).join('');
@@ -991,7 +994,7 @@
     var box = $('buildMachines');
     box.querySelectorAll('.bm-row').forEach(function(row){
       var cb = row.querySelector('input[type=checkbox]'), tx = row.querySelector('input[type=text]');
-      cb.onchange = function(){ row.classList.toggle('off', !cb.checked); buildCount(); };
+      cb.onchange = function(){ row.classList.toggle('off', !cb.checked); setOrder(row.dataset.name, cb.checked); buildCount(); };
       tx.oninput = function(){ var n = parseNum(tx.value); tx.value = isNaN(n) ? '' : n.toLocaleString('en-US'); };
     });
     box.querySelectorAll('[data-room]').forEach(function(b){ if (b.tagName === 'BUTTON') b.onclick = function(){ setAll(true, b.dataset.room); }; });
@@ -1005,20 +1008,32 @@
     $('buildMachines').querySelectorAll('.bm-row').forEach(function(row){
       if (room != null && row.dataset.room !== room) return;
       var cb = row.querySelector('input[type=checkbox]'); cb.checked = on; row.classList.toggle('off', !on);
+      setOrder(row.dataset.name, on);
     });
     buildCount();
   }
+  function setOrder(name, on){
+    var o = building.order, i = o.indexOf(name);
+    if (on && i === -1) o.push(name);
+    if (!on && i !== -1) o.splice(i, 1);
+  }
   function buildCount(){
-    var n = $('buildMachines').querySelectorAll('.bm-row input[type=checkbox]:checked').length;
+    $('buildMachines').querySelectorAll('.bm-row').forEach(function(row){
+      var i = building.order.indexOf(row.dataset.name);
+      row.querySelector('.bm-n').textContent = i === -1 ? '' : (i + 1);
+    });
+    var n = building.order.length;
     $('buildCount').textContent = n + ' machine' + (n === 1 ? '' : 's') + ' · par ' + (n * PAR);
   }
   function slug(t){ return String(t).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || 'course'; }
   function saveBuilder(asNew){
     var name = $('buildName').value.trim();
     if (!name) { setStatus('Give the course a name.', 'err'); $('buildName').focus(); return; }
-    var holes = [], bad = [];
-    $('buildMachines').querySelectorAll('.bm-row').forEach(function(row){
-      if (!row.querySelector('input[type=checkbox]').checked) return;
+    var holes = [], bad = [], rowsByName = {};
+    $('buildMachines').querySelectorAll('.bm-row').forEach(function(row){ rowsByName[row.dataset.name] = row; });
+    building.order.forEach(function(nm){
+      var row = rowsByName[nm];
+      if (!row || !row.querySelector('input[type=checkbox]').checked) return;
       var t = parseNum(row.querySelector('input[type=text]').value), b = parseInt(row.querySelector('select').value, 10);
       if (isNaN(t) || t < 1) { bad.push(row.dataset.name); return; }
       var h = {name: row.dataset.name, target: t, img: machineDefaults(LOC, row.dataset.name).img || ''};
