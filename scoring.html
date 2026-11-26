@@ -136,7 +136,7 @@
     </div>
   </div>
 </div>
-<script src="course.js?v=2026-11-26i"></script>
+<script src="course.js?v=2026-11-26j"></script>
 <script src="objectives.js?v=2026-11-26i"></script>
 <script>
 (function(){
@@ -145,6 +145,7 @@
   var courseId = COURSES[params.get('course')] ? params.get('course') : DEFAULT_COURSE;
   var holes = courseHoles(courseId);
   MAX_MULLIGANS = courseMulligans(courseId);
+  PICK = coursePick(courseId);
   var e = params.get('e');
   if (e) document.getElementById('backLink').href = './?e=' + encodeURIComponent(e);
 
@@ -157,13 +158,14 @@
     ? [ev.location ? ev.location.split(',')[0] : '', eventWhen(ev)].filter(Boolean).join(' · ')
     : [ci.name.split(' · ')[0], ci.place].filter(Boolean).join(' · ');
 
-  var n = holes.length;
+  var n = holes.length, k = PICK ? Math.min(PICK, n) : n;
   document.getElementById('rules').textContent =
     'Hit the target on ball 1, 2 or 3 and that\'s your strokes for the hole (1, 2 or 3). ' +
     'Still short after 3 balls? Find your final score below to get your strokes (4–8). ' +
     holes.filter(function(h){ return holeBalls(h) > 3; }).map(function(h){ return h.name + ' is a 5-ball game: ball 4 = 4, ball 5 = 5, short after 5 balls = 6–8. '; }).join('') +
-    'Par ' + PAR + ' per hole, ' + (PAR * n) + ' total. Lowest total wins. ' +
-    'After all ' + n + ' holes you get ' + mulliganWord(MAX_MULLIGANS) + (MAX_MULLIGANS > 1 ? ' on different games' : '') + '; a mulligan replaces that hole only if it\'s better.';
+    (PICK ? 'Players pick ' + k + ': play any ' + k + ' of the ' + n + ' games, once each. ' : '') +
+    'Par ' + PAR + ' per hole, ' + (PAR * k) + ' total. Lowest total wins. ' +
+    'After ' + (PICK ? 'your ' + k + ' games' : 'all ' + n + ' holes') + ' you get ' + mulliganWord(MAX_MULLIGANS) + (MAX_MULLIGANS > 1 ? ' on different games' : '') + '; a mulligan replaces that hole only if it\'s better.';
   document.getElementById('legend').textContent = TIEBREAK_TEXT + ' Enter scores at playpingolf.com.';
 
   document.getElementById('rows').innerHTML = holes.map(function(h){
@@ -197,8 +199,8 @@
   document.getElementById('paperRows').innerHTML = holes.map(function(h){
     return '<tr><td class="n">' + h.n + '</td><td class="m">' + esc(h.name) + '</td><td class="t">' + fmtNum(h.target) + '</td>' +
       (holeBalls(h) > 3 ? '<td class="balls" style="letter-spacing:.35em">1 2 3 4 5' : '<td class="balls">1 2 3') + '</td><td class="w"></td><td class="s"></td></tr>';
-  }).join('') + '<tr class="tot"><td colspan="5" class="lbl">Total before mulligans (par ' + (PAR * n) + ')</td><td class="s"></td></tr>';
-  document.getElementById('mullNote').textContent = 'After all ' + n + ' holes: replay ' + (MAX_MULLIGANS > 1 ? 'up to ' + MAX_MULLIGANS + ' different machines' : 'one machine') + '. A mulligan replaces that hole only if it took fewer strokes.';
+  }).join('') + '<tr class="tot"><td colspan="5" class="lbl">Total before mulligans (par ' + (PAR * k) + ')</td><td class="s"></td></tr>';
+  document.getElementById('mullNote').textContent = 'After ' + (PICK ? 'your ' + k + ' games' : 'all ' + n + ' holes') + ': replay ' + (MAX_MULLIGANS > 1 ? 'up to ' + MAX_MULLIGANS + ' different machines' : 'one machine') + '. A mulligan replaces that hole only if it took fewer strokes.';
   var mr = '';
   for (var i = 1; i <= MAX_MULLIGANS; i++) mr += '<tr><td class="n">' + i + '</td><td class="w"></td><td style="width:50px"></td><td class="balls">1 2 3</td><td class="w"></td><td class="s"></td></tr>';
   document.getElementById('mullRows').innerHTML = mr;

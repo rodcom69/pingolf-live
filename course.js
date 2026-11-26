@@ -266,6 +266,12 @@ var VENUE_MACHINES = {
 };
 // Demo: the X-Golf machines and targets, for showing people the app. Lives under Home courses as
 // "Demo (try it out)", with a DEMO ribbon on screen (course demo: true) so it's never mistaken for the real event.
+// PinCrossing Players Pick 7 (Rodney 2026-11-26): same 11 machines and targets as pincrossing-2026,
+// but each player plays only 7 games of their choice. After the 7th, the other machines lock and the
+// 1 mulligan opens (replay one of your 7); then the card is done. pick:N = games per card, par 3 x N.
+COURSES['pincrossing-pick7'] = Object.assign({}, COURSES['pincrossing-2026'], {
+  name: 'PinCrossing Players Pick 7', pick: 7, mulligans: 1
+});
 COURSES['demo-xgolf'] = Object.assign({}, COURSES['xgolf-2026-12'], {
   name: 'Demo · X-Golf machines (practice only)',
   brand: 'PINGOLF DEMO', place: 'Try it out',
@@ -286,7 +292,7 @@ var LOCATIONS = {
   zac:         "Zac's House"
 };
 var COURSE_LOCATION = {
-  'xgolf-2026-12': 'xgolf', 'pincrossing-2026': 'pincrossing', 'basement-2026': 'basement',
+  'xgolf-2026-12': 'xgolf', 'pincrossing-2026': 'pincrossing', 'pincrossing-pick7': 'pincrossing', 'basement-2026': 'basement',
   'michael-2026': 'michael', 'manor-2026': 'manor', 'chad-2026': 'chad', 'zac-2026': 'zac'
   // demo-xgolf: no location (organizer only)
 };
@@ -301,6 +307,8 @@ function courseEmail(courseId){
 }
 function validEmail(e){ return typeof e === 'string' && e.length <= 100 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); }
 function courseMulligans(courseId){ var m = courseInfo(courseId).mulligans; return typeof m === 'number' ? m : 2; }
+// Players-pick courses (pick:N): play any N games, the rest lock. 0 = play every hole.
+function coursePick(courseId){ var p = courseInfo(courseId).pick; return typeof p === 'number' ? p : 0; }
 function mulliganWord(n){ return n + ' mulligan' + (n === 1 ? '' : 's'); }
 function courseHoles(courseId){ return courseInfo(courseId).holes; }
 // The course of the event being shown. The scorecard swaps it when you pick an event.
@@ -312,7 +320,7 @@ var HOLES = courseHoles(DEFAULT_COURSE);
 //    stop counting, and par drops by 3.
 // CLOSED_HOLES = removed (the scoring list); DOWN_HOLES = closed for now.
 var CLOSED_HOLES = [], DOWN_HOLES = [];
-function useCourse(courseId, removedHoles, downHoles){ HOLES = courseHoles(courseId); MAX_MULLIGANS = courseMulligans(courseId); CLOSED_HOLES = removedHoles || []; DOWN_HOLES = downHoles || []; }
+function useCourse(courseId, removedHoles, downHoles){ HOLES = courseHoles(courseId); MAX_MULLIGANS = courseMulligans(courseId); PICK = coursePick(courseId); CLOSED_HOLES = removedHoles || []; DOWN_HOLES = downHoles || []; }
 function isHoleClosed(n, closed){ return (closed || CLOSED_HOLES).indexOf(n) !== -1; }
 function isHoleDown(n, down){ return (down || DOWN_HOLES).indexOf(n) !== -1; }
 function isHoleShut(n){ return isHoleClosed(n) || isHoleDown(n); }
@@ -365,14 +373,18 @@ function sortEvents(list){
   return list.slice().sort(function(a,b){ return (!!a.test - !!b.test) || (b.date || '').localeCompare(a.date || ''); });
 }
 
-var MAX_MULLIGANS = 2, PAR = 3;
+var MAX_MULLIGANS = 2, PAR = 3, PICK = 0;
 function rulesText(holes){
   var n = openHoleCount(holes);
   if (holes.length && isGoal(holes[0])) return goalRulesText(holes, n);
+  var k = PICK ? Math.min(PICK, n) : n;
+  var playPart = PICK
+    ? 'Players pick ' + k + ': choose any ' + k + ' of the ' + n + ' games and play each once. After your ' + k + 'th game the other machines lock and you get ' + mulliganWord(MAX_MULLIGANS) + ': replay one of your ' + k + ' games; it replaces that hole only if it\'s better. Then your card is done.'
+    : 'Play all ' + n + ' holes. Once all ' + n + ' are done, you get ' + mulliganWord(MAX_MULLIGANS) + ': pick any game, play it again, and enter the score. It replaces that hole on your card only if it\'s better.' + (MAX_MULLIGANS > 1 ? ' Each mulligan must be a different game.' : '');
   var five = holes.filter(function(h){ return holeBalls(h) === 5; }).map(function(h){ return h.name; });
   return 'Hit the target on ball 1, 2, or 3 — that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4–8) are looked up automatically. ' +
     (five.length ? five.join(' and ') + (five.length > 1 ? ' are' : ' is') + ' a 5-ball game: hit the target on ball 4 = 4 strokes, ball 5 = 5; still short after 5 balls = 6–8 strokes. ' : '') +
-    'Play all ' + n + ' holes. Once all ' + n + ' are done, you get ' + mulliganWord(MAX_MULLIGANS) + ': pick any game, play it again, and enter the score. It replaces that hole on your card only if it\'s better.' + (MAX_MULLIGANS > 1 ? ' Each mulligan must be a different game.' : '') + ' Par is 3 per hole (' + (PAR * n) + ' total). Lowest total wins. ' + TIEBREAK_TEXT;
+    playPart + ' Par is 3 per hole (' + (PAR * k) + ' total). Lowest total wins. ' + TIEBREAK_TEXT;
 }
 
 // Most games are 3 balls; a hole with balls:5 (Joker Poker) lets ball 4 = 4 and
@@ -418,8 +430,10 @@ function playerKey(name){ return name.trim().toLowerCase(); }
 // down = holes closed temporarily: they still count, but a player who hasn't played
 // one isn't held up by it (mulligans unlock once every open hole is done).
 // mulls = mulligans allowed on that course (defaults to the shown event's course).
-function scoreRound(attempts, holeCount, closed, down, mulls){
+// pick = games per card on a players-pick course (0 = every hole; defaults to the shown course).
+function scoreRound(attempts, holeCount, closed, down, mulls, pick){
   closed = closed || CLOSED_HOLES;
+  if (pick == null) pick = PICK;
   if (mulls == null) mulls = MAX_MULLIGANS;
   down = down || DOWN_HOLES;
   if (holeCount == null) holeCount = HOLES.length;
@@ -449,7 +463,8 @@ function scoreRound(attempts, holeCount, closed, down, mulls){
   var skippedDown = down.filter(function(n, i){
     return down.indexOf(n) === i && closedHere.indexOf(n) === -1 && !originals[n] && n >= 1 && n <= holeCount + closedHere.length;
   }).length;
-  var needed = holeCount - skippedDown;
+  // Players pick N: done after N different games (machines down don't matter, you just pick others).
+  var needed = pick ? Math.min(pick, holeCount) : holeCount - skippedDown;
   return {
     total: total,
     thru: thru,

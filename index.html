@@ -658,7 +658,7 @@
 <!-- Firebase (compat SDK: plain script-tag API, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="course.js?v=2026-11-26i"></script>
+<script src="course.js?v=2026-11-26j"></script>
 <script src="objectives.js?v=2026-11-26i"></script>
 
 <script>
@@ -1020,7 +1020,7 @@
     var mine = myAttempts();
     var res = scoreRound(mine);
     document.getElementById('playedCount').textContent = res.thru;
-    document.getElementById('holeTotal').textContent = res.holeCount;
+    document.getElementById('holeTotal').textContent = PICK ? res.needed : res.holeCount;
     document.getElementById('mullCount').textContent = Math.max(0, MAX_MULLIGANS - res.mulligansUsed);
     updateUndo();
 
@@ -1037,10 +1037,21 @@
     var grid = document.getElementById('holeGrid');
     grid.innerHTML = '';
     var nameReady = !!me && eventIsOpen();
+    // Players pick N: once N games are in, the unplayed machines lock.
+    var picksDone = PICK && res.thru >= res.needed;
 
     HOLES.forEach(function(h){
       var removed = isHoleClosed(h.n), closed = removed || isHoleDown(h.n);
       var a = removed ? null : res.byHole[h.n];
+      if (picksDone && !a && !closed) {
+        var lk = document.createElement('button');
+        lk.className = 'hole-tile closed';
+        lk.disabled = true;
+        lk.innerHTML = '<div class="art"><img src="' + holeImg(h) + '" alt="" loading="lazy"><div class="hn tnum">' + h.n + '</div><div class="closed-tag">NOT PICKED</div></div>' +
+          '<div class="mname">' + h.name + '</div><div class="mtarget">You played your ' + res.needed + ' games</div>';
+        grid.appendChild(lk);
+        return;
+      }
       var btn = document.createElement('button');
       btn.className = 'hole-tile' + (a ? ' done' : '') + (closed ? ' closed' : '') + (!a && !closed ? ' todo' : '');
       btn.disabled = (!nameReady && !isGoal(h)) || closed;
@@ -1058,7 +1069,7 @@
       btn.innerHTML =
         (a && a.mulligan ? '<div class="mull-tag">MULL</div>' : '') +
         '<div class="art"><img src="' + holeImg(h) + '" alt="" loading="lazy"><div class="hn tnum">' + h.n + '</div>' +
-          (a ? '<div class="done-tag">\u2713 DONE</div>' : '<div class="todo-tag">NEEDS SCORE</div>') + '</div>' +
+          (a ? '<div class="done-tag">\u2713 DONE</div>' : '<div class="todo-tag">' + (PICK ? 'PICK ME?' : 'NEEDS SCORE') + '</div>') + '</div>' +
         '<div class="mname">' + h.name + '</div>' +
         '<div class="mtarget">' + scoreLine + '</div>' +
         (a ? '<div class="badge">' + a.strokes + '</div>' : '');
@@ -1088,10 +1099,10 @@
           if (mh) body = '<div style="display:flex;gap:10px;align-items:center;"><img class="mc-thumb" src="' + holeImg(mh) + '" alt=""><div style="min-width:0;">' + body + '</div></div>';
           card.disabled = !nameReady;
         } else if (res.complete) {
-          body = '<b>Choose a game</b><div class="mc-sub">Replay any game; it counts only if it beats your card</div>';
+          body = '<b>Choose a game</b><div class="mc-sub">Replay ' + (PICK ? 'one of your ' + res.needed + ' games' : 'any game') + '; it counts only if it beats your card</div>';
           card.disabled = !nameReady;
         } else {
-          body = '<b>Locked</b><div class="mc-sub">Finish all ' + res.needed + ' open holes to unlock (' + Math.min(res.thru, res.needed) + ' / ' + res.needed + ' done)</div>';
+          body = '<b>Locked</b><div class="mc-sub">' + (PICK ? 'Play your ' + res.needed + ' games to unlock' : 'Finish all ' + res.needed + ' open holes to unlock') + ' (' + Math.min(res.thru, res.needed) + ' / ' + res.needed + ' done)</div>';
           card.disabled = true;
         }
         card.innerHTML = '<div class="mc-label">Mulligan ' + (slot + 1) + '</div><div class="mc-body">' + body + '</div>' + right;
@@ -1252,6 +1263,7 @@
   function openSheet(hole){
     var res = scoreRound(myAttempts());
     var orig = res.originals[hole.n];
+    if (!orig && PICK && res.thru >= res.needed) return; // already played your N games
     sheetMode = orig ? 'fix' : 'new';
     currentEditId = orig ? orig.id : null;
     document.getElementById('sheetGameWrap').hidden = true;
@@ -1277,7 +1289,7 @@
     currentEditId = existing ? existing.id : null;
     var taken = res.mulls.filter(function(m){ return m !== existing; }).map(function(m){ return m.hole; });
     var sel = document.getElementById('sheetGame');
-    sel.innerHTML = '<option value="">Select a game\u2026</option>' + HOLES.filter(function(h){ return taken.indexOf(h.n) === -1 && !isHoleShut(h.n); }).map(function(h){
+    sel.innerHTML = '<option value="">Select a game\u2026</option>' + HOLES.filter(function(h){ return taken.indexOf(h.n) === -1 && !isHoleShut(h.n) && (!PICK || res.originals[h.n]); }).map(function(h){
       var o = res.originals[h.n];
       return '<option value="' + h.n + '">' + h.n + '. ' + esc(h.name) + (o ? ' (now ' + o.strokes + ')' : '') + '</option>';
     }).join('');
@@ -1373,6 +1385,11 @@
       if (!res.complete || otherMulls.length >= MAX_MULLIGANS ||
           otherMulls.some(function(m){ return m.hole === currentHole.n; })) { closeSheet(); return; }
     } else if (!editId && res.originals[currentHole.n]) { closeSheet(); return; }
+    else if (!editId && PICK && res.thru >= res.needed) {
+      closeSheet();
+      setConnNote('You already played your ' + res.needed + ' games. Use your mulligan to replay one of them.', true);
+      return;
+    }
     var data = {
       playerKey: me.key,
       playerName: name,
@@ -1583,14 +1600,14 @@
     return '<div class="lb-strip">' + html + '</div>';
   }
 
-  function buildBoardHtml(attemptsList, holes, closed, down, hidden, mulls){
+  function buildBoardHtml(attemptsList, holes, closed, down, hidden, mulls, pick){
     holes = holes || HOLES;
     closed = closed || CLOSED_HOLES;
     down = down || DOWN_HOLES;
     var byPlayer = groupByCard(attemptsList, hidden);
     var players = Object.keys(byPlayer).map(function(k){
       var p = byPlayer[k];
-      var res = scoreRound(p.attempts, holes.length, closed, down, mulls);
+      var res = scoreRound(p.attempts, holes.length, closed, down, mulls, pick);
       return {key:p.key, card:p.card, name:p.name, attempts:p.attempts, res:res};
     });
     if (!players.length) return '';
@@ -1674,7 +1691,7 @@
       if (document.getElementById('historyEventSelect').value !== eventId) return;
       var where = [ev.location, eventWhen(ev)].filter(Boolean).join(' \u00b7 ');
       wrap.innerHTML = (where ? '<div class="sub" style="margin:8px 0;">' + esc(where) + '</div>' : '') +
-        (buildBoardHtml(list, courseHoles(ev.course), ev.removedHoles || [], [], ev.hiddenPlayers || [], courseMulligans(ev.course)) || '<div class="empty-note">No scores in this event.</div>');
+        (buildBoardHtml(list, courseHoles(ev.course), ev.removedHoles || [], [], ev.hiddenPlayers || [], courseMulligans(ev.course), coursePick(ev.course)) || '<div class="empty-note">No scores in this event.</div>');
     };
     if (historyLoaded[eventId]) { show(historyLoaded[eventId]); return; }
     wrap.innerHTML = '<div class="empty-note">Loading&hellip;</div>';
