@@ -52,3 +52,4 @@ This repo is public, so never commit PINs, secrets or personal details.
 - Rodney handles DNS changes and types the organizer PIN himself.
 - Changing what plays on the X-Golf TV (AbleSign) needs Rodney's go-ahead each time.
 - Scores are backed up nightly to Excel on Rodney's MacBook Air (`~/Pingolf Backups`). The script is in `~/Library/Application Support/Pingolf/`.
+- Firestore rules deploy (2026-11-26): Firebase CLI installed via Homebrew (`firebase`, v15.37). `firebase.json` + `.firebaserc` (project pingolf-95ba1) are in the repo, so `firebase deploy --only firestore:rules` publishes `firestore.rules` (Rodney runs `firebase login` once). Use this instead of the console editor, whose Publish button kept hanging.
