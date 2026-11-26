@@ -307,6 +307,8 @@
   .obj-name{flex:1;font-weight:600;font-size:14px;}
   .obj-target{font-size:11px;color:var(--text-dim);flex-shrink:0;}
   .goal-card summary{list-style:none;cursor:pointer;}
+  .goal-link u{font-size:11px;color:var(--accent);font-weight:700;}
+  .goal-card[open]{outline:2px solid var(--accent);}
   .goal-card summary::-webkit-details-marker{display:none;}
   .goal-short{font-family:"Teko",sans-serif;font-size:18px;color:var(--accent);font-weight:600;line-height:1.1;margin-top:2px;}
   .goal-more{font-size:11px;font-weight:700;color:var(--text-dim);flex-shrink:0;}
@@ -1041,7 +1043,7 @@
       var a = removed ? null : res.byHole[h.n];
       var btn = document.createElement('button');
       btn.className = 'hole-tile' + (a ? ' done' : '') + (closed ? ' closed' : '') + (!a && !closed ? ' todo' : '');
-      btn.disabled = !nameReady || closed;
+      btn.disabled = (!nameReady && !isGoal(h)) || closed;
       if (closed) {
         btn.innerHTML =
           '<div class="art"><img src="' + holeImg(h) + '" alt="" loading="lazy"><div class="hn tnum">' + h.n + '</div><div class="closed-tag">' + (removed ? 'CLOSED FOR GOOD' : 'HOLE CLOSED') + '</div></div>' +
@@ -1051,7 +1053,7 @@
         return;
       }
       var scoreLine = isGoal(h)
-        ? (a ? (a.method === 'ball' ? ('Done on ball ' + a.ball) : 'Not done in 9 balls') : '<span style="font-weight:600;color:var(--text-dim);">Objective:</span> ' + esc(h.label))
+        ? (a ? (a.method === 'ball' ? ('Done on ball ' + a.ball) : 'Not done in 9 balls') : '<span class="goal-link"><span style="font-weight:600;color:var(--text-dim);">Objective:</span> ' + esc(h.label) + ' <u>how?</u></span>')
         : a ? (a.method === 'ball' ? ('Made ' + h.label + ' on ball ' + a.ball) : ('Score: ' + fmtNum(a.rawScore))) : ('Target ' + h.label);
       btn.innerHTML =
         (a && a.mulligan ? '<div class="mull-tag">MULL</div>' : '') +
@@ -1060,7 +1062,11 @@
         '<div class="mname">' + h.name + '</div>' +
         '<div class="mtarget">' + scoreLine + '</div>' +
         (a ? '<div class="badge">' + a.strokes + '</div>' : '');
-      btn.addEventListener('click', function(){ openSheet(h); });
+      btn.addEventListener('click', function(e){
+        // Objective holes: tapping the objective line opens its explanation on the Objectives tab.
+        if (isGoal(h) && (e.target.closest('.goal-link') || !nameReady)) { showGoal(h.n); return; }
+        openSheet(h);
+      });
       grid.appendChild(btn);
     });
 
@@ -1746,9 +1752,17 @@
     setTimeout(safeReload, 3 * 60 * 60 * 1000);
   }
 
+  function showGoal(n){
+    window.location.hash = 'rules'; activateTab('rules');
+    document.querySelectorAll('.goal-card').forEach(function(d){ d.open = d.id === 'goal-' + n; });
+    var card = document.getElementById('goal-' + n);
+    if (card) setTimeout(function(){ card.scrollIntoView({block: 'center'}); }, 50);
+  }
   function renderObjectives(){
+  var tabShort = document.querySelector('.tab-btn[data-tab="rules"] .short');
+  if (tabShort) tabShort.textContent = HOLES.length && isGoal(HOLES[0]) ? 'Objectives' : 'Targets';
   document.getElementById('objList').innerHTML = HOLES.map(function(h){
-    if (isGoal(h)) return '<details class="obj-card goal-card' + (isHoleShut(h.n) ? ' closed' : '') + '"><summary>' +
+    if (isGoal(h)) return '<details id="goal-' + h.n + '" class="obj-card goal-card' + (isHoleShut(h.n) ? ' closed' : '') + '"><summary>' +
       '<div class="obj-head">' +
         '<img class="obj-thumb" src="' + holeImg(h) + '" alt="" loading="lazy">' +
         '<div class="obj-num tnum">' + h.n + '</div>' +
