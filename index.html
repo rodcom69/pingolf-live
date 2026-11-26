@@ -1051,7 +1051,7 @@
         return;
       }
       var scoreLine = isGoal(h)
-        ? (a ? (a.method === 'ball' ? ('Done on ball ' + a.ball) : 'Not done in 9 balls') : esc(h.label))
+        ? (a ? (a.method === 'ball' ? ('Done on ball ' + a.ball) : 'Not done in 9 balls') : '<span style="font-weight:600;color:var(--text-dim);">Objective:</span> ' + esc(h.label))
         : a ? (a.method === 'ball' ? ('Made ' + h.label + ' on ball ' + a.ball) : ('Score: ' + fmtNum(a.rawScore))) : ('Target ' + h.label);
       btn.innerHTML =
         (a && a.mulligan ? '<div class="mull-tag">MULL</div>' : '') +
@@ -1753,7 +1753,7 @@
         '<img class="obj-thumb" src="' + holeImg(h) + '" alt="" loading="lazy">' +
         '<div class="obj-num tnum">' + h.n + '</div>' +
         '<div class="obj-name">' + h.name + (isHoleClosed(h.n) ? ' <b style="color:#b3261e;">(closed permanently)</b>' : isHoleDown(h.n) ? ' <b style="color:#b3261e;">(closed temporarily)</b>' : '') +
-          '<div class="goal-short">' + esc(h.label) + '</div></div>' +
+          '<div class="goal-short">Objective: ' + esc(h.label) + '</div></div>' +
         '<div class="goal-more">details</div>' +
       '</div></summary>' +
       '<div class="goal-body"><b>' + esc(h.goal) + '</b><div>' + esc(h.how) + '</div></div>' +
