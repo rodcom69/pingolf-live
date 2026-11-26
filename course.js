@@ -279,7 +279,7 @@ COURSES['joe-2026'] = {
     {n:2, name:"Metallica", img:"metallica", target:30000000, label:"30M"},
     {n:3, name:"Deadpool", img:"deadpool-pro", target:75000000, label:"75M"},
     {n:4, name:"Game of Thrones", img:"game-of-thrones", target:75000000, label:"75M"},
-    {n:5, name:"The Walking Dead (LE)", img:"walking-dead", target:75000000, label:"75M"},
+    {n:5, name:"The Walking Dead Remastered (LE)", img:"walking-dead", target:75000000, label:"75M"},
     {n:6, name:"Fallout (LE)", img:"fallout-vault-boy", target:100000000, label:"100M"}
   ]
 };
