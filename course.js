@@ -354,7 +354,7 @@ COURSES['joe-2026'] = {
 COURSES['dpc-2026'] = {
   name: 'Delaware Pinball Collective · Players Pick 9',
   brand: 'DELAWARE PINBALL COLLECTIVE', place: 'Wilmington, DE', mulligans: 1, pick: 9,
-  listed: true,
+  // listed: true,  // HIDDEN for now (Rodney 2026-11-26): link-only via /dpc until he says go public
   holes: [
     {n:1, name:"Argosy", img:"argosy", target:75000, label:"75K", balls:5},
     {n:2, name:"Avengers: Infinity Quest (Premium)", img:"pc-avengers", target:50000000, label:"50M"},
