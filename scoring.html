@@ -136,7 +136,7 @@
     </div>
   </div>
 </div>
-<script src="course.js?v=2026-11-26n"></script>
+<script src="course.js?v=2026-11-26o"></script>
 <script src="objectives.js?v=2026-11-26i"></script>
 <script>
 (function(){
@@ -162,7 +162,7 @@
   document.getElementById('rules').textContent =
     'Hit the target on ball 1, 2 or 3 and that\'s your strokes for the hole (1, 2 or 3). ' +
     'Still short after 3 balls? Find your final score below to get your strokes (4–8). ' +
-    holes.filter(function(h){ return holeBalls(h) > 3; }).map(function(h){ return h.name + ' is a 5-ball game: ball 4 = 4, ball 5 = 5, short after 5 balls = 6–8. '; }).join('') +
+    (function(f){ return f.length ? listWords(f) + (f.length > 1 ? ' are 5-ball games' : ' is a 5-ball game') + ': ball 4 = 4, ball 5 = 5, short after 5 balls = 6–8. ' : ''; })(holes.filter(function(h){ return holeBalls(h) > 3; }).map(function(h){ return h.name; })) +
     (PICK ? 'Players pick ' + k + ': play any ' + k + ' of the ' + n + ' games, once each. ' : '') +
     'Par ' + PAR + ' per hole, ' + (PAR * k) + ' total. Lowest total wins. ' +
     'After ' + (PICK ? 'your ' + k + ' games' : 'all ' + n + ' holes') + ' you get ' + mulliganWord(MAX_MULLIGANS) + (MAX_MULLIGANS > 1 ? ' on different games' : '') + '; a mulligan replaces that hole only if it\'s better.';
@@ -194,7 +194,7 @@
   document.getElementById('paperRules').textContent =
     'Hit the target on ball 1, 2 or 3: circle that ball, and that\'s your strokes. Missed after 3 balls? Write your final score; ' +
     'strokes (4–8) come from the scoring chart. ' +
-    holes.filter(function(h){ return holeBalls(h) > 3; }).map(function(h){ return h.name + ' is 5 balls (circle 1–5; short = 6–8). '; }).join('') +
+    (function(f){ return f.length ? listWords(f) + (f.length > 1 ? ' are' : ' is') + ' 5 balls (circle 1–5; short = 6–8). ' : ''; })(holes.filter(function(h){ return holeBalls(h) > 3; }).map(function(h){ return h.name; })) +
     'Par ' + PAR + ' per hole. Give this card to the organizer to enter in the app.';
   document.getElementById('paperRows').innerHTML = holes.map(function(h){
     return '<tr><td class="n">' + h.n + '</td><td class="m">' + esc(h.name) + '</td><td class="t">' + fmtNum(h.target) + '</td>' +

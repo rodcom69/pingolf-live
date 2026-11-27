@@ -205,6 +205,68 @@ COURSES['zac-2026'] = {
 // picked from them later. The Manor: from Match Play "The Manor Mega Matchplay" arenas
 // (app.matchplay.events/tournaments/245339/arenas), Nov 2026; room = where it sits; opdb = Open Pinball DB id.
 var VENUE_MACHINES = {
+  dpc: [ // Delaware Pinball Collective, Pinball Map location 16645 (Nov 2026)
+    {name:"Argosy", opdb:"Gr31Y-MQ9bZ"},
+    {name:"Avengers: Infinity Quest (Premium)", opdb:"Gj66P-MXr0E-A1nx0"},
+    {name:"Bank Shot", opdb:"GrqL6-MQ5Rn"},
+    {name:"Big Hit", opdb:"GRLJp-MDRxv"},
+    {name:"Black Jack", opdb:"G5nbD-MDyXb"},
+    {name:"Bobby Orr's Power Play", opdb:"G4en0-MJ5vB"},
+    {name:"Bounty Hunter", opdb:"G5nO8-ME0Wo"},
+    {name:"Cactus Canyon (Lyman Upgrade)", opdb:"G4835-M2YPK-ARkb7"},
+    {name:"Comet", opdb:"Gryd3-MLqjd"},
+    {name:"Conquest 200", opdb:"G4E88-MLEo0"},
+    {name:"Deadpool (Premium)", opdb:"G6lnq-MRj7Z"},
+    {name:"Demolition Man", opdb:"G5bv3-MLW68"},
+    {name:"Dialed In! (LE)", opdb:"G4X2l-MYepl-A1WXy"},
+    {name:"Dungeons & Dragons: The Tyrant's Eye (Pro)", opdb:"GK1Ej-MwNZr"},
+    {name:"Eight Ball", opdb:"GrN7J-MJ78q"},
+    {name:"Fallout (Premium)", opdb:"GELVv-Mx0dl-A9jbv"},
+    {name:"Foo Fighters (Pro)", opdb:"GpeoL-MyNPq"},
+    {name:"Future Spa", opdb:"G5Dbo-M3dv6"},
+    {name:"The Games", opdb:"GR9NZ-Ml99O"},
+    {name:"Godzilla (Premium)", opdb:"GweeP-Ml9pZ-ARZoY"},
+    {name:"Harlem Globetrotters On Tour", opdb:"GRnwQ-M9R5d"},
+    {name:"Harry Potter (Arcade Edition)", opdb:"GWyBj-MdEbK-A9dEy"},
+    {name:"Iron Maiden: Legacy of the Beast (Pro)", opdb:"G4dOQ-MyNbb"},
+    {name:"JAWS (Premium)", opdb:"GLWll-M1r8O-ARnV7"},
+    {name:"Jet Spin", opdb:"G4qzZ-M0oWR"},
+    {name:"Jim Henson's Labyrinth", opdb:"GvBn8-Mz291"},
+    {name:"Junk Yard", opdb:"GRLlj-MQZN8"},
+    {name:"Jurassic Park (Premium)", opdb:"GK17D-MKNKd-A15Yn"},
+    {name:"King Kong: Myth of Terror Island (Pro)", opdb:"GEL0V-MBRyb"},
+    {name:"Lethal Weapon 3", opdb:"GRokL-MQP78"},
+    {name:"Mars Trek", opdb:"Gr89x-Mp4nB"},
+    {name:"Meteor", opdb:"G5b38-MDqkx"},
+    {name:"Night Moves", opdb:"G4NY0-MDE29"},
+    {name:"No Fear: Dangerous Sports", opdb:"Gr2Y2-MDxZq"},
+    {name:"Pokémon (Premium)", opdb:"GV8wB-MRjKd-AOVy7"},
+    {name:"Pro-Football", opdb:"G41E2-ME00b"},
+    {name:"Quicksilver", opdb:"GRBZl-Mb5Zq"},
+    {name:"Scared Stiff", opdb:"G4xbP-Mp45Y"},
+    {name:"The Shadow", opdb:"G4jPX-M85YZ"},
+    {name:"Shangri-La", opdb:"G50XN-MKNVX"},
+    {name:"Skateball", opdb:"GrNpx-M2YZq"},
+    {name:"Solar Ride", opdb:"GRDqo-MDbPx"},
+    {name:"Sorcerer", opdb:"G4qxv-MJPyv"},
+    {name:"Space Shuttle", opdb:"G4q3L-MKN50"},
+    {name:"Space Time", opdb:"GRvE1-MQ2P6"},
+    {name:"The Spirit of 76", opdb:"GrlPK-Mx0By"},
+    {name:"Star Trek (Bally 1979)", opdb:"GRVnd-MQZzx"},
+    {name:"Star Wars: Fall of the Empire (Pro)", opdb:"Gxv81-M610r"},
+    {name:"Stars", opdb:"GrXEW-MDEwr"},
+    {name:"Super Soccer", opdb:"GRn8D-MQd21"},
+    {name:"Supersonic", opdb:"GRLXd-ME07p"},
+    {name:"Surf 'N Safari", opdb:"G5W0z-MLW6N"},
+    {name:"Torpedo Alley", opdb:"G48on-ML8B9"},
+    {name:"Touchdown", opdb:"G4qEl-MQrRE"},
+    {name:"Transformers: More Than Meets the Eye (Pro)", opdb:"GBLzz-M7Zd5"},
+    {name:"Twister", opdb:"GRwbv-MkPP0"},
+    {name:"White Water", opdb:"GRQKz-MyNXz"},
+    {name:"Wild Fyre", opdb:"GrOwV-Ml9kO"},
+    {name:"Wizard!", opdb:"G4l8K-MJwXy"},
+    {name:"World Cup Soccer", opdb:"G42E2-MQP9e"}
+  ],
   chad: [ // Match Play tournament 284697 arenas (app.matchplay.events/tournaments/284697/arenas); note = venue's setting
     {name:"Attack from Mars", opdb:"G4do5-MDlN7", note:"Tournament ROM, mystery gives out awards"},
     {name:"Dirty Harry", opdb:"GrJ2Z-M61Xd"},
@@ -283,6 +345,79 @@ COURSES['joe-2026'] = {
     {n:6, name:"Fallout (LE)", img:"fallout-vault-boy", target:100000000, label:"100M"}
   ]
 };
+// Delaware Pinball Collective (1100 First State Blvd, Wilmington DE; Rodney 2026-11-26): public course like
+// PinCrossing (listed in everyone's dropdown). All 60 machines from Pinball Map (location 16645, Nov 2026), in
+// Pinball Map's order. Players Pick 9 (Rodney's pick): any 9 of the 60, then the rest lock and the 1 mulligan opens.
+// EMs are 5-ball except Big Hit (baseball, 3-ball) per Rodney. Targets: reused from other courses where the
+// machine is the same, the rest are drafts. Art: OPDB backglass photos via Pinball Map (Bank Shot, Touchdown,
+// Night Moves cropped; Night Moves is the playfield), Cactus Canyon = IPDB backglass, the rest reused.
+COURSES['dpc-2026'] = {
+  name: 'Delaware Pinball Collective · Players Pick 9',
+  brand: 'DELAWARE PINBALL COLLECTIVE', place: 'Wilmington, DE', mulligans: 1, pick: 9,
+  listed: true,
+  holes: [
+    {n:1, name:"Argosy", img:"argosy", target:75000, label:"75K", balls:5},
+    {n:2, name:"Avengers: Infinity Quest (Premium)", img:"pc-avengers", target:50000000, label:"50M"},
+    {n:3, name:"Bank Shot", img:"bank-shot", target:80000, label:"80K", balls:5},
+    {n:4, name:"Big Hit", img:"big-hit", target:30000, label:"30K"},
+    {n:5, name:"Black Jack", img:"black-jack", target:150000, label:"150K"},
+    {n:6, name:"Bobby Orr's Power Play", img:"bobby-orr-power-play", target:80000, label:"80K"},
+    {n:7, name:"Bounty Hunter", img:"bounty-hunter", target:1500000, label:"1.5M"},
+    {n:8, name:"Cactus Canyon (Lyman Upgrade)", img:"cactus-canyon", target:30000000, label:"30M"},
+    {n:9, name:"Comet", img:"comet", target:3000000, label:"3M"},
+    {n:10, name:"Conquest 200", img:"conquest-200", target:100000, label:"100K", balls:5},
+    {n:11, name:"Deadpool (Premium)", img:"deadpool-pro", target:75000000, label:"75M"},
+    {n:12, name:"Demolition Man", img:"demolition-man", target:500000000, label:"500M"},
+    {n:13, name:"Dialed In! (LE)", img:"dialed-in", target:75000000, label:"75M"},
+    {n:14, name:"Dungeons & Dragons: The Tyrant's Eye (Pro)", img:"dnd-tyrants-eye", target:75000000, label:"75M"},
+    {n:15, name:"Eight Ball", img:"eight-ball", target:150000, label:"150K"},
+    {n:16, name:"Fallout (Premium)", img:"fallout-vault-boy", target:100000000, label:"100M"},
+    {n:17, name:"Foo Fighters (Pro)", img:"foo-fighters-pro", target:75000000, label:"75M"},
+    {n:18, name:"Future Spa", img:"future-spa", target:400000, label:"400K"},
+    {n:19, name:"The Games", img:"the-games", target:1000000, label:"1M"},
+    {n:20, name:"Godzilla (Premium)", img:"godzilla-premium", target:400000000, label:"400M"},
+    {n:21, name:"Harlem Globetrotters On Tour", img:"harlem-globetrotters", target:300000, label:"300K"},
+    {n:22, name:"Harry Potter (Arcade Edition)", img:"pc-harry-potter", target:200000000, label:"200M"},
+    {n:23, name:"Iron Maiden: Legacy of the Beast (Pro)", img:"iron-maiden-lotb", target:100000000, label:"100M"},
+    {n:24, name:"JAWS (Premium)", img:"pc-jaws", target:100000000, label:"100M"},
+    {n:25, name:"Jet Spin", img:"jet-spin", target:100000, label:"100K", balls:5},
+    {n:26, name:"Jim Henson's Labyrinth", img:"labyrinth", target:50000000, label:"50M"},
+    {n:27, name:"Junk Yard", img:"junk-yard", target:40000000, label:"40M"},
+    {n:28, name:"Jurassic Park (Premium)", img:"jurassic-park-premium", target:200000000, label:"200M"},
+    {n:29, name:"King Kong: Myth of Terror Island (Pro)", img:"pc-king-kong", target:75000000, label:"75M"},
+    {n:30, name:"Lethal Weapon 3", img:"lethal-weapon-3", target:30000000, label:"30M"},
+    {n:31, name:"Mars Trek", img:"mars-trek", target:100000, label:"100K", balls:5},
+    {n:32, name:"Meteor", img:"meteor", target:500000, label:"500K"},
+    {n:33, name:"Night Moves", img:"night-moves", target:2000000, label:"2M"},
+    {n:34, name:"No Fear: Dangerous Sports", img:"no-fear", target:200000000, label:"200M"},
+    {n:35, name:"Pokémon (Premium)", img:"pokemon", target:100000000, label:"100M"},
+    {n:36, name:"Pro-Football", img:"pro-football", target:20000, label:"20K", balls:5},
+    {n:37, name:"Quicksilver", img:"quicksilver", target:400000, label:"400K"},
+    {n:38, name:"Scared Stiff", img:"pc-scared-stiff", target:5000000, label:"5M"},
+    {n:39, name:"The Shadow", img:"the-shadow", target:300000000, label:"300M"},
+    {n:40, name:"Shangri-La", img:"shangri-la", target:5000, label:"5K", balls:5},
+    {n:41, name:"Skateball", img:"skateball", target:300000, label:"300K"},
+    {n:42, name:"Solar Ride", img:"solar-ride", target:300000, label:"300K"},
+    {n:43, name:"Sorcerer", img:"sorcerer", target:3000000, label:"3M"},
+    {n:44, name:"Space Shuttle", img:"space-shuttle", target:500000, label:"500K"},
+    {n:45, name:"Space Time", img:"space-time", target:50000, label:"50K", balls:5},
+    {n:46, name:"The Spirit of 76", img:"spirit-of-76", target:20000, label:"20K", balls:5},
+    {n:47, name:"Star Trek (Bally 1979)", img:"star-trek-1979", target:300000, label:"300K"},
+    {n:48, name:"Star Wars: Fall of the Empire (Pro)", img:"sw-fall-of-the-empire", target:150000000, label:"150M"},
+    {n:49, name:"Stars", img:"stars", target:80000, label:"80K"},
+    {n:50, name:"Super Soccer", img:"super-soccer", target:50000, label:"50K", balls:5},
+    {n:51, name:"Supersonic", img:"supersonic", target:150000, label:"150K"},
+    {n:52, name:"Surf 'N Safari", img:"surf-n-safari", target:2000000, label:"2M"},
+    {n:53, name:"Torpedo Alley", img:"torpedo-alley", target:1000000, label:"1M"},
+    {n:54, name:"Touchdown", img:"touchdown", target:5000, label:"5K", balls:5},
+    {n:55, name:"Transformers: More Than Meets the Eye (Pro)", img:"transformers-mtmte", target:100000000, label:"100M"},
+    {n:56, name:"Twister", img:"twister", target:200000000, label:"200M"},
+    {n:57, name:"White Water", img:"white-water", target:75000000, label:"75M"},
+    {n:58, name:"Wild Fyre", img:"wild-fyre", target:200000, label:"200K"},
+    {n:59, name:"Wizard!", img:"pc-wizard", target:80000, label:"80K", balls:5},
+    {n:60, name:"World Cup Soccer", img:"world-cup-soccer", target:1000000000, label:"1B"}
+  ]
+};
 // PinCrossing Players Pick 7 (Rodney 2026-11-26): same 11 machines and targets as pincrossing-2026,
 // but each player plays only 7 games of their choice. After the 7th, the other machines lock and the
 // 1 mulligan opens (replay one of your 7); then the card is done. pick:N = games per card, par 3 x N.
@@ -307,11 +442,12 @@ var LOCATIONS = {
   manor:       'The Manor',
   chad:        "Chad's House",
   zac:         "Zac's House",
-  joe:         "Joe's House"
+  joe:         "Joe's House",
+  dpc:         'Delaware Pinball Collective'
 };
 var COURSE_LOCATION = {
   'xgolf-2026-12': 'xgolf', 'pincrossing-2026': 'pincrossing', 'pincrossing-pick7': 'pincrossing', 'basement-2026': 'basement',
-  'michael-2026': 'michael', 'manor-2026': 'manor', 'chad-2026': 'chad', 'zac-2026': 'zac', 'joe-2026': 'joe'
+  'michael-2026': 'michael', 'manor-2026': 'manor', 'chad-2026': 'chad', 'zac-2026': 'zac', 'joe-2026': 'joe', 'dpc-2026': 'dpc'
   // demo-xgolf: no location (organizer only)
 };
 function courseLoc(courseId){ return COURSE_LOCATION[courseId] || ''; }
@@ -392,6 +528,8 @@ function sortEvents(list){
 }
 
 var MAX_MULLIGANS = 2, PAR = 3, PICK = 0;
+// 'A', 'A and B', 'A, B and C'
+function listWords(a){ return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
 function rulesText(holes){
   var n = openHoleCount(holes);
   if (holes.length && isGoal(holes[0])) return goalRulesText(holes, n);
@@ -401,7 +539,7 @@ function rulesText(holes){
     : 'Play all ' + n + ' holes. Once all ' + n + ' are done, you get ' + mulliganWord(MAX_MULLIGANS) + ': pick any game, play it again, and enter the score. It replaces that hole on your card only if it\'s better.' + (MAX_MULLIGANS > 1 ? ' Each mulligan must be a different game.' : '');
   var five = holes.filter(function(h){ return holeBalls(h) === 5; }).map(function(h){ return h.name; });
   return 'Hit the target on ball 1, 2, or 3 — that\'s your stroke count for the hole (1, 2, or 3). Short of target after 3 balls? Enter your final score and strokes (4–8) are looked up automatically. ' +
-    (five.length ? five.join(' and ') + (five.length > 1 ? ' are' : ' is') + ' a 5-ball game: hit the target on ball 4 = 4 strokes, ball 5 = 5; still short after 5 balls = 6–8 strokes. ' : '') +
+    (five.length ? listWords(five) + (five.length > 1 ? ' are 5-ball games' : ' is a 5-ball game') + ': hit the target on ball 4 = 4 strokes, ball 5 = 5; still short after 5 balls = 6–8 strokes. ' : '') +
     playPart + ' Par is 3 per hole (' + (PAR * k) + ' total). Lowest total wins. ' + TIEBREAK_TEXT;
 }
 
